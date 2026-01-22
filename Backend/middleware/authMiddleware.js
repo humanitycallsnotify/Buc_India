@@ -3,11 +3,17 @@ const jwt = require('jsonwebtoken');
 const protect = async (req, res, next) => {
   let token;
 
+  // Check for token in cookies
   if (req.cookies && req.cookies.token) {
     token = req.cookies.token;
+  } 
+  // Check for token in Authorization header as fallback
+  else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+    token = req.headers.authorization.split(" ")[1];
   }
 
   if (!token) {
+    console.log("No token found in cookies or authorization header");
     return res.status(401).json({ message: 'Not authorized, no token' });
   }
 
@@ -16,6 +22,7 @@ const protect = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
+    console.log("Token verification failed:", error.message);
     res.status(401).json({ message: 'Not authorized, token failed' });
   }
 };

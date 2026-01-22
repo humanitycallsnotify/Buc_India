@@ -8,13 +8,27 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Add interceptor to include token in headers if available
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("buc_admin_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export const authService = {
   login: async (username, password) => {
     const response = await api.post("/auth/login", { username, password });
+    if (response.data.token) {
+      localStorage.setItem("buc_admin_token", response.data.token);
+    }
     return response.data;
   },
   logout: async () => {
     const response = await api.post("/auth/logout");
+    localStorage.removeItem("buc_admin_token");
+    localStorage.removeItem("buc_admin_authenticated");
     return response.data;
   },
   checkAuth: async () => {
