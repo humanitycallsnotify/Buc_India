@@ -1,7 +1,19 @@
 import React from 'react';
 import { ArrowRight, Users, Calendar, Shield } from 'lucide-react';
+import gsap from 'gsap';
+import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+
+gsap.registerPlugin(ScrollToPlugin);
 
 const Hero = () => {
+  const scrollToEvents = () => {
+    gsap.to(window, {
+      duration: 1,
+      scrollTo: { y: "#events", offsetY: 80 },
+      ease: 'power3.inOut'
+    });
+  };
+
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0">
@@ -54,7 +66,7 @@ const Hero = () => {
             <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
           <button 
-            onClick={() => document.getElementById('events')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={scrollToEvents}
             className="w-full sm:w-auto border-2 border-white text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg hover:bg-white hover:text-black transition-all duration-200">
             View Upcoming Rides
           </button>

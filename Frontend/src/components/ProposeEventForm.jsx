@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Users, Clock, FileText, X, Check } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, FileText, X, Check, ShieldCheck } from 'lucide-react';
 
 const ProposeEventForm = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -7,6 +7,7 @@ const ProposeEventForm = ({ isOpen, onClose }) => {
     eventDate: '',
     eventTime: '',
     location: '',
+    meetingPoint: '',
     description: '',
     expectedAttendees: '',
     organizerName: '',
@@ -26,14 +27,28 @@ const ProposeEventForm = ({ isOpen, onClose }) => {
     });
   };
 
+  const formatTime = (timeString) => {
+    if (!timeString) return "";
+    try {
+      const [hours, minutes] = timeString.split(":");
+      const h = parseInt(hours, 10);
+      const ampm = h >= 12 ? "PM" : "AM";
+      const h12 = h % 12 || 12;
+      return `${h12}:${minutes} ${ampm}`;
+    } catch (error) {
+      return timeString;
+    }
+  };
+
   const formatWhatsAppMessage = () => {
     return `*New Event Proposal*
 
 *Event Details:*
 Title: ${formData.eventTitle}
 Date: ${formData.eventDate}
-Time: ${formData.eventTime}
+Time: ${formatTime(formData.eventTime)}
 Location: ${formData.location}
+Meeting Point: ${formData.meetingPoint}
 Type: ${formData.eventType}
 Expected Attendees: ${formData.expectedAttendees}
 
@@ -73,6 +88,7 @@ Event proposal submitted successfully!`;
           eventDate: '',
           eventTime: '',
           location: '',
+          meetingPoint: '',
           description: '',
           expectedAttendees: '',
           organizerName: '',
@@ -135,6 +151,10 @@ Event proposal submitted successfully!`;
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-blue-500/10 border border-blue-500/50 text-blue-400 px-4 py-3 rounded-lg text-sm text-center font-medium">
+            <ShieldCheck className="h-4 w-4 inline-block mr-2" />
+            Your data will be kept confidential and will not be shared with anyone.
+          </div>
           <div>
             <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
               <Calendar className="h-5 w-5 text-orange-500 mr-2" />
@@ -171,6 +191,15 @@ Event proposal submitted successfully!`;
                 name="location"
                 placeholder="Event Location"
                 value={formData.location}
+                onChange={handleInputChange}
+                className="bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <input
+                type="text"
+                name="meetingPoint"
+                placeholder="Meeting Point"
+                value={formData.meetingPoint}
                 onChange={handleInputChange}
                 className="bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none"
                 required

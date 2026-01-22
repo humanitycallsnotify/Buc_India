@@ -1,0 +1,13 @@
+/* PublicHome.css */
+.public-home-container {
+  min-height: 100vh;
+  background-color: #000;
+}
+
+/* Custom line clamp if not supported by tailwind config */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
+}

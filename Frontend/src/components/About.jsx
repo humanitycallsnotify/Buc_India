@@ -26,7 +26,7 @@ const About = () => {
   ];
 
   return (
-    <section className="relative py-20 overflow-hidden">
+    <section id="about" className="relative py-20 overflow-hidden">
       <div className="absolute inset-0 z-0">
         <img
           src="https://images.pexels.com/photos/1119796/pexels-photo-1119796.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"

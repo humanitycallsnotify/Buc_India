@@ -1,43 +1,57 @@
-import React, { useState } from 'react';
-import { Search, MapPin, Bike, Calendar, Award, MessageCircle } from 'lucide-react';
-import MembershipForm from './MembershipForm.jsx';
+import React, { useState } from "react";
+import {
+  Search,
+  MapPin,
+  Bike,
+  Calendar,
+  Award,
+  MessageCircle,
+} from "lucide-react";
 
 const Members = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterBy, setFilterBy] = useState('all');
-  const [showMembershipForm, setShowMembershipForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterBy, setFilterBy] = useState("all");
 
   const members = [];
 
-  const filteredMembers = members.filter(member => {
-    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.bike.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (filterBy === 'all') return matchesSearch;
-    if (filterBy === 'officers') return matchesSearch && ['President', 'Treasurer', 'Secretary', 'Road Captain'].includes(member.role);
-    if (filterBy === 'new') return matchesSearch && parseInt(member.joinDate) >= 2022;
-    if (filterBy === 'veterans') return matchesSearch && parseInt(member.joinDate) <= 2019;
-    
+  const filteredMembers = members.filter((member) => {
+    const matchesSearch =
+      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.bike.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (filterBy === "all") return matchesSearch;
+    if (filterBy === "officers")
+      return (
+        matchesSearch &&
+        ["President", "Treasurer", "Secretary", "Road Captain"].includes(
+          member.role,
+        )
+      );
+    if (filterBy === "new")
+      return matchesSearch && parseInt(member.joinDate) >= 2022;
+    if (filterBy === "veterans")
+      return matchesSearch && parseInt(member.joinDate) <= 2019;
+
     return matchesSearch;
   });
 
   const getBadgeColor = (badge) => {
     const colors = {
-      'Founder': 'bg-purple-500',
-      'Leadership': 'bg-blue-500',
-      'Safety Expert': 'bg-green-500',
-      'Long Distance': 'bg-orange-500',
-      'Event Organizer': 'bg-red-500',
-      'Adventure Rider': 'bg-yellow-500',
-      'Photographer': 'bg-pink-500',
-      'Mentor': 'bg-indigo-500',
-      'New Rider': 'bg-gray-500',
-      'Enthusiast': 'bg-teal-500',
-      'Charity Rider': 'bg-rose-500',
-      'Classic Enthusiast': 'bg-amber-500'
+      Founder: "bg-purple-500",
+      Leadership: "bg-blue-500",
+      "Safety Expert": "bg-green-500",
+      "Long Distance": "bg-orange-500",
+      "Event Organizer": "bg-red-500",
+      "Adventure Rider": "bg-yellow-500",
+      Photographer: "bg-pink-500",
+      Mentor: "bg-indigo-500",
+      "New Rider": "bg-gray-500",
+      Enthusiast: "bg-teal-500",
+      "Charity Rider": "bg-rose-500",
+      "Classic Enthusiast": "bg-amber-500",
     };
-    return colors[badge] || 'bg-gray-500';
+    return colors[badge] || "bg-gray-500";
   };
 
   return (
@@ -50,14 +64,18 @@ const Members = () => {
         />
         <div className="absolute inset-0 bg-black/85"></div>
       </div>
-      
+
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600">Brotherhood</span>
+            Our{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600">
+              Brotherhood
+            </span>
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Meet the riders who make our community strong. Connect, share experiences, and build lasting friendships.
+            Meet the riders who make our community strong. Connect, share
+            experiences, and build lasting friendships.
           </p>
         </div>
 
@@ -86,7 +104,10 @@ const Members = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredMembers.map((member) => (
-            <div key={member.id} className="bg-black/40 backdrop-blur-sm rounded-lg p-6 border border-gray-700 hover:border-orange-500/50 transition-all duration-300 group">
+            <div
+              key={member.id}
+              className="bg-black/40 backdrop-blur-sm rounded-lg p-6 border border-gray-700 hover:border-orange-500/50 transition-all duration-300 group"
+            >
               <div className="flex items-center space-x-4 mb-4">
                 <img
                   src={member.avatar}
@@ -163,23 +184,21 @@ const Members = () => {
         </div>
 
         <div className="text-center mt-12">
-          <h3 className="text-2xl font-bold text-white mb-4">Ready to Join Our Family?</h3>
+          <h3 className="text-2xl font-bold text-white mb-4">
+            Ready to Join Our Family?
+          </h3>
           <p className="text-gray-300 mb-6">
-            Become part of a community that shares your passion for riding and adventure.
+            Become part of a community that shares your passion for riding and
+            adventure.
           </p>
           <button 
-            onClick={() => setShowMembershipForm(true)}
+            onClick={() => window.dispatchEvent(new Event('open-registration'))}
             className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 transition-all duration-200"
           >
             Start Your Membership
           </button>
         </div>
       </div>
-      
-      <MembershipForm
-        isOpen={showMembershipForm}
-        onClose={() => setShowMembershipForm(false)}
-      />
     </section>
   );
 };

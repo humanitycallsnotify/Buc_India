@@ -1,5 +1,9 @@
 import React from 'react';
 import { Bike, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Youtube, Globe } from 'lucide-react';
+import gsap from 'gsap';
+import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+
+gsap.registerPlugin(ScrollToPlugin);
 
 const Footer = () => {
   const quickLinks = [
@@ -10,6 +14,28 @@ const Footer = () => {
     { name: 'Safety', href: '#safety' },
     { name: 'Contact', href: '#contact' }
   ];
+
+  const scrollToSection = (e, href) => {
+    e.preventDefault();
+    if (href === '#contact') {
+      // Scroll to bottom or specific contact section if it exists
+      gsap.to(window, {
+        duration: 1,
+        scrollTo: { y: "max" },
+        ease: 'power3.inOut'
+      });
+      return;
+    }
+    const target = href.startsWith('#') ? href : `#${href}`;
+    const element = document.querySelector(target);
+    if (element) {
+      gsap.to(window, {
+        duration: 1,
+        scrollTo: { y: target, offsetY: 80 },
+        ease: 'power3.inOut'
+      });
+    }
+  };
 
   const socialLinks = [
     { icon: Facebook, href: '#', name: 'Facebook' },
@@ -104,6 +130,7 @@ const Footer = () => {
                 <li key={link.name}>
                   <a
                     href={link.href}
+                    onClick={(e) => scrollToSection(e, link.href)}
                     className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
                   >
                     {link.name}
