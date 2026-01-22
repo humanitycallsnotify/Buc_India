@@ -33,6 +33,14 @@ const createRegistration = async (req, res) => {
       return res.status(400).json({ message: 'You must be at least 18 years old to register' });
     }
 
+    // Phone validation (exactly 10 digits)
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ message: 'Phone number must be exactly 10 digits' });
+    }
+    if (!/^\d{10}$/.test(emergencyContactPhone)) {
+      return res.status(400).json({ message: 'Emergency contact phone number must be exactly 10 digits' });
+    }
+
     // Check for duplicates within the same event
     const duplicate = await Registration.findOne({
       eventId: eventId === 'community' ? 'community' : mongoose.Types.ObjectId.createFromHexString(eventId),

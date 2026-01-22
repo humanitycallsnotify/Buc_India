@@ -88,6 +88,10 @@ const PublicRegister = () => {
     const { name, value, files } = e.target;
     if (name === "licenseImage") {
       setFormData((prev) => ({ ...prev, licenseImage: files[0] }));
+    } else if (name === "phone" || name === "emergencyContactPhone") {
+      // Only allow digits and restrict to 10
+      const numericValue = value.replace(/\D/g, "").slice(0, 10);
+      setFormData((prev) => ({ ...prev, [name]: numericValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -133,6 +137,18 @@ const PublicRegister = () => {
       if (age < 18) {
         errors.dateOfBirth = "You must be at least 18 years old";
       }
+    }
+
+    // Phone validation (exactly 10 digits)
+    if (formData.phone && formData.phone.length !== 10) {
+      errors.phone = "Phone number must be exactly 10 digits";
+    }
+
+    if (
+      formData.emergencyContactPhone &&
+      formData.emergencyContactPhone.length !== 10
+    ) {
+      errors.emergencyContactPhone = "Phone number must be exactly 10 digits";
     }
 
     if (
@@ -423,16 +439,20 @@ const PublicRegister = () => {
                 </div>
                 <div className="form-group">
                   <label>Emergency Contact Phone *</label>
-                  <input
-                    type="tel"
-                    name="emergencyContactPhone"
-                    value={formData.emergencyContactPhone}
-                    onChange={handleInputChange}
-                    placeholder="+91 1234567890"
-                    className={
-                      fieldErrors.emergencyContactPhone ? "input-error" : ""
-                    }
-                  />
+                  <div className="phone-input-wrapper">
+                    <span className="phone-prefix">+91</span>
+                    <input
+                      type="tel"
+                      name="emergencyContactPhone"
+                      value={formData.emergencyContactPhone}
+                      onChange={handleInputChange}
+                      placeholder="9876543210"
+                      className={
+                        fieldErrors.emergencyContactPhone ? "input-error" : ""
+                      }
+                      maxLength="10"
+                    />
+                  </div>
                   {fieldErrors.emergencyContactPhone && (
                     <span className="field-error">
                       {fieldErrors.emergencyContactPhone}
