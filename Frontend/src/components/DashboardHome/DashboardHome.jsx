@@ -17,7 +17,8 @@ import {
   ArrowRight,
   TrendingUp,
   AlertCircle,
-  Clock
+  Clock,
+  ChevronRight
 } from "lucide-react";
 
 const DashboardHome = () => {

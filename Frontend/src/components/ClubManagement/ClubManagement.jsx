@@ -21,6 +21,7 @@ const ClubManagement = () => {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
   const [expandedClub, setExpandedClub] = useState(null);
+  const [activeTab, setActiveTab] = useState("pending");
 
   useEffect(() => {
     loadData();
@@ -69,8 +70,17 @@ const ClubManagement = () => {
         m.status === "active"
     );
 
+  const getFilteredClubs = () => {
+    if (activeTab === "active") return clubs.filter(c => c.status === "approved");
+    if (activeTab === "pending") return clubs.filter(c => c.status === "pending" || !c.status);
+    if (activeTab === "rejected") return clubs.filter(c => c.status === "rejected");
+    return [];
+  };
+
+  const filteredClubs = getFilteredClubs();
+
   return (
-    <div className="space-y-12 pb-20">
+    <div className="space-y-8 pb-20">
       {/* Page Header */}
       <div>
         <span className="text-copper font-body text-[10px] tracking-ultra uppercase mb-2 block font-bold">Consub-Division Alpha</span>
@@ -80,202 +90,239 @@ const ClubManagement = () => {
         </p>
       </div>
 
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-white/10">
+        <button
+          onClick={() => setActiveTab("pending")}
+          className={`px-6 py-4 font-body text-[10px] uppercase tracking-widest font-bold transition-all ${
+            activeTab === "pending"
+              ? "text-copper border-b-2 border-copper bg-copper/5"
+              : "text-steel-dim hover:text-white hover:bg-white/5"
+          }`}
+        >
+          Pending
+        </button>
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`px-6 py-4 font-body text-[10px] uppercase tracking-widest font-bold transition-all ${
+            activeTab === "active"
+              ? "text-green-500 border-b-2 border-green-500 bg-green-500/5"
+              : "text-steel-dim hover:text-white hover:bg-white/5"
+          }`}
+        >
+          Active
+        </button>
+        <button
+          onClick={() => setActiveTab("rejected")}
+          className={`px-6 py-4 font-body text-[10px] uppercase tracking-widest font-bold transition-all ${
+            activeTab === "rejected"
+              ? "text-red-500 border-b-2 border-red-500 bg-red-500/5"
+              : "text-steel-dim hover:text-white hover:bg-white/5"
+          }`}
+        >
+          Rejected
+        </button>
+        <button
+          onClick={() => setActiveTab("exits")}
+          className={`px-6 py-4 font-body text-[10px] uppercase tracking-widest font-bold transition-all ${
+            activeTab === "exits"
+              ? "text-copper border-b-2 border-copper bg-copper/5"
+              : "text-steel-dim hover:text-white hover:bg-white/5"
+          }`}
+        >
+          Exit Reasons
+        </button>
+      </div>
+
       {loading ? (
         <div className="flex flex-col items-center justify-center py-32 border border-white/5 bg-carbon-light">
            <div className="w-12 h-12 border-2 border-copper/20 border-t-copper rounded-full animate-spin mb-4"></div>
            <p className="font-body text-[10px] uppercase tracking-widest text-steel-dim font-bold">Synchronizing Entity Manifest...</p>
         </div>
       ) : (
-        <>
-          {/* Main Section: Club Requests */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-               <Shield size={20} className="text-copper" />
-               <h3 className="font-heading text-2xl uppercase text-white">Strategic Collaborations</h3>
-            </div>
-
-            {clubs.length === 0 ? (
-              <div className="p-12 border border-white/5 bg-carbon-light text-center">
-                 <p className="font-text text-steel-dim uppercase tracking-ultra italic">No pending coalition requests detected.</p>
-              </div>
-            ) : (
-              <div className="grid gap-6">
-                <div className="hidden md:grid grid-cols-12 gap-4 px-8 py-4 bg-carbon-light border border-white/5 font-body text-[10px] uppercase tracking-widest text-steel-dim font-bold">
-                   <div className="col-span-4">Designation / Intel</div>
-                   <div className="col-span-2">Inception</div>
-                   <div className="col-span-3">Doctrine / Moto</div>
-                   <div className="col-span-1 text-center">Resonance</div>
-                   <div className="col-span-2 text-right">Authorize</div>
+        <div className="min-h-[400px]">
+          {activeTab !== "exits" ? (
+            <section className="space-y-6 animate-fade-in">
+              {filteredClubs.length === 0 ? (
+                <div className="p-12 border border-white/5 bg-carbon-light text-center">
+                   <p className="font-text text-steel-dim uppercase tracking-ultra italic">No coalitions found in this category.</p>
                 </div>
-
-                {clubs.map((club) => {
-                  const participants = getParticipantsForClub(club._id);
-                  const isExpanded = expandedClub === club._id;
-
-                  return (
-                    <motion.div 
-                      key={club._id} 
-                      layout
-                      className="bg-carbon border border-white/5 overflow-hidden group hover:border-white/10 transition-colors"
-                    >
-                      <div className="md:grid grid-cols-12 gap-4 px-8 py-6 items-center">
-                        {/* Club Identity */}
-                        <div className="col-span-12 md:col-span-4 flex items-center gap-4 mb-6 md:mb-0">
-                           <div className="w-12 h-12 flex-shrink-0 bg-carbon-light border border-white/10 flex items-center justify-center overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-500">
-                              {club.logoUrl ? (
-                                <img src={club.logoUrl} alt={club.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="font-heading text-xl text-copper">{club.name?.charAt(0) || "Ω"}</span>
-                              )}
-                           </div>
-                           <div>
-                              <div className="font-heading text-xl text-white uppercase group-hover:text-copper transition-colors">{club.name}</div>
-                              <div className="font-body text-[9px] text-steel-dim uppercase tracking-widest mt-1">
-                                High Commander: <span className="text-white">{club.founder?.name || "REDACTED"}</span>
-                              </div>
-                           </div>
-                        </div>
-
-                        {/* Started On */}
-                        <div className="col-span-6 md:col-span-2 space-y-1">
-                           <div className="flex items-center gap-2 text-steel-dim text-[10px] uppercase tracking-widest">
-                              <Clock size={12} className="text-copper/50" />
-                              <span>{club.startedOn ? new Date(club.startedOn).toLocaleDateString() : "ALPHA PHASE"}</span>
-                           </div>
-                        </div>
-
-                        {/* Moto */}
-                        <div className="col-span-6 md:col-span-3">
-                           <p className="text-steel-dim text-[10px] uppercase tracking-widest italic line-clamp-1 group-hover:line-clamp-none transition-all">
-                              "{club.moto || club.showcaseText || "NO DECLARED DOCTRINE"}"
-                           </p>
-                        </div>
-
-                        {/* Status/Badge */}
-                        <div className="col-span-6 md:col-span-1 text-center">
-                           <span className={`px-3 py-1 font-body text-[8px] uppercase font-bold tracking-widest inline-block rounded-full ${
-                             club.status === "approved" ? "bg-green-500/10 text-green-500 border border-green-500/20" :
-                             club.status === "rejected" ? "bg-red-500/10 text-red-500 border border-red-500/20" :
-                             "bg-copper/10 text-copper border border-copper/20"
-                           }`}>
-                             {club.status}
-                           </span>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="col-span-6 md:col-span-2 flex justify-end gap-2">
-                           <button
-                             disabled={updatingId === club._id}
-                             onClick={() => changeStatus(club._id, "approved")}
-                             className="p-3 text-steel-dim hover:text-green-500 hover:bg-green-500/5 transition-all border border-transparent hover:border-green-500/20 disabled:opacity-20"
-                             title="Approve Coalition"
-                           >
-                             <CheckCircle size={18} />
-                           </button>
-                           <button
-                             disabled={updatingId === club._id}
-                             onClick={() => changeStatus(club._id, "rejected")}
-                             className="p-3 text-steel-dim hover:text-red-500 hover:bg-red-500/5 transition-all border border-transparent hover:border-red-500/20 disabled:opacity-20"
-                             title="Reject Coalition"
-                           >
-                             <XCircle size={18} />
-                           </button>
-                           {participants.length > 0 && (
-                             <button
-                               onClick={() => toggleExpand(club._id)}
-                               className={`p-3 transition-all ${isExpanded ? 'text-copper bg-copper/5 border border-copper/20' : 'text-steel-dim hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'}`}
-                             >
-                               {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                             </button>
-                           )}
-                        </div>
-                      </div>
-
-                      {/* Expanded Participants Section */}
-                      <AnimatePresence>
-                        {isExpanded && participants.length > 0 && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="bg-carbon-light border-t border-white/5"
-                          >
-                            <div className="p-8 space-y-6">
-                              <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-                                 <Users size={14} className="text-copper" />
-                                 <h4 className="font-body text-[10px] uppercase tracking-widest font-bold text-white">Active Operational Units ({participants.length})</h4>
-                              </div>
-
-                              <div className="grid gap-2">
-                                {participants.map((m) => (
-                                  <div key={m._id} className="grid grid-cols-1 md:grid-cols-5 gap-4 py-3 border-b border-white/5 font-body text-[9px] uppercase tracking-widest text-steel-dim hover:text-white transition-colors">
-                                    <div className="flex items-center gap-2 font-bold text-white">
-                                       <UserCheck size={12} className="text-copper" />
-                                       {m.userId?.fullName || "UNKNOWN UNIT"}
-                                    </div>
-                                    <div className="truncate">{m.userId?.email || "ENCRYPTED"}</div>
-                                    <div className="font-mono text-[8px]">{m.userId?.phone || "-"}</div>
-                                    <div className="text-copper font-bold">{m.role || "MEMBER"}</div>
-                                    <div className="text-right italic">ENGAGED: {m.createdAt ? new Date(m.createdAt).toLocaleDateString() : "-"}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* Secondary Section: Exit Telemetry */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-               <Info size={20} className="text-copper" />
-               <h3 className="font-heading text-2xl uppercase text-white">Dissolution Telemetry</h3>
-            </div>
-
-            {exitMemberships.length === 0 ? (
-              <div className="p-12 border border-white/5 bg-carbon-light text-center">
-                 <p className="font-text text-steel-dim uppercase tracking-ultra italic">Stable cohesion detected across all sectors.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {exitMemberships.map((m) => (
-                  <div key={m._id} className="p-8 bg-carbon border border-white/5 group hover:border-red-500/20 transition-all">
-                    <div className="flex justify-between items-start mb-4">
-                       <div>
-                          <div className="font-heading text-lg text-white group-hover:text-red-500 transition-colors uppercase">
-                             {m.userId?.fullName || "UNIT"} // {m.clubId?.name || "COALITION"}
-                          </div>
-                          <div className="flex gap-3 mt-2 text-[8px] uppercase tracking-widest text-steel-dim font-bold">
-                             <span>ID: {m.userId?.email || "REDACTED"}</span>
-                             <span className="text-copper">PH: {m.userId?.phone || "REDACTED"}</span>
-                             <span className="text-red-500/50">EXIT: {m.exitedAt ? new Date(m.exitedAt).toLocaleDateString() : "MANUAL TERM"}</span>
-                          </div>
-                       </div>
-                       <MessageSquare size={20} className="text-red-500/20 group-hover:text-red-500/50 transition-colors" />
-                    </div>
-                    
-                    <div className="bg-carbon-light p-4 border-l-2 border-red-500/30">
-                       <div className="font-body text-[8px] uppercase tracking-widest text-red-500 font-bold mb-1">Debriefing Summary:</div>
-                       <p className="font-text text-xs italic text-steel-dim leading-relaxed">
-                         "{m.exitReason || "No formal reason provided for strategic withdrawal."}"
-                       </p>
-                    </div>
+              ) : (
+                <div className="grid gap-6">
+                  <div className="hidden md:grid grid-cols-12 gap-4 px-8 py-4 bg-carbon-light border border-white/5 font-body text-[10px] uppercase tracking-widest text-steel-dim font-bold">
+                     <div className="col-span-4">Designation / Intel</div>
+                     <div className="col-span-2">Inception</div>
+                     <div className="col-span-3">Doctrine / Moto</div>
+                     <div className="col-span-1 text-center">Resonance</div>
+                     <div className="col-span-2 text-right">Authorize</div>
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </>
+
+                  {filteredClubs.map((club) => {
+                    const participants = getParticipantsForClub(club._id);
+                    const isExpanded = expandedClub === club._id;
+
+                    return (
+                      <motion.div 
+                        key={club._id} 
+                        layout
+                        className="bg-carbon border border-white/5 overflow-hidden group hover:border-white/10 transition-colors"
+                      >
+                        <div className="md:grid grid-cols-12 gap-4 px-8 py-6 items-center">
+                          {/* Club Identity */}
+                          <div className="col-span-12 md:col-span-4 flex items-center gap-4 mb-6 md:mb-0">
+                             <div className="w-12 h-12 flex-shrink-0 bg-carbon-light border border-white/10 flex items-center justify-center overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-500">
+                                {club.logoUrl ? (
+                                  <img src={club.logoUrl} alt={club.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="font-heading text-xl text-copper">{club.name?.charAt(0) || "Ω"}</span>
+                                )}
+                             </div>
+                             <div>
+                                <div className="font-heading text-xl text-white uppercase group-hover:text-copper transition-colors">{club.name}</div>
+                                <div className="font-body text-[9px] text-steel-dim uppercase tracking-widest mt-1">
+                                  High Commander: <span className="text-white">{club.founder?.name || "REDACTED"}</span>
+                                </div>
+                             </div>
+                          </div>
+
+                          {/* Started On */}
+                          <div className="col-span-6 md:col-span-2 space-y-1">
+                             <div className="flex items-center gap-2 text-steel-dim text-[10px] uppercase tracking-widest">
+                                <Clock size={12} className="text-copper/50" />
+                                <span>{club.startedOn ? new Date(club.startedOn).toLocaleDateString() : "ALPHA PHASE"}</span>
+                             </div>
+                          </div>
+
+                          {/* Moto */}
+                          <div className="col-span-6 md:col-span-3">
+                             <p className="text-steel-dim text-[10px] uppercase tracking-widest italic line-clamp-1 group-hover:line-clamp-none transition-all">
+                                "{club.moto || club.showcaseText || "NO DECLARED DOCTRINE"}"
+                             </p>
+                          </div>
+
+                          {/* Status/Badge */}
+                          <div className="col-span-6 md:col-span-1 text-center">
+                             <span className={`px-3 py-1 font-body text-[8px] uppercase font-bold tracking-widest inline-block rounded-full ${
+                               club.status === "approved" ? "bg-green-500/10 text-green-500 border border-green-500/20" :
+                               club.status === "rejected" ? "bg-red-500/10 text-red-500 border border-red-500/20" :
+                               "bg-copper/10 text-copper border border-copper/20"
+                             }`}>
+                               {club.status}
+                             </span>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="col-span-6 md:col-span-2 flex justify-end gap-2">
+                             {activeTab !== "active" && (
+                               <button
+                                 disabled={updatingId === club._id}
+                                 onClick={() => changeStatus(club._id, "approved")}
+                                 className="p-3 text-steel-dim hover:text-green-500 hover:bg-green-500/5 transition-all border border-transparent hover:border-green-500/20 disabled:opacity-20"
+                                 title="Approve Coalition"
+                               >
+                                 <CheckCircle size={18} />
+                               </button>
+                             )}
+                             {activeTab !== "rejected" && (
+                               <button
+                                 disabled={updatingId === club._id}
+                                 onClick={() => changeStatus(club._id, "rejected")}
+                                 className="p-3 text-steel-dim hover:text-red-500 hover:bg-red-500/5 transition-all border border-transparent hover:border-red-500/20 disabled:opacity-20"
+                                 title="Reject Coalition"
+                               >
+                                 <XCircle size={18} />
+                               </button>
+                             )}
+                             {participants.length > 0 && (
+                               <button
+                                 onClick={() => toggleExpand(club._id)}
+                                 className={`p-3 transition-all ${isExpanded ? 'text-copper bg-copper/5 border border-copper/20' : 'text-steel-dim hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'}`}
+                               >
+                                 {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                               </button>
+                             )}
+                          </div>
+                        </div>
+
+                        {/* Expanded Participants Section */}
+                        <AnimatePresence>
+                          {isExpanded && participants.length > 0 && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="bg-carbon-light border-t border-white/5"
+                            >
+                              <div className="p-8 space-y-6">
+                                <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                                   <Users size={14} className="text-copper" />
+                                   <h4 className="font-body text-[10px] uppercase tracking-widest font-bold text-white">Active Operational Units ({participants.length})</h4>
+                                </div>
+
+                                <div className="grid gap-2">
+                                  {participants.map((m) => (
+                                    <div key={m._id} className="grid grid-cols-1 md:grid-cols-5 gap-4 py-3 border-b border-white/5 font-body text-[9px] uppercase tracking-widest text-steel-dim hover:text-white transition-colors">
+                                      <div className="flex items-center gap-2 font-bold text-white">
+                                         <UserCheck size={12} className="text-copper" />
+                                         {m.userId?.fullName || "UNKNOWN UNIT"}
+                                      </div>
+                                      <div className="truncate">{m.userId?.email || "ENCRYPTED"}</div>
+                                      <div className="font-mono text-[8px]">{m.userId?.phone || "-"}</div>
+                                      <div className="text-copper font-bold">{m.role || "MEMBER"}</div>
+                                      <div className="text-right italic">ENGAGED: {m.createdAt ? new Date(m.createdAt).toLocaleDateString() : "-"}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ) : (
+            <section className="space-y-6 animate-fade-in">
+              {exitMemberships.length === 0 ? (
+                <div className="p-12 border border-white/5 bg-carbon-light text-center">
+                   <p className="font-text text-steel-dim uppercase tracking-ultra italic">Stable cohesion detected across all sectors. No exit telemetry found.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {exitMemberships.map((m) => (
+                    <div key={m._id} className="p-8 bg-carbon border border-white/5 group hover:border-red-500/20 transition-all">
+                      <div className="flex justify-between items-start mb-4">
+                         <div>
+                            <div className="font-heading text-lg text-white group-hover:text-red-500 transition-colors uppercase">
+                               {m.userId?.fullName || "UNIT"} // {m.clubId?.name || "COALITION"}
+                            </div>
+                            <div className="flex gap-3 mt-2 text-[8px] uppercase tracking-widest text-steel-dim font-bold">
+                               <span>ID: {m.userId?.email || "REDACTED"}</span>
+                               <span className="text-copper">PH: {m.userId?.phone || "REDACTED"}</span>
+                               <span className="text-red-500/50">EXIT: {m.exitedAt ? new Date(m.exitedAt).toLocaleDateString() : "MANUAL TERM"}</span>
+                            </div>
+                         </div>
+                         <MessageSquare size={20} className="text-red-500/20 group-hover:text-red-500/50 transition-colors" />
+                      </div>
+                      
+                      <div className="bg-carbon-light p-4 border-l-2 border-red-500/30">
+                         <div className="font-body text-[8px] uppercase tracking-widest text-red-500 font-bold mb-1">Debriefing Summary:</div>
+                         <p className="font-text text-xs italic text-steel-dim leading-relaxed">
+                           "{m.exitReason || "No formal reason provided for strategic withdrawal."}"
+                         </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+        </div>
       )}
     </div>
   );
 };
 
 export default ClubManagement;
-

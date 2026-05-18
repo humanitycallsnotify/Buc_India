@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -12,7 +12,8 @@ import {
   Phone,
   Calendar,
   Zap,
-  Trash2
+  Trash2,
+  CheckCircle
 } from "lucide-react";
 import { clubService } from "../../services/api";
 
@@ -35,12 +36,16 @@ const initialRequestState = {
 
 const ClubCollaborate = () => {
   const navigate = useNavigate();
-  const isLoggedIn = sessionStorage.getItem("userLoggedIn") === "true";
-  const userEmail = sessionStorage.getItem("userEmail") || "";
-  const userPhone = sessionStorage.getItem("userPhone") || "";
+  const [userEmail, setUserEmail] = useState("");
+  const [userPhone, setUserPhone] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const [requestForm, setRequestForm] = useState(initialRequestState);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Logic to set user details if needed from auth context
+  }, []);
 
   const updateField = (field, value) =>
     setRequestForm((prev) => ({ ...prev, [field]: value }));
@@ -73,11 +78,6 @@ const ClubCollaborate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isLoggedIn) {
-      toast.info("Please login before submitting a collaboration request.");
-      navigate("/login");
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -106,8 +106,7 @@ const ClubCollaborate = () => {
       toast.success(
         "Request submitted! BUC admin will review and respond shortly."
       );
-      setRequestForm(initialRequestState);
-      navigate("/clubs");
+      setIsSuccess(true);
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
@@ -123,13 +122,7 @@ const ClubCollaborate = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-16">
-          <button
-            onClick={() => navigate("/clubs")}
-            className="flex items-center gap-2 font-body text-[10px] tracking-widest uppercase text-steel-dim hover:text-copper transition-colors mb-8"
-          >
-            <ArrowLeft size={14} />
-            Back to Clubs
-          </button>
+
           
           <div className="flex items-end gap-6 mb-4">
              <div className="w-16 h-16 bg-copper/10 border border-copper/30 flex items-center justify-center rounded-full">
@@ -146,8 +139,28 @@ const ClubCollaborate = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-12">
-          {/* Section: Club Information */}
+        {isSuccess ? (
+          <div className="bg-carbon-light border border-white/5 p-12 text-center animate-fade-in">
+            <div className="w-24 h-24 bg-green-500/10 border border-green-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle size={40} className="text-green-500" />
+            </div>
+            <h2 className="font-heading text-4xl uppercase mb-4 text-white">Registration <span className="text-transparent outline-title">Successful</span></h2>
+            <p className="font-text text-steel-dim text-lg max-w-lg mx-auto leading-relaxed mb-8">
+              Your club collaboration request has been successfully submitted. The BUC administrators will review your application and respond shortly.
+            </p>
+            <button
+              onClick={() => {
+                setIsSuccess(false);
+                setRequestForm(initialRequestState);
+              }}
+              className="px-8 py-4 bg-copper text-carbon font-heading text-sm uppercase tracking-widest hover:bg-white transition-all duration-300"
+            >
+              Submit Another Request
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-12">
+            {/* Section: Club Information */}
           <div className="bg-carbon-light border border-white/5 p-8 md:p-12">
             <h2 className="font-heading text-3xl uppercase mb-8 flex items-center gap-4">
                <Zap size={24} className="text-copper" />
@@ -327,20 +340,14 @@ const ClubCollaborate = () => {
           <div className="flex flex-col md:flex-row items-center gap-12 pt-8">
             <button
               type="submit"
-              disabled={submitting || !isLoggedIn}
+              disabled={submitting}
               className="w-full md:w-auto px-16 py-6 bg-copper text-carbon font-heading text-2xl uppercase hover:bg-white transition-all duration-500 disabled:opacity-50"
             >
               {submitting ? "Processing..." : "Submit Collaboration Request"}
             </button>
-            
-            {!isLoggedIn && (
-               <div className="flex items-center gap-4 text-red-500 animate-pulse">
-                  <Shield size={20} />
-                  <span className="font-body text-xs tracking-widest uppercase">AUTHENTICATION REQUIRED</span>
-               </div>
-            )}
           </div>
         </form>
+        )}
       </div>
     </div>
   );

@@ -27,6 +27,16 @@ export const getProfile = async (req, res) => {
   }
 };
 
+export const getAllProfiles = async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error("Get All Profiles Error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const userSignup = async (req, res) => {
   try {
     const {

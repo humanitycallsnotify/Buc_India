@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getProfile,
+  getAllProfiles,
   userSignup,
   userLogin,
   updateUserProfile,
@@ -9,6 +10,7 @@ import { profileUpload } from "../middleware/cloudinaryConfig.js";
 
 const router = express.Router();
 
+router.get("/all", getAllProfiles);
 router.get("/", getProfile);
 
 router.post(

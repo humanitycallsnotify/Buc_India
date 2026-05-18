@@ -131,6 +131,10 @@ export const profileService = {
     const response = await api.get("/profile", { params });
     return response.data;
   },
+  getAllAdmin: async () => {
+    const response = await api.get("/profile/all");
+    return response.data;
+  },
   signup: async (formData) => {
     const response = await api.post("/profile/signup", formData, {
       headers: {
