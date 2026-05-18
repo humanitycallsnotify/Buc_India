@@ -13,9 +13,71 @@ import {
   Calendar,
   Zap,
   Trash2,
-  CheckCircle
+  CheckCircle,
+  X
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { clubService } from "../../services/api";
+import TermsModal from "../TermsModal";
+
+const CLUB_TERMS = [
+  {
+    title: "1. Purpose of Collaboration",
+    content: "We agree to collaborate with Bikers Unity Calls (BUC_India) to:\n• Promote safe and responsible riding culture\n• Build unity, brotherhood, and community bonding\n• Support social initiatives, awareness campaigns, and events\n\nThis collaboration is non-commercial in nature unless formally agreed otherwise in writing."
+  },
+  {
+    title: "2. Legal Compliance",
+    content: "The club agrees to:\n• Follow all Government laws, Traffic rules, and Police regulations\n• Ensure members comply with safety and legal standards during rides/events"
+  },
+  {
+    title: "3. Independent Identity Clause",
+    content: "• Each club operates independently\n• This registration does not create any partnership, employment, or legal joint liability\n• Clubs remain responsible for their own internal operations"
+  },
+  {
+    title: "4. Code of Conduct",
+    content: "The club and its members agree to:\n• Promote discipline, safety, and respect\n• Avoid stunts, rash riding, illegal gatherings\n• Prohibit alcohol/drug influence during rides\n• Maintain positive representation of biking community"
+  },
+  {
+    title: "5. Safety Commitment",
+    content: "All participating members must:\n• Wear mandatory riding gear\n• Follow ride protocols and marshal instructions\n• Prioritize safety over performance or showmanship"
+  },
+  {
+    title: "6. Community & Brotherhood Clause",
+    content: "• This collaboration is built on trust, unity, and brotherhood\n• All clubs agree to maintain mutual respect and support\n• No actions should harm the reputation or harmony of the riding community"
+  },
+  {
+    title: "🚫 7. No Claim / No Dispute Clause",
+    content: "The club hereby agrees that:\n• No club, member, or representative shall:\n  - Raise complaints\n  - File legal claims\n  - Demand compensation\n\nagainst:\n  - Bikers Unity Calls (BUC_India)\n  - Humanity Calls Trust\n  - UFH Riders\n  - Organizers, volunteers, or associated partners\n\nfor any matter arising from:\n  - Participation in rides/events\n  - Community collaborations\n  - Interactions between clubs\n\nThis agreement is made in the spirit of healthy brotherhood and mutual respect."
+  },
+  {
+    title: "⚠️ 8. Conflict of Interest Clause",
+    content: "The club declares that:\n• It will not use this platform for personal, political, or commercial gain without approval\n• It will not promote conflicting or competing interests that harm the community\n• Any conflict must be disclosed immediately\n\nFailure to comply may result in termination of association."
+  },
+  {
+    title: "9. Liability Disclaimer",
+    content: "• BUC_India acts only as a community platform\n• It is not responsible for actions, incidents, or disputes involving individual clubs\n• Each club is fully responsible for its members’ conduct and safety"
+  },
+  {
+    title: "10. Indemnity Clause",
+    content: "The club agrees to:\n• Indemnify and hold harmless BUC_India and associated entities from:\n  - Claims arising due to club/member actions\n  - Legal issues caused by negligence or misconduct"
+  },
+  {
+    title: "11. Media & Branding Consent",
+    content: "The club agrees that:\n• BUC_India may use club name, logo, and visuals for:\n  - Promotions\n  - Social media\n  - Awareness campaigns"
+  },
+  {
+    title: "12. Termination Rights",
+    content: "BUC_India reserves the right to:\n• Suspend or remove any club for:\n  - Misconduct\n  - Unsafe activities\n  - Violation of terms\n\nNo explanation or compensation is required."
+  },
+  {
+    title: "13. All Rights Reserved Clause",
+    content: "All rights regarding:\n• Event execution\n• Branding\n• Community representation\n• Decision-making\n\nare solely reserved by BUC_India / Humanity Calls Trust"
+  },
+  {
+    title: "14. Final Acceptance",
+    content: "We, as a club/community, confirm that:\n• We have read and understood all terms\n• We voluntarily agree to collaborate under these conditions\n• We accept this agreement in the spirit of unity, safety, and brotherhood"
+  }
+];
 
 const initialRequestState = {
   name: "",
@@ -42,6 +104,8 @@ const ClubCollaborate = () => {
 
   const [requestForm, setRequestForm] = useState(initialRequestState);
   const [submitting, setSubmitting] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   useEffect(() => {
     // Logic to set user details if needed from auth context
@@ -85,6 +149,10 @@ const ClubCollaborate = () => {
     
     if (!requestForm.logo || !requestForm.firstRideImage || !requestForm.governmentIdImage || !requestForm.founderPassport) {
       return toast.error("Please upload all required visual assets.");
+    }
+
+    if (!termsAccepted) {
+      return toast.error("Please accept the Club Declaration & Legal Agreement to proceed.");
     }
 
     setSubmitting(true);
@@ -160,6 +228,7 @@ const ClubCollaborate = () => {
               onClick={() => {
                 setIsSuccess(false);
                 setRequestForm(initialRequestState);
+                setTermsAccepted(false);
               }}
               className="px-8 py-4 bg-copper text-carbon font-heading text-sm uppercase tracking-widest hover:bg-white transition-all duration-300"
             >
@@ -351,6 +420,35 @@ const ClubCollaborate = () => {
             </div>
           </div>
 
+          {/* Declaration & Legal Agreement */}
+          <div className="bg-carbon-light border border-white/5 p-8 md:p-12 space-y-6">
+            <h2 className="font-heading text-3xl uppercase mb-4 flex items-center gap-4">
+              <Shield size={24} className="text-copper" />
+              Declaration & Legal Agreement
+            </h2>
+            
+            <div className="flex items-start gap-4">
+              <input
+                type="checkbox"
+                id="acceptClubTerms"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-1 w-5 h-5 accent-copper bg-carbon border border-white/10 rounded cursor-pointer"
+              />
+              <label htmlFor="acceptClubTerms" className="font-text text-sm text-steel-dim leading-relaxed cursor-pointer select-none">
+                We, as a club/community, confirm that we have read and understood all{" "}
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-copper hover:underline hover:text-white transition-all font-semibold"
+                >
+                  Club Collaboration Terms & Conditions
+                </button>
+                , voluntarily agree to collaborate under these conditions, and accept this agreement in the spirit of unity, safety, and brotherhood. <span className="text-red-500">*</span>
+              </label>
+            </div>
+          </div>
+
           {/* Action */}
           <div className="flex flex-col md:flex-row items-center gap-12 pt-8">
             <button
@@ -364,6 +462,26 @@ const ClubCollaborate = () => {
         </form>
         )}
       </div>
+
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        title="Club Collaboration"
+        subtitle="Club Declaration"
+        introText="By registering as a club/community partner with BUC_India, we agree to the following terms:"
+        terms={CLUB_TERMS}
+        finalAcceptanceItems={[
+          "We have read and understood all terms",
+          "We voluntarily agree to collaborate under these conditions",
+          "We accept this agreement in the spirit of unity, safety, and brotherhood"
+        ]}
+        onAccept={() => {
+          setTermsAccepted(true);
+          setShowTermsModal(false);
+          toast.success("Declaration accepted!");
+        }}
+        acceptButtonText="We Accept & Agree"
+      />
     </div>
   );
 };
