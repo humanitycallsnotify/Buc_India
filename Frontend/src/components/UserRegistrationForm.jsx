@@ -72,8 +72,17 @@ const UserRegistrationForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.phone || !formData.password || !formData.otp) {
+    if (
+      !formData.email || !formData.phone || !formData.password || !formData.otp ||
+      !formData.fullName || !formData.dateOfBirth || !formData.bloodGroup ||
+      !formData.address || !formData.city || !formData.state || !formData.pincode ||
+      !formData.bikeModel || !formData.bikeRegistrationNumber || !formData.licenseNumber ||
+      !formData.emergencyContactName || !formData.emergencyContactPhone
+    ) {
       return toast.error("Please fill all required fields and enter OTP.");
+    }
+    if (!profileImage || !licenseImage) {
+      return toast.error("Please upload Profile and License images.");
     }
     if (formData.phone.length !== 10) return toast.error("Phone number must be exactly 10 digits");
     if (!otpSent) return toast.error("Please verify your email with OTP first");
@@ -134,11 +143,11 @@ const UserRegistrationForm = () => {
         
         {/* Basic Info */}
         <div className="space-y-6">
-          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Basic Info *</h3>
+          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Basic Info <span className="text-red-500">*</span></h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Full Name *" name="fullName" icon={User} value={formData.fullName} onChange={handleInputChange} required />
+            <InputField label="Full Name" name="fullName" icon={User} value={formData.fullName} onChange={handleInputChange} required />
             <div className="space-y-1">
-              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Email Address *</label>
+              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Email Address <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
                 <div className="relative flex-grow">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
@@ -149,10 +158,10 @@ const UserRegistrationForm = () => {
                 </button>
               </div>
             </div>
-            {otpSent && <InputField label="OTP *" name="otp" icon={Key} value={formData.otp} onChange={handleInputChange} required />}
-            <InputField label="Phone Number *" name="phone" icon={Phone} type="tel" value={formData.phone} onChange={handleInputChange} required />
+            {otpSent && <InputField label="OTP" name="otp" icon={Key} value={formData.otp} onChange={handleInputChange} required />}
+            <InputField label="Phone Number" name="phone" icon={Phone} type="tel" value={formData.phone} onChange={handleInputChange} required />
             <div className="space-y-1">
-              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Password *</label>
+              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Password <span className="text-red-500">*</span></label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
                 <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 pl-12 pr-12 py-4 font-body text-xs outline-none focus:border-copper transition-colors" />
@@ -168,10 +177,10 @@ const UserRegistrationForm = () => {
         <div className="space-y-6">
           <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Personal Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} />
+            <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
             <div className="space-y-1">
-              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Blood Group</label>
-              <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors appearance-none">
+              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Blood Group <span className="text-red-500">*</span></label>
+              <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors appearance-none">
                 <option value="">Select Blood Group</option>
                 {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
               </select>
@@ -182,11 +191,11 @@ const UserRegistrationForm = () => {
         {/* Address */}
         <div className="space-y-6">
           <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Address Info</h3>
-          <InputField label="Address" name="address" icon={MapPin} value={formData.address} onChange={handleInputChange} />
+          <InputField label="Address" name="address" icon={MapPin} value={formData.address} onChange={handleInputChange} required />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <InputField label="City" name="city" value={formData.city} onChange={handleInputChange} />
-            <InputField label="State" name="state" value={formData.state} onChange={handleInputChange} />
-            <InputField label="Pincode" name="pincode" value={formData.pincode} onChange={handleInputChange} />
+            <InputField label="City" name="city" value={formData.city} onChange={handleInputChange} required />
+            <InputField label="State" name="state" value={formData.state} onChange={handleInputChange} required />
+            <InputField label="Pincode" name="pincode" value={formData.pincode} onChange={handleInputChange} required />
           </div>
         </div>
 
@@ -194,9 +203,9 @@ const UserRegistrationForm = () => {
         <div className="space-y-6">
           <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Bike Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Bike Model" name="bikeModel" icon={Bike} value={formData.bikeModel} onChange={handleInputChange} />
-            <InputField label="Bike Registration Number" name="bikeRegistrationNumber" icon={FileText} value={formData.bikeRegistrationNumber} onChange={handleInputChange} />
-            <InputField label="License Number" name="licenseNumber" icon={FileText} value={formData.licenseNumber} onChange={handleInputChange} />
+            <InputField label="Bike Model" name="bikeModel" icon={Bike} value={formData.bikeModel} onChange={handleInputChange} required />
+            <InputField label="Bike Registration Number" name="bikeRegistrationNumber" icon={FileText} value={formData.bikeRegistrationNumber} onChange={handleInputChange} required />
+            <InputField label="License Number" name="licenseNumber" icon={FileText} value={formData.licenseNumber} onChange={handleInputChange} required />
           </div>
         </div>
 
@@ -204,8 +213,8 @@ const UserRegistrationForm = () => {
         <div className="space-y-6">
           <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Emergency Contact</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Emergency Contact Name" name="emergencyContactName" icon={User} value={formData.emergencyContactName} onChange={handleInputChange} />
-            <InputField label="Emergency Contact Phone" name="emergencyContactPhone" icon={Phone} type="tel" value={formData.emergencyContactPhone} onChange={handleInputChange} />
+            <InputField label="Emergency Contact Name" name="emergencyContactName" icon={User} value={formData.emergencyContactName} onChange={handleInputChange} required />
+            <InputField label="Emergency Contact Phone" name="emergencyContactPhone" icon={Phone} type="tel" value={formData.emergencyContactPhone} onChange={handleInputChange} required />
           </div>
         </div>
 
@@ -230,7 +239,7 @@ const UserRegistrationForm = () => {
                 <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
                   <Camera size={20} />
                 </div>
-                <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">Profile Image</span>
+                <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">Profile Image <span className="text-red-500">*</span></span>
                 <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
                   {profileImage ? profileImage.name : "Deploy File (IMG)"}
                 </span>
@@ -242,7 +251,7 @@ const UserRegistrationForm = () => {
                 <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
                   <FileText size={20} />
                 </div>
-                <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">License Image</span>
+                <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">License Image <span className="text-red-500">*</span></span>
                 <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
                   {licenseImage ? licenseImage.name : "Deploy File (IMG)"}
                 </span>
@@ -262,7 +271,9 @@ const UserRegistrationForm = () => {
 
 const InputField = ({ label, icon: Icon, name, value, onChange, type = "text", required = false }) => (
   <div className="space-y-1">
-    <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">{label}</label>
+    <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
     <div className="relative">
       {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />}
       <input

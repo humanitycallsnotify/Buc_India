@@ -78,6 +78,14 @@ const ClubCollaborate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const validAdmins = requestForm.admins.filter(admin => admin.name.trim() !== "");
+    if (validAdmins.length === 0) {
+      return toast.error("Please add at least 1 additional admin.");
+    }
+    
+    if (!requestForm.logo || !requestForm.firstRideImage || !requestForm.governmentIdImage || !requestForm.founderPassport) {
+      return toast.error("Please upload all required visual assets.");
+    }
 
     setSubmitting(true);
     try {
@@ -93,7 +101,7 @@ const ClubCollaborate = () => {
       data.append("founderPhone", requestForm.founderPhone);
       data.append("creatorEmail", userEmail || requestForm.founderEmail);
       data.append("creatorPhone", userPhone || requestForm.founderPhone);
-      data.append("admins", JSON.stringify(requestForm.admins || []));
+      data.append("admins", JSON.stringify(validAdmins));
       if (requestForm.logo) data.append("logo", requestForm.logo);
       if (requestForm.firstRideImage)
         data.append("firstRideImage", requestForm.firstRideImage);
@@ -169,7 +177,7 @@ const ClubCollaborate = () => {
             
             <div className="grid grid-cols-1 gap-8">
               <div className="space-y-2">
-                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Club Name *</label>
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Club Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
@@ -182,34 +190,37 @@ const ClubCollaborate = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
-                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Est. Date</label>
+                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Est. Date <span className="text-red-500">*</span></label>
                   <input
                     type="date"
                     className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
                     value={requestForm.startedOn}
                     onChange={(e) => updateField("startedOn", e.target.value)}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Moto / Tagline</label>
+                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Moto / Tagline <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
                     value={requestForm.moto}
                     onChange={(e) => updateField("moto", e.target.value)}
                     placeholder="e.g. HONOR OVER SPEED"
+                    required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Mission Statement</label>
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Mission Statement <span className="text-red-500">*</span></label>
                 <textarea
                   rows={4}
                    className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors resize-none"
                   value={requestForm.showcaseText}
                   onChange={(e) => updateField("showcaseText", e.target.value)}
                   placeholder="What does your brotherhood stand for?"
+                  required
                 />
               </div>
             </div>
@@ -224,17 +235,18 @@ const ClubCollaborate = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
               <div className="space-y-2">
-                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Founder Name</label>
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Founder Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
                   value={requestForm.founderName}
                   onChange={(e) => updateField("founderName", e.target.value)}
                   placeholder="Lead Founder"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Designation</label>
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Designation <span className="text-red-500">*</span></label>
                 <select
                   className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors appearance-none"
                   value={requestForm.founderRole}
@@ -247,16 +259,17 @@ const ClubCollaborate = () => {
               </div>
             </div>
 
-            <h3 className="font-body text-[10px] uppercase tracking-[0.3em] text-copper mb-6">Additional Leadership</h3>
+            <h3 className="font-body text-[10px] uppercase tracking-[0.3em] text-copper mb-6">Additional Leadership <span className="text-red-500">*</span></h3>
             <div className="space-y-4 mb-8">
               {requestForm.admins.map((admin, index) => (
                 <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-white/5 bg-carbon/50 relative group">
                   <input
                     type="text"
                     className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
-                    placeholder="NAME"
+                    placeholder="NAME *"
                     value={admin.name}
                     onChange={(e) => updateAdminField(index, "name", e.target.value)}
+                    required={index === 0}
                   />
                   <select
                     className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
@@ -311,17 +324,19 @@ const ClubCollaborate = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                {[
-                 { label: "Club Insignia (Logo)", field: "logo", icon: <Shield size={20} /> },
-                 { label: "Brotherhood Moment (Ride Photo)", field: "firstRideImage", icon: <Zap size={20} /> },
-                 { label: "Institutional ID (Reg. Doc)", field: "governmentIdImage", icon: <Calendar size={20} /> },
-                 { label: "Founder Verification (Passport)", field: "founderPassport", icon: <User size={20} /> },
+                 { label: "Club Insignia (Logo) *", field: "logo", icon: <Shield size={20} /> },
+                 { label: "Brotherhood Moment (Ride Photo) *", field: "firstRideImage", icon: <Zap size={20} /> },
+                 { label: "Institutional ID (Reg. Doc) *", field: "governmentIdImage", icon: <Calendar size={20} /> },
+                 { label: "Founder Verification (Govt ID) *", field: "founderPassport", icon: <User size={20} /> },
                ].map((item) => (
                  <label key={item.field} className="group cursor-pointer">
                     <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
                        <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
                           {item.icon}
                        </div>
-                       <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">{item.label}</span>
+                       <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">
+                         {item.label.replace(' *', '')} <span className="text-red-500">*</span>
+                       </span>
                        <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
                           {requestForm[item.field] ? requestForm[item.field].name : "Deploy File (IMG, PDF)"}
                        </span>
