@@ -2,9 +2,23 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
+  registrationType: {
+    type: String,
+    enum: ['PC', 'Rider', 'Student Rider', 'Student'],
+    default: 'Rider'
+  },
+  collegeName: {
+    type: String,
+    default: ''
+  },
+  collegeIdNo: {
+    type: String,
+    default: ''
+  },
   email: {
     type: String,
-    required: true,
+    required: false,
+    sparse: true,
     unique: true,
     trim: true,
     lowercase: true
@@ -16,7 +30,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: false
   },
   fullName: {
     type: String,
@@ -108,7 +122,7 @@ const userSchema = new mongoose.Schema({
 
 // Hash password before saving
 userSchema.pre('save', async function() {
-  if (!this.isModified('password')) return;
+  if (!this.password || !this.isModified('password')) return;
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);

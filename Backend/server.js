@@ -16,6 +16,7 @@ import clubMembershipRoutes from "./routes/clubMembershipRoutes.js";
 import certificateRoutes from "./routes/certificateRoutes.js";
 import otpRoutes from "./routes/otpRoutes.js";
 import userAuthRoutes from "./routes/userAuthRoutes.js";
+import talentRoutes from "./routes/talentRoutes.js";
 
 const app = express();
 
@@ -85,6 +86,19 @@ mongoose
       );
     }
 
+    // Programmatically drop old email index on users if it is not sparse
+    try {
+      const usersCollection = mongoose.connection.collection("users");
+      const usersIndexes = await usersCollection.indexes();
+      const emailIndex = usersIndexes.find((idx) => idx.name === "email_1");
+      if (emailIndex && !emailIndex.sparse) {
+        console.log("Dropping old non-sparse email index on users collection...");
+        await usersCollection.dropIndex("email_1");
+      }
+    } catch (err) {
+      console.warn("Note: Could not drop email index on users:", err.message);
+    }
+
     // Create initial admin(s) if not exists
     // Keep backward compatibility: many deployments previously used username "admin"
     const adminUsername = process.env.ADMIN_USERNAME || "bucindia";
@@ -122,6 +136,7 @@ app.use("/api/club-memberships", clubMembershipRoutes);
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/user-auth", userAuthRoutes);
+app.use("/api/talent", talentRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

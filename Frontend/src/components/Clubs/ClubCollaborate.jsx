@@ -252,7 +252,7 @@ const ClubCollaborate = () => {
                   className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
                   value={requestForm.name}
                   onChange={(e) => updateField("name", e.target.value)}
-                  placeholder="e.g. DARK RIDERS PUNE"
+                  placeholder="e.g. APEX PREDATORS MOTORCYCLE CLUB"
                   required
                 />
               </div>

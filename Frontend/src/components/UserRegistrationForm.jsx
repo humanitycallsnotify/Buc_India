@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import {
   User, Mail, Phone, Lock, Eye, EyeOff, Shield, MapPin, 
-  Bike, Camera, Calendar, AlertCircle, FileText, Image as ImageIcon, CheckCircle, Zap, Key, Upload, X
+  Bike, Camera, Calendar, AlertCircle, FileText, Image as ImageIcon, CheckCircle, Zap, Key, Upload, X,
+  GraduationCap, Users
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { profileService, otpService } from "../services/api";
@@ -85,11 +86,13 @@ const USER_TERMS = [
 
 const UserRegistrationForm = () => {
   const [formData, setFormData] = useState({
+    registrationType: "Rider",
     fullName: "", email: "", phone: "", password: "", otp: "",
     dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
     bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "",
     emergencyContactName: "", emergencyContactPhone: "",
     facebookUrl: "", instagramUrl: "", twitterUrl: "", youtubeUrl: "", websiteUrl: "",
+    collegeName: "", collegeIdNo: "",
   });
 
   const [profileImage, setProfileImage] = useState(null);
@@ -151,20 +154,47 @@ const UserRegistrationForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const isRider = formData.registrationType === "Rider" || formData.registrationType === "Student Rider";
+    const isStudent = formData.registrationType === "Student" || formData.registrationType === "Student Rider";
+
+    // 1. Core validations common to ALL registration types
     if (
-      !formData.email || !formData.phone || !formData.password || !formData.otp ||
-      !formData.fullName || !formData.dateOfBirth || !formData.bloodGroup ||
+      !formData.fullName || !formData.phone || !formData.email || !formData.password || !formData.otp ||
       !formData.address || !formData.city || !formData.state || !formData.pincode ||
-      !formData.bikeModel || !formData.bikeRegistrationNumber || !formData.licenseNumber ||
       !formData.emergencyContactName || !formData.emergencyContactPhone
     ) {
-      return toast.error("Please fill all required fields and enter OTP.");
+      return toast.error("Please fill all required fields: Name, Phone, Email, Password, OTP, Address, and Emergency Contact details.");
     }
-    if (!profileImage || !licenseImage) {
-      return toast.error("Please upload Profile and License images.");
-    }
+
     if (formData.phone.length !== 10) return toast.error("Phone number must be exactly 10 digits");
+    if (formData.emergencyContactPhone.length !== 10) return toast.error("Emergency contact phone number must be exactly 10 digits");
     if (!otpSent) return toast.error("Please verify your email with OTP first");
+
+    if (!profileImage) {
+      return toast.error("Please upload your Profile Image.");
+    }
+
+    // 2. Rider specific validations
+    if (isRider) {
+      if (
+        !formData.dateOfBirth || !formData.bloodGroup ||
+        !formData.bikeModel || !formData.bikeRegistrationNumber || !formData.licenseNumber
+      ) {
+        return toast.error("Please fill all required Rider fields (Date of birth, Blood group, Bike Details, and DL details).");
+      }
+      if (!licenseImage) {
+        return toast.error("Please upload your License/DL Image.");
+      }
+    }
+
+    // 3. Student specific validations
+    if (isStudent) {
+      if (!formData.collegeName || !formData.collegeIdNo) {
+        return toast.error("Please provide College Name and Student ID number.");
+      }
+    }
+
     if (!termsAccepted) {
       return toast.error("Please accept the Declaration & Legal Agreement to proceed.");
     }
@@ -172,22 +202,60 @@ const UserRegistrationForm = () => {
     setIsSubmitting(true);
     try {
       const data = new FormData();
-      Object.keys(formData).forEach(key => {
-        data.append(key, formData[key]);
-      });
+      
+      // Append core fields (Common to all)
+      data.append("registrationType", formData.registrationType);
+      data.append("fullName", formData.fullName);
+      data.append("phone", formData.phone);
+      data.append("email", formData.email);
+      data.append("password", formData.password);
+      data.append("otp", formData.otp);
+      data.append("address", formData.address);
+      data.append("city", formData.city);
+      data.append("state", formData.state);
+      data.append("pincode", formData.pincode);
+      data.append("emergencyContactName", formData.emergencyContactName);
+      data.append("emergencyContactPhone", formData.emergencyContactPhone);
+
+      // Social details (Common to all)
+      if (formData.facebookUrl) data.append("facebookUrl", formData.facebookUrl);
+      if (formData.instagramUrl) data.append("instagramUrl", formData.instagramUrl);
+      if (formData.twitterUrl) data.append("twitterUrl", formData.twitterUrl);
+      if (formData.youtubeUrl) data.append("youtubeUrl", formData.youtubeUrl);
+      if (formData.websiteUrl) data.append("websiteUrl", formData.websiteUrl);
+
+      // Profile image (Common to all)
       if (profileImage) data.append("profileImage", profileImage);
-      if (licenseImage) data.append("licenseImage", licenseImage);
+
+      // Conditionally append Rider details
+      if (isRider) {
+        data.append("dateOfBirth", formData.dateOfBirth);
+        data.append("bloodGroup", formData.bloodGroup);
+        data.append("bikeModel", formData.bikeModel);
+        data.append("bikeRegistrationNumber", formData.bikeRegistrationNumber);
+        data.append("licenseNumber", formData.licenseNumber);
+
+        if (licenseImage) data.append("licenseImage", licenseImage);
+      }
+
+      // Conditionally append Student details
+      if (isStudent) {
+        data.append("collegeName", formData.collegeName);
+        data.append("collegeIdNo", formData.collegeIdNo);
+      }
 
       await profileService.signup(data);
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
         setFormData({
+          registrationType: "Rider",
           fullName: "", email: "", phone: "", password: "", otp: "",
           dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
           bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "",
           emergencyContactName: "", emergencyContactPhone: "",
           facebookUrl: "", instagramUrl: "", twitterUrl: "", youtubeUrl: "", websiteUrl: "",
+          collegeName: "", collegeIdNo: "",
         });
         setProfileImage(null); setProfileImagePreview(null);
         setLicenseImage(null); setLicenseImagePreview(null);
@@ -217,18 +285,99 @@ const UserRegistrationForm = () => {
     );
   }
 
+  const isRider = formData.registrationType === "Rider" || formData.registrationType === "Student Rider";
+  const isStudent = formData.registrationType === "Student" || formData.registrationType === "Student Rider";
+
   return (
     <div className="bg-carbon-light border border-white/5 text-white max-w-4xl mx-auto p-6 md:p-12">
-      <h2 className="font-heading text-4xl uppercase mb-12 flex items-center gap-4">
-        <User size={32} className="text-copper" /> User Registration
-      </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-8 mb-12 gap-6">
+        <div className="flex items-center gap-4">
+          <img src="/logo.jpg" alt="BUC India Logo" className="w-16 h-16 rounded-full border border-copper/30 object-cover" />
+          <div>
+            <h1 className="font-heading text-3xl uppercase tracking-wider text-white">BUC India</h1>
+            <span className="text-copper font-body text-[10px] tracking-[0.2em] uppercase">Bikers Unity Calls</span>
+          </div>
+        </div>
+        <h2 className="font-heading text-2xl uppercase flex items-center gap-3 text-steel-dim sm:border-l sm:border-white/10 sm:pl-8">
+          <User size={24} className="text-copper" /> User Registration
+        </h2>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-12">
         
+        {/* Registration Type Selection */}
+        <div className="space-y-6">
+          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Select Registration Category <span className="text-red-500">*</span></h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                id: "PC",
+                title: "PC",
+                description: "",
+                icon: Users,
+              },
+              {
+                id: "Rider",
+                title: "Rider",
+                description: "Full Rider Details",
+                icon: Bike,
+              },
+              {
+                id: "Student Rider",
+                title: "Student Rider",
+                description: "Student with DL & Bike",
+                icon: Zap,
+              },
+              {
+                id: "Student",
+                title: "Student",
+                description: "College Student (No Ride)",
+                icon: GraduationCap,
+              },
+            ].map((type) => {
+              const IconComp = type.icon;
+              const isSelected = formData.registrationType === type.id;
+              return (
+                <button
+                  key={type.id}
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, registrationType: type.id }))}
+                  className={`flex flex-col items-center justify-center p-6 border text-center transition-all duration-300 relative overflow-hidden group ${
+                    isSelected
+                      ? "bg-copper/10 border-copper text-white shadow-[0_0_15px_rgba(202,138,4,0.15)]"
+                      : "bg-carbon border-white/5 text-steel-dim hover:border-white/20 hover:text-white hover:bg-carbon-light"
+                  }`}
+                >
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-all duration-300 ${
+                    isSelected ? "bg-copper text-carbon" : "bg-white/5 text-steel-dim group-hover:bg-white/10 group-hover:text-white"
+                  }`}>
+                    <IconComp size={20} />
+                  </div>
+                  <span className="font-heading text-lg uppercase tracking-wide mb-1 block">
+                    {type.title}
+                  </span>
+                  {type.description && (
+                    <span className="font-text text-[10px] opacity-60 leading-tight">
+                      {type.description}
+                    </span>
+                  )}
+                  {isSelected && (
+                    <div className="absolute top-2 right-2">
+                      <CheckCircle className="text-copper" size={14} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Basic Info */}
         <div className="space-y-6">
           <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Basic Info <span className="text-red-500">*</span></h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField label="Full Name" name="fullName" icon={User} value={formData.fullName} onChange={handleInputChange} required />
+            <InputField label="Phone Number" name="phone" icon={Phone} type="tel" value={formData.phone} onChange={handleInputChange} required />
+            
             <div className="space-y-1">
               <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Email Address <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
@@ -242,7 +391,6 @@ const UserRegistrationForm = () => {
               </div>
             </div>
             {otpSent && <InputField label="OTP" name="otp" icon={Key} value={formData.otp} onChange={handleInputChange} required />}
-            <InputField label="Phone Number" name="phone" icon={Phone} type="tel" value={formData.phone} onChange={handleInputChange} required />
             <div className="space-y-1">
               <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Password <span className="text-red-500">*</span></label>
               <div className="relative">
@@ -256,24 +404,37 @@ const UserRegistrationForm = () => {
           </div>
         </div>
 
-        {/* Personal Details */}
-        <div className="space-y-6">
-          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Personal Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
-            <div className="space-y-1">
-              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Blood Group <span className="text-red-500">*</span></label>
-              <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors appearance-none">
-                <option value="">Select Blood Group</option>
-                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
-              </select>
+        {/* Student Details */}
+        {isStudent && (
+          <div className="space-y-6">
+            <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Student Information <span className="text-red-500">*</span></h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField label="College Name" name="collegeName" icon={GraduationCap} value={formData.collegeName} onChange={handleInputChange} required />
+              <InputField label="Student ID Number" name="collegeIdNo" icon={FileText} value={formData.collegeIdNo} onChange={handleInputChange} required />
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Personal Details */}
+        {isRider && (
+          <div className="space-y-6">
+            <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Personal Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
+              <div className="space-y-1">
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Blood Group <span className="text-red-500">*</span></label>
+                <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors appearance-none">
+                  <option value="">Select Blood Group</option>
+                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Address */}
         <div className="space-y-6">
-          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Address Info</h3>
+          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Address Info <span className="text-red-500">*</span></h3>
           <InputField label="Address" name="address" icon={MapPin} value={formData.address} onChange={handleInputChange} required />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <InputField label="City" name="city" value={formData.city} onChange={handleInputChange} required />
@@ -283,18 +444,20 @@ const UserRegistrationForm = () => {
         </div>
 
         {/* Bike Information */}
-        <div className="space-y-6">
-          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Bike Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Bike Model" name="bikeModel" icon={Bike} value={formData.bikeModel} onChange={handleInputChange} required />
-            <InputField label="Bike Registration Number" name="bikeRegistrationNumber" icon={FileText} value={formData.bikeRegistrationNumber} onChange={handleInputChange} required />
-            <InputField label="License Number" name="licenseNumber" icon={FileText} value={formData.licenseNumber} onChange={handleInputChange} required />
+        {isRider && (
+          <div className="space-y-6">
+            <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Bike & License Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField label="Bike Model" name="bikeModel" icon={Bike} value={formData.bikeModel} onChange={handleInputChange} required />
+              <InputField label="Bike Registration Number" name="bikeRegistrationNumber" icon={FileText} value={formData.bikeRegistrationNumber} onChange={handleInputChange} required />
+              <InputField label="License Number" name="licenseNumber" icon={FileText} value={formData.licenseNumber} onChange={handleInputChange} required />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Emergency Contact */}
         <div className="space-y-6">
-          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Emergency Contact</h3>
+          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Emergency Contact <span className="text-red-500">*</span></h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField label="Emergency Contact Name" name="emergencyContactName" icon={User} value={formData.emergencyContactName} onChange={handleInputChange} required />
             <InputField label="Emergency Contact Phone" name="emergencyContactPhone" icon={Phone} type="tel" value={formData.emergencyContactPhone} onChange={handleInputChange} required />
@@ -316,9 +479,9 @@ const UserRegistrationForm = () => {
         {/* Uploads */}
         <div className="space-y-6">
           <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Uploads</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className={`grid grid-cols-1 ${isRider ? 'md:grid-cols-2' : 'max-w-md mx-auto'} gap-8`}>
             <label className="group cursor-pointer">
-              <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
+              <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30 animate-fade-in">
                 <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
                   <Camera size={20} />
                 </div>
@@ -329,18 +492,21 @@ const UserRegistrationForm = () => {
               </div>
               <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setProfileImage, setProfileImagePreview)} />
             </label>
-            <label className="group cursor-pointer">
-              <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
-                <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
-                  <FileText size={20} />
+            
+            {isRider && (
+              <label className="group cursor-pointer animate-fade-in">
+                <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
+                  <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
+                    <FileText size={20} />
+                  </div>
+                  <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">License Image <span className="text-red-500">*</span></span>
+                  <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
+                    {licenseImage ? licenseImage.name : "Deploy File (IMG)"}
+                  </span>
                 </div>
-                <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">License Image <span className="text-red-500">*</span></span>
-                <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
-                  {licenseImage ? licenseImage.name : "Deploy File (IMG)"}
-                </span>
-              </div>
-              <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setLicenseImage, setLicenseImagePreview)} />
-            </label>
+                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setLicenseImage, setLicenseImagePreview)} />
+              </label>
+            )}
           </div>
         </div>
 

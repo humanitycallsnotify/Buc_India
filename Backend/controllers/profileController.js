@@ -40,6 +40,9 @@ export const getAllProfiles = async (req, res) => {
 export const userSignup = async (req, res) => {
   try {
     const {
+      registrationType = 'Rider',
+      collegeName,
+      collegeIdNo,
       email,
       phone,
       password,
@@ -58,28 +61,52 @@ export const userSignup = async (req, res) => {
       otp,
     } = req.body;
 
-    if (!email || !phone || !password || !otp) {
-      return res
-        .status(400)
-        .json({ message: "Email, phone, password and OTP are required" });
+    const isRider = registrationType === 'Rider' || registrationType === 'Student Rider';
+    const isStudent = registrationType === 'Student' || registrationType === 'Student Rider';
+
+    // 1. Mandatory overall validation (Common to ALL registration types)
+    if (
+      !phone || !fullName || !email || !password || !otp ||
+      !address || !city || !state || !pincode || 
+      !emergencyContactName || !emergencyContactPhone
+    ) {
+      return res.status(400).json({ 
+        message: "Full Name, Phone, Email, Password, OTP, Address, and Emergency Contact details are required for all registrations." 
+      });
     }
 
-    // Check if email or phone already exists
+    // 2. Role-specific validation
+    if (isRider) {
+      if (!bikeModel || !bikeRegistrationNumber || !licenseNumber) {
+        return res.status(400).json({ 
+          message: "Bike details and license details are required for Rider registrations." 
+        });
+      }
+    }
+    
+    if (isStudent) {
+      if (!collegeName || !collegeIdNo) {
+        return res.status(400).json({ 
+          message: "College Name and Student ID Number are required for Student registrations." 
+        });
+      }
+    }
+
+    // Check if phone or email already exists
     const existingUser = await User.findOne({
-      $or: [{ email: email.toLowerCase() }, { phone }],
+      $or: [{ phone }, { email: email.toLowerCase() }],
     });
 
     if (existingUser) {
-      const field =
-        existingUser.email === email.toLowerCase() ? "Email" : "Phone number";
+      const field = existingUser.email === email.toLowerCase() ? "Email" : "Phone number";
       return res
         .status(400)
         .json({
-          message: `${field} is already registered. Please login instead.`,
+          message: `${field} is already registered.`,
         });
     }
 
-    // Verify OTP exists for this email
+    // Verify OTP exists for this email (Common to all)
     const otpRecord = await Otp.findOne({
       email: email.toLowerCase(),
       otp,
@@ -92,20 +119,28 @@ export const userSignup = async (req, res) => {
       });
     }
 
+    // File Upload Validation
+    const profileImageFile = req.files && req.files.profileImage ? req.files.profileImage[0] : null;
+    const licenseImageFile = req.files && req.files.licenseImage ? req.files.licenseImage[0] : null;
+
+    if (!profileImageFile) {
+      return res.status(400).json({ message: "Profile image upload is required." });
+    }
+
+    if (isRider && !licenseImageFile) {
+      return res.status(400).json({ message: "License image upload is required for Riders." });
+    }
+
     const userData = {
-      email: email.toLowerCase(),
-      phone,
-      password,
+      registrationType,
       fullName,
-      dateOfBirth,
-      bloodGroup,
+      phone,
+      email: email.toLowerCase(),
+      password,
       address,
       city,
       state,
       pincode,
-      bikeModel,
-      bikeRegistrationNumber,
-      licenseNumber,
       emergencyContactName,
       emergencyContactPhone,
       facebookUrl: req.body.facebookUrl || "",
@@ -115,14 +150,27 @@ export const userSignup = async (req, res) => {
       websiteUrl: req.body.websiteUrl || "",
     };
 
-    if (req.files && req.files.profileImage) {
-      userData.profileImage = req.files.profileImage[0].path;
-      userData.profileImagePublicId = req.files.profileImage[0].filename;
+    if (isRider) {
+      userData.dateOfBirth = dateOfBirth;
+      userData.bloodGroup = bloodGroup;
+      userData.bikeModel = bikeModel;
+      userData.bikeRegistrationNumber = bikeRegistrationNumber;
+      userData.licenseNumber = licenseNumber;
     }
 
-    if (req.files && req.files.licenseImage) {
-      userData.licenseImage = req.files.licenseImage[0].path;
-      userData.licenseImagePublicId = req.files.licenseImage[0].filename;
+    if (isStudent) {
+      userData.collegeName = collegeName;
+      userData.collegeIdNo = collegeIdNo;
+    }
+
+    // Set Profile Image
+    userData.profileImage = profileImageFile.path;
+    userData.profileImagePublicId = profileImageFile.filename;
+
+    // Set License Image if present/rider
+    if (isRider && licenseImageFile) {
+      userData.licenseImage = licenseImageFile.path;
+      userData.licenseImagePublicId = licenseImageFile.filename;
     }
 
     const user = new User(userData);

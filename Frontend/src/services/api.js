@@ -239,4 +239,15 @@ export const certificateService = {
   },
 };
 
+export const talentService = {
+  submit: async (formData) => {
+    const response = await api.post("/talent", formData);
+    return response.data;
+  },
+  getAll: async () => {
+    const response = await api.get("/talent");
+    return response.data;
+  },
+};
+
 export default api;
