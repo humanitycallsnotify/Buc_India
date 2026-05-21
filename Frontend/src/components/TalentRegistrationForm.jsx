@@ -4,7 +4,7 @@ import {
   User, Mail, Phone, MapPin, Music, Star, Clock, Link, Bike,
   FileText, Calendar, Trophy, CheckCircle, Shield, ChevronDown
 } from "lucide-react";
-import { talentService } from "../services/api";
+import { talentService, clubService } from "../services/api";
 
 const TALENT_CATEGORIES = {
   "🎤 Performing Arts": [
@@ -45,7 +45,7 @@ const initialFormData = {
   talentCategory: "", subTalentDescription: "",
   experienceLevel: "", yearsOfExperience: "",
   portfolioLink: "",
-  isRider: "", bikeModel: "", ridingExperience: "",
+  isRider: "", bikeModel: "", ridingExperience: "", clubId: "",
   shortDescription: "", whyParticipate: "",
   availableDates: "",
   openToPerformLive: "", openToCompetition: "",
@@ -58,6 +58,19 @@ const TalentRegistrationForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState("");
+  const [clubs, setClubs] = useState([]);
+
+  React.useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const data = await clubService.getPublic();
+        setClubs(data || []);
+      } catch (err) {
+        console.error("Failed to fetch clubs:", err);
+      }
+    };
+    fetchClubs();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -251,6 +264,42 @@ const TalentRegistrationForm = () => {
             </div>
           </div>
         </Section>
+
+        {/* Club Affiliation (Featured Section) */}
+        {formData.isRider === "true" && (
+          <div className="space-y-6 bg-copper/5 p-6 md:p-8 border border-copper/20 shadow-[0_0_15px_rgba(202,138,4,0.1)] relative overflow-hidden">
+            {/* Decorative background element */}
+            <div className="absolute -right-10 -top-10 text-copper/5 pointer-events-none">
+              <Shield size={150} />
+            </div>
+            
+            <h3 className="font-body text-sm uppercase tracking-[0.2em] text-copper border-b border-copper/20 pb-3 flex items-center gap-3">
+              <Shield size={18} /> Club Affiliation <span className="text-steel-dim text-[10px] ml-auto">(Optional)</span>
+            </h3>
+            
+            <div className="space-y-4 max-w-xl relative z-10">
+              <p className="font-text text-sm text-steel-dim leading-relaxed">
+                If you are a member of an officially registered and approved BUC club, select it below to link your profile with your club.
+              </p>
+              
+              <div className="space-y-1">
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Select Your Associated Club</label>
+                <div className="relative group">
+                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-copper/70 group-hover:text-copper transition-colors" size={18} />
+                  <select name="clubId" value={formData.clubId} onChange={handleChange} className="w-full bg-carbon border border-white/20 hover:border-copper/50 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-all appearance-none cursor-pointer shadow-inner">
+                    <option value="">None / Not Applicable</option>
+                    {clubs.map(club => (
+                      <option key={club.id} value={club.id}>{club.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-steel-dim">
+                    ▼
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Additional Info */}
         <Section title="📝 Additional Info" required>

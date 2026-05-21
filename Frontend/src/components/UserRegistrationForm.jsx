@@ -6,7 +6,7 @@ import {
   GraduationCap, Users
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { profileService, otpService } from "../services/api";
+import { profileService, otpService, clubService } from "../services/api";
 import TermsModal from "./TermsModal";
 
 const USER_TERMS = [
@@ -89,7 +89,7 @@ const UserRegistrationForm = () => {
     registrationType: "Rider",
     fullName: "", email: "", phone: "", password: "", otp: "",
     dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
-    bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "",
+    bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
     emergencyContactName: "", emergencyContactPhone: "",
     facebookUrl: "", instagramUrl: "", twitterUrl: "", youtubeUrl: "", websiteUrl: "",
     collegeName: "", collegeIdNo: "",
@@ -108,6 +108,7 @@ const UserRegistrationForm = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [clubs, setClubs] = useState([]);
 
   useEffect(() => {
     let timer;
@@ -116,6 +117,18 @@ const UserRegistrationForm = () => {
     }
     return () => clearInterval(timer);
   }, [countdown]);
+
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const data = await clubService.getPublic();
+        setClubs(data || []);
+      } catch (err) {
+        console.error("Failed to fetch clubs:", err);
+      }
+    };
+    fetchClubs();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -157,19 +170,26 @@ const UserRegistrationForm = () => {
 
     const isRider = formData.registrationType === "Rider" || formData.registrationType === "Student Rider";
     const isStudent = formData.registrationType === "Student" || formData.registrationType === "Student Rider";
+    const isPC = formData.registrationType === "PC";
 
     // 1. Core validations common to ALL registration types
     if (
-      !formData.fullName || !formData.phone || !formData.email || !formData.password || !formData.otp ||
+      !formData.fullName || !formData.phone ||
       !formData.address || !formData.city || !formData.state || !formData.pincode ||
       !formData.emergencyContactName || !formData.emergencyContactPhone
     ) {
-      return toast.error("Please fill all required fields: Name, Phone, Email, Password, OTP, Address, and Emergency Contact details.");
+      return toast.error("Please fill all required fields: Name, Phone, Address, and Emergency Contact details.");
+    }
+
+    if (!isPC) {
+      if (!formData.email || !formData.password || !formData.otp) {
+        return toast.error("Please fill Email, Password, and OTP.");
+      }
+      if (!otpSent) return toast.error("Please verify your email with OTP first");
     }
 
     if (formData.phone.length !== 10) return toast.error("Phone number must be exactly 10 digits");
     if (formData.emergencyContactPhone.length !== 10) return toast.error("Emergency contact phone number must be exactly 10 digits");
-    if (!otpSent) return toast.error("Please verify your email with OTP first");
 
     if (!profileImage) {
       return toast.error("Please upload your Profile Image.");
@@ -207,9 +227,11 @@ const UserRegistrationForm = () => {
       data.append("registrationType", formData.registrationType);
       data.append("fullName", formData.fullName);
       data.append("phone", formData.phone);
-      data.append("email", formData.email);
-      data.append("password", formData.password);
-      data.append("otp", formData.otp);
+      if (!isPC) {
+        data.append("email", formData.email);
+        data.append("password", formData.password);
+        data.append("otp", formData.otp);
+      }
       data.append("address", formData.address);
       data.append("city", formData.city);
       data.append("state", formData.state);
@@ -234,6 +256,7 @@ const UserRegistrationForm = () => {
         data.append("bikeModel", formData.bikeModel);
         data.append("bikeRegistrationNumber", formData.bikeRegistrationNumber);
         data.append("licenseNumber", formData.licenseNumber);
+        if (formData.clubId) data.append("clubId", formData.clubId);
 
         if (licenseImage) data.append("licenseImage", licenseImage);
       }
@@ -252,7 +275,7 @@ const UserRegistrationForm = () => {
           registrationType: "Rider",
           fullName: "", email: "", phone: "", password: "", otp: "",
           dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
-          bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "",
+          bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
           emergencyContactName: "", emergencyContactPhone: "",
           facebookUrl: "", instagramUrl: "", twitterUrl: "", youtubeUrl: "", websiteUrl: "",
           collegeName: "", collegeIdNo: "",
@@ -287,6 +310,7 @@ const UserRegistrationForm = () => {
 
   const isRider = formData.registrationType === "Rider" || formData.registrationType === "Student Rider";
   const isStudent = formData.registrationType === "Student" || formData.registrationType === "Student Rider";
+  const isPC = formData.registrationType === "PC";
 
   return (
     <div className="bg-carbon-light border border-white/5 text-white max-w-4xl mx-auto p-6 md:p-12">
@@ -307,7 +331,7 @@ const UserRegistrationForm = () => {
         {/* Registration Type Selection */}
         <div className="space-y-6">
           <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Select Registration Category <span className="text-red-500">*</span></h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             {[
               {
                 id: "PC",
@@ -341,28 +365,28 @@ const UserRegistrationForm = () => {
                   key={type.id}
                   type="button"
                   onClick={() => setFormData((prev) => ({ ...prev, registrationType: type.id }))}
-                  className={`flex flex-col items-center justify-center p-6 border text-center transition-all duration-300 relative overflow-hidden group ${
+                  className={`flex flex-col items-center justify-center p-3 sm:p-6 border text-center transition-all duration-300 relative overflow-hidden group ${
                     isSelected
                       ? "bg-copper/10 border-copper text-white shadow-[0_0_15px_rgba(202,138,4,0.15)]"
                       : "bg-carbon border-white/5 text-steel-dim hover:border-white/20 hover:text-white hover:bg-carbon-light"
                   }`}
                 >
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-all duration-300 ${
+                  <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-2 sm:mb-4 transition-all duration-300 ${
                     isSelected ? "bg-copper text-carbon" : "bg-white/5 text-steel-dim group-hover:bg-white/10 group-hover:text-white"
                   }`}>
-                    <IconComp size={20} />
+                    <IconComp className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <span className="font-heading text-lg uppercase tracking-wide mb-1 block">
+                  <span className="font-heading text-[10px] sm:text-lg uppercase tracking-wide mb-1 block">
                     {type.title}
                   </span>
                   {type.description && (
-                    <span className="font-text text-[10px] opacity-60 leading-tight">
+                    <span className="font-text text-[8px] sm:text-[10px] opacity-60 leading-tight">
                       {type.description}
                     </span>
                   )}
                   {isSelected && (
-                    <div className="absolute top-2 right-2">
-                      <CheckCircle className="text-copper" size={14} />
+                    <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
+                      <CheckCircle className="text-copper w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </div>
                   )}
                 </button>
@@ -378,29 +402,33 @@ const UserRegistrationForm = () => {
             <InputField label="Full Name" name="fullName" icon={User} value={formData.fullName} onChange={handleInputChange} required />
             <InputField label="Phone Number" name="phone" icon={Phone} type="tel" value={formData.phone} onChange={handleInputChange} required />
             
-            <div className="space-y-1">
-              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Email Address <span className="text-red-500">*</span></label>
-              <div className="flex gap-2">
-                <div className="relative flex-grow">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
-                  <input type="email" name="email" value={formData.email} onChange={handleInputChange} required disabled={otpSent && countdown > 0} className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-xs outline-none focus:border-copper transition-colors disabled:opacity-50" />
+            {!isPC && (
+              <>
+                <div className="space-y-1">
+                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Email Address <span className="text-red-500">*</span></label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-grow">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                      <input type="email" name="email" value={formData.email} onChange={handleInputChange} required disabled={otpSent && countdown > 0} className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-xs outline-none focus:border-copper transition-colors disabled:opacity-50" />
+                    </div>
+                    <button type="button" onClick={handleSendOtp} disabled={isSendingOtp || countdown > 0} className="px-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 min-w-[90px]">
+                      {isSendingOtp ? "..." : countdown > 0 ? `${countdown}s` : "SEND OTP"}
+                    </button>
+                  </div>
                 </div>
-                <button type="button" onClick={handleSendOtp} disabled={isSendingOtp || countdown > 0} className="px-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 min-w-[90px]">
-                  {isSendingOtp ? "..." : countdown > 0 ? `${countdown}s` : "SEND OTP"}
-                </button>
-              </div>
-            </div>
-            {otpSent && <InputField label="OTP" name="otp" icon={Key} value={formData.otp} onChange={handleInputChange} required />}
-            <div className="space-y-1">
-              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Password <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
-                <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 pl-12 pr-12 py-4 font-body text-xs outline-none focus:border-copper transition-colors" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-steel-dim hover:text-white transition-colors">
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
+                {otpSent && <InputField label="OTP" name="otp" icon={Key} value={formData.otp} onChange={handleInputChange} required />}
+                <div className="space-y-1">
+                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Password <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                    <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 pl-12 pr-12 py-4 font-body text-xs outline-none focus:border-copper transition-colors" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-steel-dim hover:text-white transition-colors">
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -451,6 +479,42 @@ const UserRegistrationForm = () => {
               <InputField label="Bike Model" name="bikeModel" icon={Bike} value={formData.bikeModel} onChange={handleInputChange} required />
               <InputField label="Bike Registration Number" name="bikeRegistrationNumber" icon={FileText} value={formData.bikeRegistrationNumber} onChange={handleInputChange} required />
               <InputField label="License Number" name="licenseNumber" icon={FileText} value={formData.licenseNumber} onChange={handleInputChange} required />
+            </div>
+          </div>
+        )}
+
+        {/* Club Affiliation (Featured Section) */}
+        {isRider && (
+          <div className="space-y-6 bg-copper/5 p-6 md:p-8 border border-copper/20 shadow-[0_0_15px_rgba(202,138,4,0.1)] relative overflow-hidden">
+            {/* Decorative background element */}
+            <div className="absolute -right-10 -top-10 text-copper/5 pointer-events-none">
+              <Shield size={150} />
+            </div>
+            
+            <h3 className="font-body text-sm uppercase tracking-[0.2em] text-copper border-b border-copper/20 pb-3 flex items-center gap-3">
+              <Shield size={18} /> Club Affiliation <span className="text-steel-dim text-[10px] ml-auto">(Optional)</span>
+            </h3>
+            
+            <div className="space-y-4 max-w-xl relative z-10">
+              <p className="font-text text-sm text-steel-dim leading-relaxed">
+                If you are a member of an officially registered and approved BUC club, select it below to link your profile with your club.
+              </p>
+              
+              <div className="space-y-1">
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Select Your Associated Club</label>
+                <div className="relative group">
+                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-copper/70 group-hover:text-copper transition-colors" size={18} />
+                  <select name="clubId" value={formData.clubId} onChange={handleInputChange} className="w-full bg-carbon border border-white/20 hover:border-copper/50 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-all appearance-none cursor-pointer shadow-inner">
+                    <option value="">None / Not Applicable</option>
+                    {clubs.map(club => (
+                      <option key={club.id} value={club.id}>{club.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-steel-dim">
+                    ▼
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
