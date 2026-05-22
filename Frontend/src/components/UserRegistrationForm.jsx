@@ -87,7 +87,7 @@ const USER_TERMS = [
 const UserRegistrationForm = () => {
   const [formData, setFormData] = useState({
     registrationType: "Rider",
-    fullName: "", email: "", phone: "", password: "", otp: "",
+    fullName: "", email: "", phone: "", password: "", otp: "", tshirtSize: "",
     dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
     bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
     emergencyContactName: "", emergencyContactPhone: "",
@@ -174,11 +174,16 @@ const UserRegistrationForm = () => {
 
     // 1. Core validations common to ALL registration types
     if (
-      !formData.fullName || !formData.phone ||
-      !formData.address || !formData.city || !formData.state || !formData.pincode ||
-      !formData.emergencyContactName || !formData.emergencyContactPhone
+      !formData.fullName || !formData.phone || !formData.tshirtSize ||
+      !formData.address || !formData.city || !formData.state || !formData.pincode
     ) {
-      return toast.error("Please fill all required fields: Name, Phone, Address, and Emergency Contact details.");
+      return toast.error("Please fill all required fields: Name, Phone, T-Shirt Size, and Address details.");
+    }
+
+    if (!isPC) {
+      if (!formData.emergencyContactName || !formData.emergencyContactPhone) {
+        return toast.error("Please fill Emergency Contact details.");
+      }
     }
 
     if (!isPC) {
@@ -189,13 +194,15 @@ const UserRegistrationForm = () => {
     }
 
     if (formData.phone.length !== 10) return toast.error("Phone number must be exactly 10 digits");
-    if (formData.emergencyContactPhone.length !== 10) return toast.error("Emergency contact phone number must be exactly 10 digits");
+    if (!isPC) {
+      if (formData.emergencyContactPhone.length !== 10) return toast.error("Emergency contact phone number must be exactly 10 digits");
 
-    if (!profileImage) {
-      return toast.error("Please upload your Profile Image.");
+      if (!profileImage) {
+        return toast.error("Please upload your Profile Image.");
+      }
     }
 
-    // 2. Rider specific validations
+    // 2. Rider & PC specific validations
     if (isRider) {
       if (
         !formData.dateOfBirth || !formData.bloodGroup ||
@@ -205,6 +212,12 @@ const UserRegistrationForm = () => {
       }
       if (!licenseImage) {
         return toast.error("Please upload your License/DL Image.");
+      }
+    }
+
+    if (isPC) {
+      if (!formData.bikeModel || !formData.bikeRegistrationNumber) {
+        return toast.error("Please fill Bike Model and Registration Number.");
       }
     }
 
@@ -227,6 +240,7 @@ const UserRegistrationForm = () => {
       data.append("registrationType", formData.registrationType);
       data.append("fullName", formData.fullName);
       data.append("phone", formData.phone);
+      data.append("tshirtSize", formData.tshirtSize);
       if (!isPC) {
         data.append("email", formData.email);
         data.append("password", formData.password);
@@ -236,25 +250,31 @@ const UserRegistrationForm = () => {
       data.append("city", formData.city);
       data.append("state", formData.state);
       data.append("pincode", formData.pincode);
-      data.append("emergencyContactName", formData.emergencyContactName);
-      data.append("emergencyContactPhone", formData.emergencyContactPhone);
+      
+      if (!isPC) {
+        data.append("emergencyContactName", formData.emergencyContactName);
+        data.append("emergencyContactPhone", formData.emergencyContactPhone);
+      }
 
-      // Social details (Common to all)
-      if (formData.facebookUrl) data.append("facebookUrl", formData.facebookUrl);
-      if (formData.instagramUrl) data.append("instagramUrl", formData.instagramUrl);
-      if (formData.twitterUrl) data.append("twitterUrl", formData.twitterUrl);
-      if (formData.youtubeUrl) data.append("youtubeUrl", formData.youtubeUrl);
-      if (formData.websiteUrl) data.append("websiteUrl", formData.websiteUrl);
-
-      // Profile image (Common to all)
-      if (profileImage) data.append("profileImage", profileImage);
+      // Social details & Profile image (Common to non-PC)
+      if (!isPC) {
+        if (formData.facebookUrl) data.append("facebookUrl", formData.facebookUrl);
+        if (formData.instagramUrl) data.append("instagramUrl", formData.instagramUrl);
+        if (formData.twitterUrl) data.append("twitterUrl", formData.twitterUrl);
+        if (formData.youtubeUrl) data.append("youtubeUrl", formData.youtubeUrl);
+        if (formData.websiteUrl) data.append("websiteUrl", formData.websiteUrl);
+        if (profileImage) data.append("profileImage", profileImage);
+      }
 
       // Conditionally append Rider details
+      if (isRider || isPC) {
+        data.append("bikeModel", formData.bikeModel);
+        data.append("bikeRegistrationNumber", formData.bikeRegistrationNumber);
+      }
+
       if (isRider) {
         data.append("dateOfBirth", formData.dateOfBirth);
         data.append("bloodGroup", formData.bloodGroup);
-        data.append("bikeModel", formData.bikeModel);
-        data.append("bikeRegistrationNumber", formData.bikeRegistrationNumber);
         data.append("licenseNumber", formData.licenseNumber);
         if (formData.clubId) data.append("clubId", formData.clubId);
 
@@ -273,7 +293,7 @@ const UserRegistrationForm = () => {
         setShowSuccess(false);
         setFormData({
           registrationType: "Rider",
-          fullName: "", email: "", phone: "", password: "", otp: "",
+          fullName: "", email: "", phone: "", password: "", otp: "", tshirtSize: "",
           dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
           bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
           emergencyContactName: "", emergencyContactPhone: "",
@@ -402,6 +422,14 @@ const UserRegistrationForm = () => {
             <InputField label="Full Name" name="fullName" icon={User} value={formData.fullName} onChange={handleInputChange} required />
             <InputField label="Phone Number" name="phone" icon={Phone} type="tel" value={formData.phone} onChange={handleInputChange} required />
             
+            <div className="space-y-1">
+              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">T-Shirt Size <span className="text-red-500">*</span></label>
+              <select name="tshirtSize" value={formData.tshirtSize} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors appearance-none">
+                <option value="">Select Size</option>
+                {["S", "M", "L", "XL", "XXL", "XXXL"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
+              </select>
+            </div>
+            
             {!isPC && (
               <>
                 <div className="space-y-1">
@@ -472,13 +500,13 @@ const UserRegistrationForm = () => {
         </div>
 
         {/* Bike Information */}
-        {isRider && (
+        {(isRider || isPC) && (
           <div className="space-y-6">
             <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Bike & License Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputField label="Bike Model" name="bikeModel" icon={Bike} value={formData.bikeModel} onChange={handleInputChange} required />
               <InputField label="Bike Registration Number" name="bikeRegistrationNumber" icon={FileText} value={formData.bikeRegistrationNumber} onChange={handleInputChange} required />
-              <InputField label="License Number" name="licenseNumber" icon={FileText} value={formData.licenseNumber} onChange={handleInputChange} required />
+              {isRider && <InputField label="License Number" name="licenseNumber" icon={FileText} value={formData.licenseNumber} onChange={handleInputChange} required />}
             </div>
           </div>
         )}
@@ -520,59 +548,65 @@ const UserRegistrationForm = () => {
         )}
 
         {/* Emergency Contact */}
-        <div className="space-y-6">
-          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Emergency Contact <span className="text-red-500">*</span></h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Emergency Contact Name" name="emergencyContactName" icon={User} value={formData.emergencyContactName} onChange={handleInputChange} required />
-            <InputField label="Emergency Contact Phone" name="emergencyContactPhone" icon={Phone} type="tel" value={formData.emergencyContactPhone} onChange={handleInputChange} required />
+        {!isPC && (
+          <div className="space-y-6">
+            <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Emergency Contact <span className="text-red-500">*</span></h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField label="Emergency Contact Name" name="emergencyContactName" icon={User} value={formData.emergencyContactName} onChange={handleInputChange} required />
+              <InputField label="Emergency Contact Phone" name="emergencyContactPhone" icon={Phone} type="tel" value={formData.emergencyContactPhone} onChange={handleInputChange} required />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Social Presence */}
-        <div className="space-y-6">
-          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Social Presence</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Facebook" name="facebookUrl" value={formData.facebookUrl} onChange={handleInputChange} />
-            <InputField label="Instagram" name="instagramUrl" value={formData.instagramUrl} onChange={handleInputChange} />
-            <InputField label="Twitter / X" name="twitterUrl" value={formData.twitterUrl} onChange={handleInputChange} />
-            <InputField label="YouTube" name="youtubeUrl" value={formData.youtubeUrl} onChange={handleInputChange} />
-            <InputField label="Personal Website" name="websiteUrl" value={formData.websiteUrl} onChange={handleInputChange} />
+        {!isPC && (
+          <div className="space-y-6">
+            <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Social Presence</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField label="Facebook" name="facebookUrl" value={formData.facebookUrl} onChange={handleInputChange} />
+              <InputField label="Instagram" name="instagramUrl" value={formData.instagramUrl} onChange={handleInputChange} />
+              <InputField label="Twitter / X" name="twitterUrl" value={formData.twitterUrl} onChange={handleInputChange} />
+              <InputField label="YouTube" name="youtubeUrl" value={formData.youtubeUrl} onChange={handleInputChange} />
+              <InputField label="Personal Website" name="websiteUrl" value={formData.websiteUrl} onChange={handleInputChange} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Uploads */}
-        <div className="space-y-6">
-          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Uploads</h3>
-          <div className={`grid grid-cols-1 ${isRider ? 'md:grid-cols-2' : 'max-w-md mx-auto'} gap-8`}>
-            <label className="group cursor-pointer">
-              <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30 animate-fade-in">
-                <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
-                  <Camera size={20} />
-                </div>
-                <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">Profile Image <span className="text-red-500">*</span></span>
-                <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
-                  {profileImage ? profileImage.name : "Deploy File (IMG)"}
-                </span>
-              </div>
-              <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setProfileImage, setProfileImagePreview)} />
-            </label>
-            
-            {isRider && (
-              <label className="group cursor-pointer animate-fade-in">
-                <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
+        {!isPC && (
+          <div className="space-y-6">
+            <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Uploads</h3>
+            <div className={`grid grid-cols-1 ${isRider ? 'md:grid-cols-2' : 'max-w-md mx-auto'} gap-8`}>
+              <label className="group cursor-pointer">
+                <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30 animate-fade-in">
                   <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
-                    <FileText size={20} />
+                    <Camera size={20} />
                   </div>
-                  <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">License Image <span className="text-red-500">*</span></span>
+                  <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">Profile Image <span className="text-red-500">*</span></span>
                   <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
-                    {licenseImage ? licenseImage.name : "Deploy File (IMG)"}
+                    {profileImage ? profileImage.name : "Deploy File (IMG)"}
                   </span>
                 </div>
-                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setLicenseImage, setLicenseImagePreview)} />
+                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setProfileImage, setProfileImagePreview)} />
               </label>
-            )}
+              
+              {isRider && (
+                <label className="group cursor-pointer animate-fade-in">
+                  <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
+                    <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
+                      <FileText size={20} />
+                    </div>
+                    <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">License Image <span className="text-red-500">*</span></span>
+                    <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
+                      {licenseImage ? licenseImage.name : "Deploy File (IMG)"}
+                    </span>
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setLicenseImage, setLicenseImagePreview)} />
+                </label>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Declaration & Legal Agreement */}
         <div className="space-y-6 bg-carbon/50 p-6 border border-white/5 rounded-small">

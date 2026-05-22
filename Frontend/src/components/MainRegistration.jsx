@@ -3,12 +3,37 @@ import UserRegistrationForm from "./UserRegistrationForm";
 import TalentRegistrationForm from "./TalentRegistrationForm";
 import ClubCollaborate from "./Clubs/ClubCollaborate";
 import { User, Shield, Star, Heart, ArrowRight } from "lucide-react";
+import { galleryService } from "../services/api";
 
 const MainRegistration = () => {
   const [activeTab, setActiveTab] = useState("user");
+  const [coverPhoto, setCoverPhoto] = useState(null);
+
+  React.useEffect(() => {
+    const fetchCover = async () => {
+      try {
+        const items = await galleryService.getAll();
+        const coverItem = items.find(item => item.category === 'cover');
+        if (coverItem) {
+          setCoverPhoto(coverItem.imageUrl);
+        }
+      } catch (err) {
+        console.error("Failed to fetch cover photo:", err);
+      }
+    };
+    fetchCover();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-carbon text-white">
+    <div 
+      className="min-h-screen bg-carbon text-white relative"
+      style={coverPhoto ? {
+        backgroundImage: `linear-gradient(to bottom, rgba(17, 17, 17, 0.85), rgba(17, 17, 17, 0.95)), url(${coverPhoto})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      } : {}}
+    >
       {/* BUC India Brand Top Bar */}
       <div className="w-full bg-carbon-light border-b border-white/5 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-3 flex items-center justify-between">
