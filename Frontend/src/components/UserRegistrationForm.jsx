@@ -87,7 +87,7 @@ const USER_TERMS = [
 const UserRegistrationForm = () => {
   const [formData, setFormData] = useState({
     registrationType: "Rider",
-    fullName: "", email: "", phone: "", password: "", otp: "", tshirtSize: "",
+    fullName: "", gender: "", email: "", phone: "", password: "", otp: "", tshirtSize: "",
     dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
     bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
     emergencyContactName: "", emergencyContactPhone: "",
@@ -174,10 +174,10 @@ const UserRegistrationForm = () => {
 
     // 1. Core validations common to ALL registration types
     if (
-      !formData.fullName || !formData.phone || !formData.tshirtSize ||
+      !formData.fullName || !formData.phone || !formData.gender || !formData.tshirtSize ||
       !formData.address || !formData.city || !formData.state || !formData.pincode
     ) {
-      return toast.error("Please fill all required fields: Name, Phone, T-Shirt Size, and Address details.");
+      return toast.error("Please fill all required fields: Name, Phone, Gender, T-Shirt Size, and Address details.");
     }
 
     if (!isPC) {
@@ -241,6 +241,7 @@ const UserRegistrationForm = () => {
       data.append("fullName", formData.fullName);
       data.append("phone", formData.phone);
       data.append("tshirtSize", formData.tshirtSize);
+      data.append("gender", formData.gender);
       if (!isPC) {
         data.append("email", formData.email);
         data.append("password", formData.password);
@@ -293,7 +294,7 @@ const UserRegistrationForm = () => {
         setShowSuccess(false);
         setFormData({
           registrationType: "Rider",
-          fullName: "", email: "", phone: "", password: "", otp: "", tshirtSize: "",
+          fullName: "", gender: "", email: "", phone: "", password: "", otp: "", tshirtSize: "",
           dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
           bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
           emergencyContactName: "", emergencyContactPhone: "",
@@ -427,6 +428,16 @@ const UserRegistrationForm = () => {
               <select name="tshirtSize" value={formData.tshirtSize} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors appearance-none">
                 <option value="">Select Size</option>
                 {["S", "M", "L", "XL", "XXL", "XXXL"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Gender <span className="text-red-500">*</span></label>
+              <select name="gender" value={formData.gender} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors appearance-none">
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="prefernottosay">Prefer not to say</option>
               </select>
             </div>
             

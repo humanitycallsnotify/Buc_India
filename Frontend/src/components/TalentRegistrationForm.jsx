@@ -168,7 +168,9 @@ const TalentRegistrationForm = () => {
               <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Gender <span className="text-red-500">*</span></label>
               <select name="gender" value={formData.gender} onChange={handleChange} required className="w-full bg-carbon border border-white/10 px-4 py-4 font-body text-xs outline-none focus:border-copper transition-colors appearance-none">
                 <option value="">Select Gender</option>
-                {["Male", "Female", "Other", "Prefer not to say"].map(g => <option key={g} value={g}>{g}</option>)}
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="prefernottosay">Prefer not to say</option>
               </select>
             </div>
             <InputField label="Phone Number" name="phone" type="tel" icon={Phone} value={formData.phone} onChange={handleChange} required />
