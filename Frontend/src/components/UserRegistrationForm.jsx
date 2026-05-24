@@ -416,6 +416,42 @@ const UserRegistrationForm = () => {
           </div>
         </div>
 
+        {/* Uploads */}
+        {!isPC && (
+          <div className="space-y-6">
+            <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Visual Assets <span className="text-red-500">*</span></h3>
+            <div className={`grid grid-cols-1 ${isRider ? 'md:grid-cols-2' : 'max-w-md mx-auto'} gap-8`}>
+              <label className="group cursor-pointer">
+                <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
+                  <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
+                    <Camera size={20} />
+                  </div>
+                  <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">Profile Image <span className="text-red-500">*</span></span>
+                  <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
+                    {profileImage ? profileImage.name : "Deploy File (IMG)"}
+                  </span>
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setProfileImage, setProfileImagePreview)} />
+              </label>
+              
+              {isRider && (
+                <label className="group cursor-pointer">
+                  <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
+                    <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
+                      <FileText size={20} />
+                    </div>
+                    <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">License Image <span className="text-red-500">*</span></span>
+                    <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
+                      {licenseImage ? licenseImage.name : "Deploy File (IMG)"}
+                    </span>
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setLicenseImage, setLicenseImagePreview)} />
+                </label>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Basic Info */}
         <div className="space-y-6">
           <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Basic Info <span className="text-red-500">*</span></h3>
@@ -583,41 +619,7 @@ const UserRegistrationForm = () => {
           </div>
         )}
 
-        {/* Uploads */}
-        {!isPC && (
-          <div className="space-y-6">
-            <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Uploads</h3>
-            <div className={`grid grid-cols-1 ${isRider ? 'md:grid-cols-2' : 'max-w-md mx-auto'} gap-8`}>
-              <label className="group cursor-pointer">
-                <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30 animate-fade-in">
-                  <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
-                    <Camera size={20} />
-                  </div>
-                  <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">Profile Image <span className="text-red-500">*</span></span>
-                  <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
-                    {profileImage ? profileImage.name : "Deploy File (IMG)"}
-                  </span>
-                </div>
-                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setProfileImage, setProfileImagePreview)} />
-              </label>
-              
-              {isRider && (
-                <label className="group cursor-pointer animate-fade-in">
-                  <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
-                    <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
-                      <FileText size={20} />
-                    </div>
-                    <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">License Image <span className="text-red-500">*</span></span>
-                    <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
-                      {licenseImage ? licenseImage.name : "Deploy File (IMG)"}
-                    </span>
-                  </div>
-                  <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setLicenseImage, setLicenseImagePreview)} />
-                </label>
-              )}
-            </div>
-          </div>
-        )}
+
 
         {/* Declaration & Legal Agreement */}
         <div className="space-y-6 bg-carbon/50 p-6 border border-white/5 rounded-small">

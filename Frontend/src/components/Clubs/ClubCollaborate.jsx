@@ -237,6 +237,41 @@ const ClubCollaborate = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-12">
+            {/* Section: Assets & Verification */}
+            <div className="bg-carbon-light border border-white/5 p-8 md:p-12">
+              <h2 className="font-heading text-3xl uppercase mb-8 flex items-center gap-4">
+                 <Upload size={24} className="text-copper" />
+                 Visual Assets
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 {[
+                   { label: "Club Insignia (Logo) *", field: "logo", icon: <Shield size={20} /> },
+                   { label: "Brotherhood Moment (Ride Photo) *", field: "firstRideImage", icon: <Zap size={20} /> },
+                   { label: "Institutional ID (Reg. Doc) *", field: "governmentIdImage", icon: <Calendar size={20} /> },
+                   { label: "Founder Verification (Govt ID) *", field: "founderPassport", icon: <User size={20} /> },
+                 ].map((item) => (
+                   <label key={item.field} className="group cursor-pointer">
+                      <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
+                         <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
+                            {item.icon}
+                         </div>
+                         <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">
+                           {item.label.replace(' *', '')} <span className="text-red-500">*</span>
+                         </span>
+                         <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
+                            {requestForm[item.field] ? requestForm[item.field].name : "Deploy File (IMG, PDF)"}
+                         </span>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => handleFileChange(item.field, e.target.files?.[0])}
+                      />
+                   </label>
+                 ))}
+              </div>
+            </div>
             {/* Section: Club Information */}
           <div className="bg-carbon-light border border-white/5 p-8 md:p-12">
             <h2 className="font-heading text-3xl uppercase mb-8 flex items-center gap-4">
@@ -382,42 +417,6 @@ const ClubCollaborate = () => {
               <PlusCircle size={14} />
               Enlist More Leaders
             </button>
-          </div>
-
-          {/* Section: Assets & Verification */}
-          <div className="bg-carbon-light border border-white/5 p-8 md:p-12">
-            <h2 className="font-heading text-3xl uppercase mb-8 flex items-center gap-4">
-               <Upload size={24} className="text-copper" />
-               Visual Assets
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               {[
-                 { label: "Club Insignia (Logo) *", field: "logo", icon: <Shield size={20} /> },
-                 { label: "Brotherhood Moment (Ride Photo) *", field: "firstRideImage", icon: <Zap size={20} /> },
-                 { label: "Institutional ID (Reg. Doc) *", field: "governmentIdImage", icon: <Calendar size={20} /> },
-                 { label: "Founder Verification (Govt ID) *", field: "founderPassport", icon: <User size={20} /> },
-               ].map((item) => (
-                 <label key={item.field} className="group cursor-pointer">
-                    <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
-                       <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
-                          {item.icon}
-                       </div>
-                       <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">
-                         {item.label.replace(' *', '')} <span className="text-red-500">*</span>
-                       </span>
-                       <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
-                          {requestForm[item.field] ? requestForm[item.field].name : "Deploy File (IMG, PDF)"}
-                       </span>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => handleFileChange(item.field, e.target.files?.[0])}
-                    />
-                 </label>
-               ))}
-            </div>
           </div>
 
           {/* Declaration & Legal Agreement */}
