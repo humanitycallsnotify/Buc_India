@@ -14,10 +14,11 @@ import {
   Zap,
   Trash2,
   CheckCircle,
-  X
+  X,
+  Key
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { clubService } from "../../services/api";
+import { clubService, otpService } from "../../services/api";
 import TermsModal from "../TermsModal";
 
 const CLUB_TERMS = [
@@ -94,6 +95,7 @@ const initialRequestState = {
   firstRideImage: null,
   governmentIdImage: null,
   founderPassport: null,
+  otp: "",
 };
 
 const ClubCollaborate = () => {
@@ -106,6 +108,36 @@ const ClubCollaborate = () => {
   const [submitting, setSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  const handleSendOtp = async () => {
+    const emailToVerify = requestForm.founderEmail || userEmail;
+    if (!emailToVerify) {
+      toast.error("Please enter the founder or creator email address first");
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      await otpService.send(emailToVerify, "club_signup");
+      setOtpSent(true);
+      setCountdown(60);
+      toast.success("OTP transmission successful! Check your email.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to transmit OTP code.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
 
   useEffect(() => {
     // Logic to set user details if needed from auth context
@@ -142,6 +174,19 @@ const ClubCollaborate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const emailToVerify = requestForm.founderEmail || userEmail;
+    if (!emailToVerify) {
+      return toast.error("Please enter a valid founder email address.");
+    }
+
+    if (!requestForm.otp) {
+      return toast.error("Please enter the email verification OTP code.");
+    }
+
+    if (!otpSent) {
+      return toast.error("Please verify your email address with OTP first.");
+    }
+
     const validAdmins = requestForm.admins.filter(admin => admin.name.trim() !== "");
     if (validAdmins.length === 0) {
       return toast.error("Please add at least 1 additional admin.");
@@ -169,6 +214,7 @@ const ClubCollaborate = () => {
       data.append("founderPhone", requestForm.founderPhone);
       data.append("creatorEmail", userEmail || requestForm.founderEmail);
       data.append("creatorPhone", userPhone || requestForm.founderPhone);
+      data.append("otp", requestForm.otp);
       data.append("admins", JSON.stringify(validAdmins));
       if (requestForm.logo) data.append("logo", requestForm.logo);
       if (requestForm.firstRideImage)
@@ -183,6 +229,7 @@ const ClubCollaborate = () => {
         "Request submitted! BUC admin will review and respond shortly."
       );
       setIsSuccess(true);
+      setOtpSent(false);
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
@@ -337,7 +384,7 @@ const ClubCollaborate = () => {
                Command & Control
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div className="space-y-2">
                 <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Founder Name <span className="text-red-500">*</span></label>
                 <input
@@ -361,6 +408,60 @@ const ClubCollaborate = () => {
                   <option value="lead-admin">LEAD ADMIN</option>
                 </select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+              <div className="space-y-2">
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Founder Phone <span className="text-red-500">*</span></label>
+                <input
+                  type="tel"
+                  className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
+                  value={requestForm.founderPhone}
+                  onChange={(e) => updateField("founderPhone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="Founder Phone"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div className="md:col-span-2 space-y-2">
+                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Founder Email <span className="text-red-500">*</span></label>
+                  <input
+                    type="email"
+                    className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
+                    value={requestForm.founderEmail}
+                    onChange={(e) => updateField("founderEmail", e.target.value)}
+                    placeholder="Founder Email"
+                    required
+                  />
+                </div>
+                <div className="pb-0.5">
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={isSendingOtp || countdown > 0}
+                    className="w-full h-[54px] bg-white/5 border border-white/10 hover:bg-copper hover:text-carbon text-white font-heading text-[10px] uppercase tracking-widest transition-all duration-300 disabled:opacity-50 disabled:hover:bg-white/5 disabled:hover:text-white font-bold"
+                  >
+                    {isSendingOtp ? "Transmitting..." : countdown > 0 ? `Resend in ${countdown}s` : otpSent ? "Resend OTP" : "Send OTP"}
+                  </button>
+                </div>
+              </div>
+
+              {otpSent && (
+                <div className="md:col-span-2 space-y-2 animate-fade-in">
+                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim font-bold">Verification Code (6-Digit OTP) <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <Key className="absolute left-6 top-1/2 -translate-y-1/2 text-steel-dim animate-pulse" size={18} />
+                    <input
+                      type="text"
+                      className="w-full bg-carbon border border-white/10 pl-16 pr-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors placeholder:text-white/20"
+                      value={requestForm.otp}
+                      onChange={(e) => updateField("otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="Enter 6-digit OTP code"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <h3 className="font-body text-[10px] uppercase tracking-[0.3em] text-copper mb-6">Additional Leadership <span className="text-red-500">*</span></h3>

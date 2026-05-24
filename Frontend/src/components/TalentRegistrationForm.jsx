@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import {
   User, Mail, Phone, MapPin, Music, Star, Clock, Link, Bike,
-  FileText, Calendar, Trophy, CheckCircle, Shield, ChevronDown
+  FileText, Calendar, Trophy, CheckCircle, Shield, ChevronDown, Key
 } from "lucide-react";
-import { talentService, clubService } from "../services/api";
+import { talentService, clubService, otpService } from "../services/api";
 
 const TALENT_CATEGORIES = {
   "🎤 Performing Arts": [
@@ -51,6 +51,7 @@ const initialFormData = {
   openToPerformLive: "", openToCompetition: "",
   pastAchievements: "", socialMediaLinks: "",
   consentInfoTrue: false, consentRules: false, consentMedia: false,
+  otp: "",
 };
 
 const TalentRegistrationForm = () => {
@@ -59,6 +60,35 @@ const TalentRegistrationForm = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState("");
   const [clubs, setClubs] = useState([]);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  React.useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  const handleSendOtp = async () => {
+    if (!formData.email) {
+      toast.error("Please enter your email address first");
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      await otpService.send(formData.email, "talent_signup");
+      setOtpSent(true);
+      setCountdown(60);
+      toast.success("OTP transmission successful! Check your email.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to transmit OTP code.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
 
   React.useEffect(() => {
     const fetchClubs = async () => {
@@ -92,12 +122,15 @@ const TalentRegistrationForm = () => {
     const required = [
       "fullName", "age", "gender", "phone", "email", "city", "tshirtSize",
       "talentCategory", "subTalentDescription", "experienceLevel", "yearsOfExperience",
-      "shortDescription", "whyParticipate", "availableDates",
+      "shortDescription", "whyParticipate", "availableDates", "otp",
     ];
     for (const field of required) {
       if (!formData[field]) {
         return toast.error(`Please fill in: ${field.replace(/([A-Z])/g, " $1")}`);
       }
+    }
+    if (!otpSent) {
+      return toast.error("Please verify your email address with OTP first.");
     }
     if (!formData.consentInfoTrue || !formData.consentRules || !formData.consentMedia) {
       return toast.error("Please check all three consent checkboxes before submitting.");
@@ -109,6 +142,7 @@ const TalentRegistrationForm = () => {
       await talentService.submit(payload);
       setShowSuccess(true);
       setFormData(initialFormData);
+      setOtpSent(false);
       setSelectedGroup("");
     } catch (err) {
       toast.error(err.response?.data?.message || "Submission failed. Please try again.");
@@ -174,7 +208,38 @@ const TalentRegistrationForm = () => {
               </select>
             </div>
             <InputField label="Phone Number" name="phone" type="tel" icon={Phone} value={formData.phone} onChange={handleChange} required />
-            <InputField label="Email ID" name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} required />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end md:col-span-2">
+              <div className="md:col-span-2">
+                <InputField label="Email ID" name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} required />
+              </div>
+              <div className="pb-0.5">
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={isSendingOtp || countdown > 0}
+                  className="w-full h-[52px] bg-white/5 border border-white/10 hover:bg-copper hover:text-carbon text-white font-heading text-[10px] uppercase tracking-widest transition-all duration-300 disabled:opacity-50 disabled:hover:bg-white/5 disabled:hover:text-white font-bold"
+                >
+                  {isSendingOtp ? "Transmitting..." : countdown > 0 ? `Resend in ${countdown}s` : otpSent ? "Resend OTP" : "Send OTP"}
+                </button>
+              </div>
+            </div>
+            {otpSent && (
+              <div className="md:col-span-2">
+                <InputField 
+                  label="Verification Code (6-Digit OTP)" 
+                  name="otp" 
+                  type="text" 
+                  icon={Key} 
+                  value={formData.otp} 
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    setFormData(prev => ({ ...prev, otp: val }));
+                  }} 
+                  required 
+                  placeholder="Enter 6-digit OTP code"
+                />
+              </div>
+            )}
             <InputField label="City / Location" name="city" icon={MapPin} value={formData.city} onChange={handleChange} required />
             <div className="space-y-1">
               <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">T-Shirt Size <span className="text-red-500">*</span></label>
