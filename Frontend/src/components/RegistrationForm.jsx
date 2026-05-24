@@ -28,6 +28,7 @@ const RegistrationForm = ({
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: "",
+    gender: "",
     email: "",
     phone: "",
     password: "",
@@ -88,12 +89,13 @@ const RegistrationForm = ({
 
     if (
       !formData.fullName ||
+      !formData.gender ||
       !formData.email ||
       !formData.phone ||
       !formData.password ||
       !formData.otp
     ) {
-      setError("Please fill all fields and enter OTP.");
+      setError("Please fill all fields, select gender, and enter OTP.");
       return;
     }
 
@@ -113,6 +115,7 @@ const RegistrationForm = ({
       const data = new FormData();
       data.append("eventId", type === "community" ? "community" : eventId);
       data.append("fullName", formData.fullName);
+      data.append("gender", formData.gender);
       data.append("email", formData.email);
       data.append("phone", formData.phone);
       data.append("password", formData.password);
@@ -136,6 +139,7 @@ const RegistrationForm = ({
       setTimeout(() => {
         setFormData({
           fullName: "",
+          gender: "",
           email: "",
           phone: "",
           password: "",
@@ -249,6 +253,23 @@ const RegistrationForm = ({
                             placeholder="YOUR NAME"
                           />
                         </div>
+                      </div>
+
+                      {/* Gender */}
+                      <div className="space-y-1">
+                        <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Gender</label>
+                        <select
+                          name="gender"
+                          value={formData.gender}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full bg-carbon border border-white/10 px-4 py-4 font-body text-xs outline-none focus:border-copper transition-colors appearance-none"
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="prefernottosay">Prefer not to say</option>
+                        </select>
                       </div>
 
                       {/* Email Row */}
