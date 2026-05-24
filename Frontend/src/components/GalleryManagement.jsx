@@ -42,6 +42,7 @@ const categories = [
   { id: "bikes", label: "Member Bikes" },
   { id: "rallies", label: "Rallies" },
   { id: "highlights", label: "Ride Highlights (2–3s Clips)" },
+  { id: "cover", label: "Registration Cover Photo" },
 ];
 
 const GalleryManagement = () => {

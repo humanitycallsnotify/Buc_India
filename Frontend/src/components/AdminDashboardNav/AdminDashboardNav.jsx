@@ -74,6 +74,7 @@ const AdminDashboard = () => {
     { path: "/admin/users", name: "Users", icon: <User size={20} /> },
     { path: "/admin/talents", name: "Talents", icon: <Star size={20} /> },
     { path: "/admin/gallery", name: "Gallery", icon: <ImageIcon size={20} /> },
+    { path: "/admin/gallery", name: "Cover Photo", icon: <ImageIcon size={20} /> },
     { path: "/admin/clubs", name: "Clubs", icon: <Bike size={20} /> },
   ];
 

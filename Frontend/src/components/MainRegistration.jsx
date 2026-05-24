@@ -50,6 +50,34 @@ const MainRegistration = () => {
         </div>
       </div>
 
+      {/* Cover Pic Section */}
+      <div className="w-full h-[45vh] relative overflow-hidden flex items-center justify-center bg-carbon border-b border-white/5">
+        {/* Cover Image with reduced opacity */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 transform hover:scale-105"
+          style={coverPhoto ? {
+            backgroundImage: `url(${coverPhoto})`,
+            opacity: 0.6
+          } : {
+            backgroundImage: `linear-gradient(to bottom, rgba(17, 17, 17, 0.4), rgba(17, 17, 17, 0.9)), url('/logo.jpg')`,
+            opacity: 0.3
+          }}
+        />
+        {/* Overlay gradient to blend nicely with the carbon background */}
+        <div className="absolute inset-0 bg-gradient-to-t from-carbon via-transparent to-transparent" />
+        
+        {/* Center Content: BUC Logo */}
+        <div className="relative z-10 flex flex-col items-center gap-4 text-center">
+          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-2 border-copper bg-carbon flex items-center justify-center p-1 shadow-[0_0_50px_rgba(193,154,107,0.3)] transition-all duration-500 hover:scale-105">
+            <img src="/logo.jpg" alt="BUC India Logo" className="w-full h-full rounded-full object-cover" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <h2 className="font-heading text-2xl sm:text-4xl uppercase tracking-widest text-white drop-shadow-md">Bikers Unity Calls</h2>
+            <p className="font-body text-[9px] sm:text-xs tracking-[0.4em] text-copper uppercase drop-shadow-md">BUC India Brotherhood</p>
+          </div>
+        </div>
+      </div>
+
       <div className="pt-10 pb-24 px-6 md:px-12">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
