@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import {
   User, Mail, Phone, MapPin, Music, Star, Clock, Link, Bike,
-  FileText, Calendar, Trophy, CheckCircle, Shield, ChevronDown, Key
+  FileText, Calendar, Trophy, CheckCircle, Shield, ChevronDown, Key,
+  Upload, Image as ImageIcon, Video as VideoIcon
 } from "lucide-react";
 import { talentService, clubService, otpService } from "../services/api";
 
@@ -63,6 +64,37 @@ const TalentRegistrationForm = () => {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+
+  const [talentImage, setTalentImage] = useState(null);
+  const [talentVideo, setTalentVideo] = useState(null);
+  const [talentImagePreview, setTalentImagePreview] = useState("");
+  const [talentVideoPreview, setTalentVideoPreview] = useState("");
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Image file size should not exceed 10MB");
+        return;
+      }
+      setTalentImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setTalentImagePreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleVideoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 100 * 1024 * 1024) {
+        toast.error("Video file size should not exceed 100MB");
+        return;
+      }
+      setTalentVideo(file);
+      setTalentVideoPreview(URL.createObjectURL(file));
+    }
+  };
 
   React.useEffect(() => {
     let timer;
@@ -138,12 +170,26 @@ const TalentRegistrationForm = () => {
 
     setIsSubmitting(true);
     try {
-      const payload = { ...formData };
+      const payload = new FormData();
+      Object.keys(formData).forEach((key) => {
+        payload.append(key, formData[key]);
+      });
+      if (talentImage) {
+        payload.append("talentImage", talentImage);
+      }
+      if (talentVideo) {
+        payload.append("talentVideo", talentVideo);
+      }
+
       await talentService.submit(payload);
       setShowSuccess(true);
       setFormData(initialFormData);
       setOtpSent(false);
       setSelectedGroup("");
+      setTalentImage(null);
+      setTalentVideo(null);
+      setTalentImagePreview("");
+      setTalentVideoPreview("");
     } catch (err) {
       toast.error(err.response?.data?.message || "Submission failed. Please try again.");
     } finally {
@@ -176,7 +222,24 @@ const TalentRegistrationForm = () => {
     : [];
 
   return (
-    <div className="bg-carbon-light border border-white/5 text-white max-w-4xl mx-auto p-6 md:p-12">
+    <div className="bg-carbon-light border border-white/5 text-white max-w-4xl mx-auto p-6 md:p-12 relative">
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-carbon/90 z-50 flex flex-col items-center justify-center text-center p-6 animate-fade-in backdrop-blur-sm">
+          <div className="relative mb-6">
+            <div className="w-20 h-20 border-2 border-copper/20 rounded-full animate-ping absolute inset-0" />
+            <div className="w-20 h-20 border-t-2 border-r-2 border-copper rounded-full animate-spin flex items-center justify-center">
+              <Upload size={32} className="text-copper animate-bounce" />
+            </div>
+          </div>
+          <h3 className="font-heading text-2xl uppercase tracking-wider text-white mb-2">
+            Uploading Visual Assets...
+          </h3>
+          <p className="font-text text-steel-dim text-sm max-w-sm leading-relaxed">
+            Please wait while we process and upload your showcase image and video to Cloudinary.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-8 mb-12 gap-6">
         <div className="flex items-center gap-4">
@@ -192,6 +255,74 @@ const TalentRegistrationForm = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-12">
+
+        {/* Visual Showcase Assets */}
+        <div className="space-y-6 bg-carbon/20 p-6 md:p-8 border border-white/5 shadow-inner">
+          <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-3 flex items-center gap-3">
+            <Upload size={14} className="text-copper" /> Visual Showcase Assets
+          </h3>
+          <p className="font-text text-xs text-steel-dim leading-relaxed mb-4">
+            Upload a stunning image and an interactive video displaying your unique talents. Supported image formats: JPG, PNG, WEBP. Supported video formats: MP4, MOV, WEBM.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Image Upload Box */}
+            <div className="flex flex-col space-y-4">
+              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">
+                Talent Image Showcase
+              </label>
+              <div className="relative group border border-dashed border-white/10 hover:border-copper/50 transition-all duration-300 bg-carbon/40 flex flex-col items-center justify-center p-6 h-60 text-center cursor-pointer overflow-hidden">
+                {talentImagePreview ? (
+                  <div className="absolute inset-0 w-full h-full group">
+                    <img src={talentImagePreview} alt="Showcase Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-carbon/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity duration-300">
+                      <ImageIcon size={28} className="text-copper mb-2" />
+                      <span className="font-heading text-xs uppercase tracking-widest text-white">Change Image</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-3 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
+                      <ImageIcon size={20} />
+                    </div>
+                    <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">Choose Image</span>
+                    <span className="font-text text-[9px] text-white/20">Max Size: 10MB</span>
+                  </div>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+              </div>
+            </div>
+
+            {/* Video Upload Box */}
+            <div className="flex flex-col space-y-4">
+              <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">
+                Talent Video Showcase
+              </label>
+              <div className="relative group border border-dashed border-white/10 hover:border-copper/50 transition-all duration-300 bg-carbon/40 flex flex-col items-center justify-center p-6 h-60 text-center cursor-pointer overflow-hidden">
+                {talentVideoPreview ? (
+                  <div className="absolute inset-0 w-full h-full group">
+                    <video src={talentVideoPreview} controls className="w-full h-full object-cover" />
+                    <div className="absolute top-2 right-2 bg-carbon/80 px-3 py-1 rounded text-[9px] font-heading uppercase text-copper border border-copper/20 hover:bg-copper hover:text-carbon transition-colors cursor-pointer z-10" onClick={(e) => {
+                      e.preventDefault();
+                      setTalentVideo(null);
+                      setTalentVideoPreview("");
+                    }}>
+                      Remove
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-3 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
+                      <VideoIcon size={20} />
+                    </div>
+                    <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">Choose Video</span>
+                    <span className="font-text text-[9px] text-white/20">Max Size: 100MB</span>
+                  </div>
+                )}
+                {!talentVideoPreview && <input type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Basic Details */}
         <Section title="👤 Basic Details" required>

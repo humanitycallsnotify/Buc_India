@@ -248,7 +248,11 @@ export const certificateService = {
 
 export const talentService = {
   submit: async (formData) => {
-    const response = await api.post("/talent", formData);
+    const response = await api.post("/talent", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
   getAll: async () => {
