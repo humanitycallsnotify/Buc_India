@@ -155,6 +155,13 @@ export const profileService = {
     });
     return response.data;
   },
+  createOrUpdate: async (formData) => {
+    return profileService.update(formData);
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/profile/${id}`);
+    return response.data;
+  },
 };
 
 export const clubService = {

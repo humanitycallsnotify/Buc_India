@@ -42,6 +42,7 @@ const Profile = () => {
 
   const [profileData, setProfileData] = useState({
     fullName: "",
+    gender: "",
     email: "",
     phone: "",
     address: "",
@@ -185,6 +186,7 @@ const Profile = () => {
       formData.append("email", userEmail);
       formData.append("phone", userPhone);
       formData.append("fullName", profileData.fullName || "");
+      formData.append("gender", profileData.gender || "");
       formData.append("dateOfBirth", profileData.dateOfBirth || "");
       formData.append("bloodGroup", profileData.bloodGroup || "");
       formData.append("address", profileData.address || "");
@@ -408,6 +410,16 @@ const Profile = () => {
                     onChange={handleInputChange}
                     isEditing={isEditing}
                     placeholder="Enter your full name"
+                  />
+                  <ProfileField
+                    label="Gender"
+                    icon={User}
+                    name="gender"
+                    value={profileData.gender}
+                    onChange={handleInputChange}
+                    isEditing={isEditing}
+                    type="select"
+                    options={["male", "female", "prefernottosay"]}
                   />
                   <ProfileField
                     label="Email Address"
@@ -813,7 +825,7 @@ const ProfileField = ({
             <option value="">Select {label}</option>
             {options?.map((opt) => (
               <option key={opt} value={opt}>
-                {opt}
+                {opt === "male" ? "Male" : opt === "female" ? "Female" : opt === "prefernottosay" ? "Prefer not to say" : opt}
               </option>
             ))}
           </select>
@@ -829,7 +841,11 @@ const ProfileField = ({
         )
       ) : (
         <div className="bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 text-white min-h-[44px] flex items-center">
-          {value || <span className="text-gray-500">Not provided</span>}
+          {name === "gender" && value ? (
+            value === "male" ? "Male" : value === "female" ? "Female" : value === "prefernottosay" ? "Prefer not to say" : value
+          ) : (
+            value || <span className="text-gray-500">Not provided</span>
+          )}
         </div>
       )}
     </div>
