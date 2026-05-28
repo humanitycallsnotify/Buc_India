@@ -103,8 +103,8 @@ export const registrationService = {
     });
     return response.data;
   },
-  getAll: async (eventId) => {
-    const params = {};
+  getAll: async (eventId, filters = {}) => {
+    const params = { ...filters };
     if (eventId && eventId !== "all") {
       params.eventId = eventId;
     }
@@ -153,13 +153,6 @@ export const profileService = {
         "Content-Type": "multipart/form-data",
       },
     });
-    return response.data;
-  },
-  createOrUpdate: async (formData) => {
-    return profileService.update(formData);
-  },
-  delete: async (id) => {
-    const response = await api.delete(`/profile/${id}`);
     return response.data;
   },
 };
@@ -246,17 +239,13 @@ export const certificateService = {
   },
 };
 
-export const talentService = {
-  submit: async (formData) => {
-    const response = await api.post("/talent", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+export const siteContentService = {
+  getHumanityCallsCarousel: async () => {
+    const response = await api.get("/site-content/humanity-calls-carousel");
     return response.data;
   },
-  getAll: async () => {
-    const response = await api.get("/talent");
+  updateHumanityCallsCarousel: async (images) => {
+    const response = await api.put("/site-content/humanity-calls-carousel", { images });
     return response.data;
   },
 };
