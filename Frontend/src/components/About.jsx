@@ -18,7 +18,7 @@ const About = () => {
     if (loggedIn) {
       navigate("/profile");
     } else {
-      navigate("/signup");
+      navigate("/register");
     }
   };
 

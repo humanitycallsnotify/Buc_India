@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { useState, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "./components/Header.jsx";
@@ -85,7 +85,8 @@ function App() {
                   </main>
                   <Footer />
                 </div>}>
-                  <Route path="/" element={<HomePage />} />
+                  {/* Registration deployment: land on public registration portal */}
+                  <Route path="/" element={<Navigate to="/register" replace />} />
                   <Route path="/events" element={<Events />} />
                   <Route path="/gallery" element={<Gallery />} />
                   <Route path="/members" element={<Members />} />

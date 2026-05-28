@@ -20,7 +20,6 @@ import {
   User,
   Bell,
   Star,
-  Layers,
 } from "lucide-react";
 import DashboardHome from "../DashboardHome/DashboardHome";
 import EventManagement from "../EventManagement/EventManagement";
@@ -30,7 +29,6 @@ import GalleryManagement from "../GalleryManagement.jsx";
 import ClubManagement from "../ClubManagement/ClubManagement.jsx";
 import ViewTalents from "../ViewTalents/ViewTalents.jsx";
 import { authService, profileService } from "../../services/api";
-import SiteContentManagement from "../SiteContentManagement.jsx";
 
 const logo = "/logo copy copy.jpg";
 const DRAWER_WIDTH = 260;
@@ -76,7 +74,7 @@ const AdminDashboard = () => {
     { path: "/admin/users", name: "Users", icon: <User size={20} /> },
     { path: "/admin/talents", name: "Talents", icon: <Star size={20} /> },
     { path: "/admin/gallery", name: "Gallery", icon: <ImageIcon size={20} /> },
-    { path: "/admin/site-content", name: "Site Content", icon: <Layers size={20} /> },
+    { path: "/admin/cover-photo", name: "Cover Photo", icon: <ImageIcon size={20} /> },
     { path: "/admin/clubs", name: "Clubs", icon: <Bike size={20} /> },
   ];
 
@@ -244,7 +242,7 @@ const AdminDashboard = () => {
             <Route path="users" element={<ViewUsers />} />
             <Route path="talents" element={<ViewTalents />} />
             <Route path="gallery" element={<GalleryManagement />} />
-            <Route path="site-content" element={<SiteContentManagement />} />
+            <Route path="cover-photo" element={<GalleryManagement isCoverOnly={true} />} />
             <Route path="clubs" element={<ClubManagement />} />
           </Routes>
         </main>

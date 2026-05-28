@@ -2,16 +2,26 @@ import mongoose from "mongoose";
 
 const talentSchema = new mongoose.Schema(
   {
+    bucId: {
+      type: String,
+      unique: true,
+      sparse: true
+    },
     // Basic Details
     fullName: { type: String, required: true, trim: true },
     age: { type: Number, required: true },
-    gender: { type: String, required: true, enum: ["Male", "Female", "Other", "Prefer not to say"] },
+    gender: { type: String, required: true, enum: ["male", "female", "prefernottosay", "Male", "Female", "Other", "Prefer not to say"] },
     phone: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },
     city: { type: String, required: true, trim: true },
 
     // Talent Details
     talentCategory: { type: String, required: true, trim: true },
+    tshirtSize: {
+      type: String,
+      enum: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+      default: ''
+    },
     subTalentDescription: { type: String, required: true, trim: true },
     experienceLevel: { 
       type: String, 
@@ -27,6 +37,7 @@ const talentSchema = new mongoose.Schema(
     isRider: { type: Boolean, default: false },
     bikeModel: { type: String, trim: true },
     ridingExperience: { type: String, trim: true },
+    clubId: { type: mongoose.Schema.Types.ObjectId, ref: 'Club', default: null },
 
     // Additional Info
     shortDescription: { type: String, required: true, trim: true },
@@ -42,6 +53,12 @@ const talentSchema = new mongoose.Schema(
     // Optional
     pastAchievements: { type: String, trim: true },
     socialMediaLinks: { type: String, trim: true },
+
+    // Visual Assets
+    talentImage: { type: String, trim: true },
+    talentImagePublicId: { type: String, trim: true },
+    talentVideo: { type: String, trim: true },
+    talentVideoPublicId: { type: String, trim: true },
 
     // Legal consents
     consentInfoTrue: { type: Boolean, required: true },

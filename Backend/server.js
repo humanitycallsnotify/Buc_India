@@ -30,13 +30,8 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Parse the comma-separated list from .env
-      const envOrigins = process.env.FRONTEND_URL 
-        ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
-        : [];
-
       const allowedOrigins = [
-        ...envOrigins,
+        process.env.FRONTEND_URL,
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:5174",

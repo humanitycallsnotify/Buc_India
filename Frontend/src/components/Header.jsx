@@ -5,6 +5,7 @@ import GlareHover from "./animations/GlareHover";
 
 const navigation = [
   { name: "HOME", path: "/", label: "WELCOME" },
+  { name: "REGISTER", path: "/register", label: "ENROLL" },
   { name: "EVENTS", path: "/events", label: "EXPERIENCE" },
   { name: "GALLERY", path: "/gallery", label: "VISUALS" },
   { name: "MEMBERS", path: "/members", label: "BROTHERHOOD" },
@@ -248,11 +249,11 @@ const Header = () => {
                   <div className="relative group">
                     <GlareHover>
                       <button
-                        onClick={() => handleNavigate("/signup")}
+                        onClick={() => handleNavigate("/register")}
                         className="px-10 py-4 bg-transparent border border-copper/30 text-copper font-heading text-xl tracking-widest relative overflow-hidden group/btn hover:border-copper transition-colors duration-300 interactive-item"
                       >
                         <span className="relative z-10 transition-colors duration-500 group-hover/btn:text-carbon">
-                          JOIN BROTHERHOOD
+                          REGISTER NOW
                         </span>
                         <div className="absolute inset-0 bg-copper translate-x-[-100%] group-hover/btn:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.7,0,0.3,1)] -z-0"></div>
                       </button>
@@ -313,10 +314,10 @@ const Header = () => {
                   <span className="w-4 h-[1px] bg-current"></span>
                 </button>
                 <button
-                  onClick={() => handleNavigate("/signup")}
+                  onClick={() => handleNavigate("/register")}
                   className="flex-1 py-5 flex items-center justify-center font-heading text-sm tracking-widest uppercase bg-copper text-carbon hover:bg-white transition-colors duration-300"
                 >
-                  JOIN BROTHERHOOD
+                  REGISTER
                 </button>
               </div>
             </div>

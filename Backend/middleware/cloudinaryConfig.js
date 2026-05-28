@@ -48,8 +48,24 @@ const clubStorage = new CloudinaryStorage({
   }
 });
 
+// Storage for talent visual assets (logos, documents, photos, videos)
+const talentStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    const isVideo = file.mimetype.startsWith('video/');
+    return {
+      folder: 'buc_india_talents',
+      resource_type: isVideo ? 'video' : 'image',
+      allowed_formats: isVideo 
+        ? ['mp4', 'mov', 'avi', 'mkv', 'webm'] 
+        : ['jpg', 'png', 'jpeg', 'webp'],
+    };
+  }
+});
+
 export const upload = multer({ storage: eventStorage });
 export const profileUpload = multer({ storage: profileStorage });
 export const galleryUpload = multer({ storage: galleryStorage });
 export const clubUpload = multer({ storage: clubStorage });
+export const talentUpload = multer({ storage: talentStorage });
 export { cloudinary };

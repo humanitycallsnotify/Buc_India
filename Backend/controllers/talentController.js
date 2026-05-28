@@ -1,39 +1,98 @@
 import Talent from "../models/Talent.js";
+import Otp from "../models/Otp.js";
+import { generateUniqueBucId } from "../utils/generateBucId.js";
+import { sendRegistrationConfirmation } from "../utils/mailSender.js";
 
 export const submitTalent = async (req, res) => {
   try {
     const {
-      fullName, age, gender, phone, email, city,
-      talentCategory, subTalentDescription, experienceLevel, yearsOfExperience,
+      fullName,
+      age,
+      gender,
+      phone,
+      email,
+      city,
+      talentCategory,
+      subTalentDescription,
+      experienceLevel,
+      yearsOfExperience,
       portfolioLink,
-      isRider, bikeModel, ridingExperience,
-      shortDescription, whyParticipate,
+      isRider,
+      bikeModel,
+      ridingExperience,
+      shortDescription,
+      whyParticipate,
       availableDates,
-      openToPerformLive, openToCompetition,
-      pastAchievements, socialMediaLinks,
-      consentInfoTrue, consentRules, consentMedia,
+      openToPerformLive,
+      openToCompetition,
+      pastAchievements,
+      socialMediaLinks,
+      consentInfoTrue,
+      consentRules,
+      consentMedia,
+      tshirtSize,
+      otp,
     } = req.body;
 
-    // Required field validation
     if (
-      !fullName || !age || !gender || !phone || !email || !city ||
-      !talentCategory || !subTalentDescription || !experienceLevel || !yearsOfExperience ||
-      !shortDescription || !whyParticipate || !availableDates
+      !fullName ||
+      !age ||
+      !gender ||
+      !phone ||
+      !email ||
+      !city ||
+      !talentCategory ||
+      !subTalentDescription ||
+      !experienceLevel ||
+      !yearsOfExperience ||
+      !shortDescription ||
+      !whyParticipate ||
+      !availableDates ||
+      !tshirtSize ||
+      !otp
     ) {
-      return res.status(400).json({ message: "Please fill all required fields." });
+      return res
+        .status(400)
+        .json({ message: "Please fill all required fields, including OTP." });
     }
 
     if (!consentInfoTrue || consentInfoTrue === "false") {
-      return res.status(400).json({ message: "You must confirm that all information is true." });
+      return res
+        .status(400)
+        .json({ message: "You must confirm that all information is true." });
     }
     if (!consentRules || consentRules === "false") {
-      return res.status(400).json({ message: "You must agree to the event rules & safety guidelines." });
+      return res.status(400).json({
+        message: "You must agree to the event rules & safety guidelines.",
+      });
     }
     if (!consentMedia || consentMedia === "false") {
-      return res.status(400).json({ message: "You must give permission for media use." });
+      return res
+        .status(400)
+        .json({ message: "You must give permission for media use." });
     }
 
-    const talent = new Talent({
+    const otpRecord = await Otp.findOne({
+      email: email.toLowerCase(),
+      otp,
+      type: "talent_signup",
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        message: "Invalid or expired OTP. Please verify your email first.",
+      });
+    }
+
+    const bucId = await generateUniqueBucId();
+
+    const talentImageFile =
+      req.files && req.files.talentImage ? req.files.talentImage[0] : null;
+    const talentVideoFile =
+      req.files && req.files.talentVideo ? req.files.talentVideo[0] : null;
+
+    const talentData = {
+      bucId,
       fullName,
       age: Number(age),
       gender,
@@ -41,6 +100,7 @@ export const submitTalent = async (req, res) => {
       email,
       city,
       talentCategory,
+      tshirtSize,
       subTalentDescription,
       experienceLevel,
       yearsOfExperience: Number(yearsOfExperience),
@@ -51,17 +111,50 @@ export const submitTalent = async (req, res) => {
       shortDescription,
       whyParticipate,
       availableDates,
-      openToPerformLive: openToPerformLive === "true" || openToPerformLive === true,
-      openToCompetition: openToCompetition === "true" || openToCompetition === true,
+      openToPerformLive:
+        openToPerformLive === "true" || openToPerformLive === true,
+      openToCompetition:
+        openToCompetition === "true" || openToCompetition === true,
       pastAchievements: pastAchievements || "",
       socialMediaLinks: socialMediaLinks || "",
       consentInfoTrue: true,
       consentRules: true,
       consentMedia: true,
-    });
+    };
 
+    if (talentImageFile) {
+      talentData.talentImage = talentImageFile.path;
+      talentData.talentImagePublicId = talentImageFile.filename;
+    }
+    if (talentVideoFile) {
+      talentData.talentVideo = talentVideoFile.path;
+      talentData.talentVideoPublicId = talentVideoFile.filename;
+    }
+
+    const talent = new Talent(talentData);
     await talent.save();
-    res.status(201).json({ message: "Talent registration submitted successfully!", talent });
+
+    try {
+      await Otp.deleteOne({ _id: otpRecord._id });
+    } catch (otpDelError) {
+      console.error("Failed to delete talent OTP:", otpDelError);
+    }
+
+    try {
+      await sendRegistrationConfirmation(talent.email, {
+        fullName: talent.fullName,
+        tshirtSize: talent.tshirtSize,
+        bucId: talent.bucId,
+        clubName: "",
+      });
+    } catch (mailError) {
+      console.error("Failed to send welcome email to talent:", mailError);
+    }
+
+    res.status(201).json({
+      message: "Talent registration submitted successfully!",
+      talent,
+    });
   } catch (error) {
     console.error("Talent Submit Error:", error);
     res.status(500).json({ message: error.message || "Internal Server Error" });
@@ -91,7 +184,9 @@ export const approveTalent = async (req, res) => {
     res.json({ message: "Talent approved successfully.", talent });
   } catch (error) {
     console.error("Approve Talent Error:", error);
-    res.status(500).json({ message: "Failed to approve talent registration." });
+    res
+      .status(500)
+      .json({ message: "Failed to approve talent registration." });
   }
 };
 
@@ -141,11 +236,13 @@ export const updateTalent = async (req, res) => {
     }
     if (Object.prototype.hasOwnProperty.call(updates, "openToPerformLive")) {
       updates.openToPerformLive =
-        updates.openToPerformLive === true || updates.openToPerformLive === "true";
+        updates.openToPerformLive === true ||
+        updates.openToPerformLive === "true";
     }
     if (Object.prototype.hasOwnProperty.call(updates, "openToCompetition")) {
       updates.openToCompetition =
-        updates.openToCompetition === true || updates.openToCompetition === "true";
+        updates.openToCompetition === true ||
+        updates.openToCompetition === "true";
     }
     if (Object.prototype.hasOwnProperty.call(updates, "approvalStatus")) {
       if (updates.approvalStatus === "approved") {
@@ -166,7 +263,9 @@ export const updateTalent = async (req, res) => {
     res.json({ message: "Talent registration updated successfully.", talent });
   } catch (error) {
     console.error("Update Talent Error:", error);
-    res.status(400).json({ message: error.message || "Failed to update talent." });
+    res
+      .status(400)
+      .json({ message: error.message || "Failed to update talent." });
   }
 };
 
@@ -179,6 +278,9 @@ export const deleteTalent = async (req, res) => {
     res.json({ message: "Talent registration deleted successfully." });
   } catch (error) {
     console.error("Delete Talent Error:", error);
-    res.status(500).json({ message: "Failed to delete talent registration." });
+    res
+      .status(500)
+      .json({ message: "Failed to delete talent registration." });
   }
 };
+

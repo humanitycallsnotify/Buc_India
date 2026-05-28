@@ -12,7 +12,8 @@ import {
   Info,
   Clock,
   ExternalLink,
-  UserCheck
+  UserCheck,
+  Trash2
 } from "lucide-react";
 
 const ClubManagement = () => {
@@ -22,6 +23,8 @@ const ClubManagement = () => {
   const [updatingId, setUpdatingId] = useState(null);
   const [expandedClub, setExpandedClub] = useState(null);
   const [activeTab, setActiveTab] = useState("pending");
+  const [viewClub, setViewClub] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -50,6 +53,27 @@ const ClubManagement = () => {
       await loadData();
     } catch (error) {
       console.error("Protocol update failure:", error);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+    const { action, clubId } = confirmAction;
+    
+    setConfirmAction(null);
+    setUpdatingId(clubId);
+    
+    try {
+      if (action === 'delete') {
+        await clubService.deleteAdmin(clubId);
+      } else {
+        await clubService.updateStatus(clubId, action === 'approve' ? 'approved' : 'rejected');
+      }
+      await loadData();
+    } catch (error) {
+      console.error(`Action ${action} failed:`, error);
     } finally {
       setUpdatingId(null);
     }
@@ -212,33 +236,50 @@ const ClubManagement = () => {
                           </div>
 
                           {/* Actions */}
-                          <div className="col-span-6 md:col-span-2 flex justify-end gap-2">
+                          <div className="col-span-12 md:col-span-2 flex flex-wrap justify-end gap-2 mt-4 md:mt-0">
+                             <button
+                               onClick={() => setViewClub(club)}
+                               className="p-2 bg-copper text-carbon hover:bg-white transition-all rounded"
+                               title="View Details"
+                             >
+                               <Info size={16} />
+                             </button>
+
                              {activeTab !== "active" && (
                                <button
                                  disabled={updatingId === club._id}
-                                 onClick={() => changeStatus(club._id, "approved")}
-                                 className="p-3 text-steel-dim hover:text-green-500 hover:bg-green-500/5 transition-all border border-transparent hover:border-green-500/20 disabled:opacity-20"
+                                 onClick={() => setConfirmAction({ action: 'approve', clubId: club._id, clubName: club.name })}
+                                 className="p-2 bg-green-500 text-white hover:bg-green-400 transition-all rounded disabled:opacity-50"
                                  title="Approve Coalition"
                                >
-                                 <CheckCircle size={18} />
+                                 <CheckCircle size={16} />
                                </button>
                              )}
                              {activeTab !== "rejected" && (
                                <button
                                  disabled={updatingId === club._id}
-                                 onClick={() => changeStatus(club._id, "rejected")}
-                                 className="p-3 text-steel-dim hover:text-red-500 hover:bg-red-500/5 transition-all border border-transparent hover:border-red-500/20 disabled:opacity-20"
+                                 onClick={() => setConfirmAction({ action: 'reject', clubId: club._id, clubName: club.name })}
+                                 className="p-2 bg-orange-500 text-white hover:bg-orange-400 transition-all rounded disabled:opacity-50"
                                  title="Reject Coalition"
                                >
-                                 <XCircle size={18} />
+                                 <XCircle size={16} />
                                </button>
                              )}
+                             <button
+                               disabled={updatingId === club._id}
+                               onClick={() => setConfirmAction({ action: 'delete', clubId: club._id, clubName: club.name })}
+                               className="p-2 bg-red-600 text-white hover:bg-red-500 transition-all rounded disabled:opacity-50"
+                               title="Delete Coalition"
+                             >
+                               <Trash2 size={16} />
+                             </button>
+
                              {participants.length > 0 && (
                                <button
                                  onClick={() => toggleExpand(club._id)}
-                                 className={`p-3 transition-all ${isExpanded ? 'text-copper bg-copper/5 border border-copper/20' : 'text-steel-dim hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'}`}
+                                 className={`p-2 transition-all rounded ${isExpanded ? 'text-copper bg-copper/5 border border-copper/20' : 'text-steel-dim hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'}`}
                                >
-                                 {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                                 {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                </button>
                              )}
                           </div>
@@ -321,6 +362,181 @@ const ClubManagement = () => {
           )}
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {confirmAction && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-carbon border border-white/10 max-w-md w-full p-6 shadow-2xl relative"
+            >
+              <h3 className="font-heading text-2xl uppercase mb-2 text-white">
+                Confirm {confirmAction.action}
+              </h3>
+              <p className="font-text text-steel-dim mb-6">
+                Are you sure you want to {confirmAction.action} the club "{confirmAction.clubName}"? 
+                {confirmAction.action === 'delete' && " This action cannot be undone and will remove all associated operational units."}
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmAction(null)}
+                  className="px-6 py-2 border border-white/20 text-steel-dim hover:text-white hover:bg-white/5 transition-all font-body text-xs uppercase tracking-widest rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleConfirmAction()}
+                  className={`px-6 py-2 text-white font-body text-xs uppercase tracking-widest transition-all rounded ${
+                    confirmAction.action === 'approve' ? 'bg-green-500 hover:bg-green-400' :
+                    confirmAction.action === 'reject' ? 'bg-orange-500 hover:bg-orange-400' :
+                    'bg-red-600 hover:bg-red-500'
+                  }`}
+                >
+                  Confirm
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* View Details Modal */}
+      <AnimatePresence>
+        {viewClub && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto py-10"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-carbon border border-white/10 max-w-4xl w-full p-8 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => setViewClub(null)}
+                className="absolute top-4 right-4 text-steel-dim hover:text-white transition-colors"
+              >
+                <XCircle size={24} />
+              </button>
+
+              <div className="flex items-center gap-6 border-b border-white/10 pb-6 mb-6">
+                <div className="w-24 h-24 bg-carbon-light border border-white/10 flex items-center justify-center overflow-hidden">
+                  {viewClub.logoUrl ? (
+                    <img src={viewClub.logoUrl} alt={viewClub.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-heading text-4xl text-copper">{viewClub.name?.charAt(0) || "Ω"}</span>
+                  )}
+                </div>
+                <div>
+                  <h2 className="font-heading text-4xl uppercase text-white leading-none mb-2">{viewClub.name}</h2>
+                  <div className="flex gap-4 font-body text-[10px] uppercase tracking-widest text-steel-dim">
+                    <span className={`px-2 py-1 rounded font-bold ${
+                      viewClub.status === "approved" ? "bg-green-500/10 text-green-500" :
+                      viewClub.status === "rejected" ? "bg-red-500/10 text-red-500" :
+                      "bg-copper/10 text-copper"
+                    }`}>{viewClub.status}</span>
+                    <span className="flex items-center gap-1"><Clock size={12} /> {viewClub.startedOn ? new Date(viewClub.startedOn).toLocaleDateString() : "Unknown"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="font-body text-[10px] uppercase tracking-widest text-copper mb-2 border-b border-white/5 pb-1">Club Doctrine (Moto)</h4>
+                    <p className="font-text text-steel-dim text-sm italic">"{viewClub.moto || 'None provided'}"</p>
+                  </div>
+                  <div>
+                    <h4 className="font-body text-[10px] uppercase tracking-widest text-copper mb-2 border-b border-white/5 pb-1">Showcase Text</h4>
+                    <p className="font-text text-steel-dim text-sm whitespace-pre-wrap">{viewClub.showcaseText || 'None provided'}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-body text-[10px] uppercase tracking-widest text-copper mb-2 border-b border-white/5 pb-1">Government ID / Reg No</h4>
+                    <p className="font-text text-steel-dim text-sm">{viewClub.governmentIdNumber || 'None provided'}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="font-body text-[10px] uppercase tracking-widest text-copper mb-2 border-b border-white/5 pb-1">High Commander (Founder)</h4>
+                    {viewClub.founder ? (
+                      <div className="space-y-1 font-text text-sm text-steel-dim">
+                        <p><span className="text-white">Name:</span> {viewClub.founder.name}</p>
+                        <p><span className="text-white">Email:</span> {viewClub.founder.email}</p>
+                        <p><span className="text-white">Phone:</span> {viewClub.founder.phone}</p>
+                        <p><span className="text-white">Role:</span> <span className="uppercase">{viewClub.founder.role}</span></p>
+                      </div>
+                    ) : (
+                      <p className="font-text text-steel-dim text-sm">No founder info</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className="font-body text-[10px] uppercase tracking-widest text-copper mb-2 border-b border-white/5 pb-1">Additional Admins</h4>
+                    {viewClub.admins && viewClub.admins.length > 0 ? (
+                      <div className="space-y-4">
+                        {viewClub.admins.map((admin, idx) => (
+                          <div key={idx} className="space-y-1 font-text text-sm text-steel-dim">
+                            <p><span className="text-white">Name:</span> {admin.name}</p>
+                            <p><span className="text-white">Email:</span> {admin.email}</p>
+                            <p><span className="text-white">Phone:</span> {admin.phone}</p>
+                            <p><span className="text-white">Role:</span> <span className="uppercase">{admin.role}</span></p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="font-text text-steel-dim text-sm">None</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-body text-[10px] uppercase tracking-widest text-copper mb-2 border-b border-white/5 pb-1">Document Intel</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {viewClub.firstRideImageUrl ? (
+                    <a href={viewClub.firstRideImageUrl} target="_blank" rel="noopener noreferrer" className="block border border-white/10 p-2 hover:border-copper transition-colors">
+                      <img src={viewClub.firstRideImageUrl} alt="First Ride" className="w-full h-32 object-cover mb-2" />
+                      <span className="font-body text-[8px] uppercase tracking-widest text-center block text-steel-dim">First Ride Image</span>
+                    </a>
+                  ) : (
+                    <div className="border border-white/5 border-dashed p-4 flex items-center justify-center h-40 bg-white/5 text-steel-dim font-body text-[8px] uppercase tracking-widest text-center">No First Ride Image</div>
+                  )}
+
+                  {viewClub.governmentIdImageUrl ? (
+                    <a href={viewClub.governmentIdImageUrl} target="_blank" rel="noopener noreferrer" className="block border border-white/10 p-2 hover:border-copper transition-colors">
+                      <img src={viewClub.governmentIdImageUrl} alt="Government ID" className="w-full h-32 object-cover mb-2" />
+                      <span className="font-body text-[8px] uppercase tracking-widest text-center block text-steel-dim">Government ID</span>
+                    </a>
+                  ) : (
+                    <div className="border border-white/5 border-dashed p-4 flex items-center justify-center h-40 bg-white/5 text-steel-dim font-body text-[8px] uppercase tracking-widest text-center">No Gov ID Image</div>
+                  )}
+
+                  {viewClub.founderPassportUrl ? (
+                    <a href={viewClub.founderPassportUrl} target="_blank" rel="noopener noreferrer" className="block border border-white/10 p-2 hover:border-copper transition-colors">
+                      <img src={viewClub.founderPassportUrl} alt="Founder Passport" className="w-full h-32 object-cover mb-2" />
+                      <span className="font-body text-[8px] uppercase tracking-widest text-center block text-steel-dim">Founder Passport/ID</span>
+                    </a>
+                  ) : (
+                    <div className="border border-white/5 border-dashed p-4 flex items-center justify-center h-40 bg-white/5 text-steel-dim font-body text-[8px] uppercase tracking-widest text-center">No Passport Image</div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

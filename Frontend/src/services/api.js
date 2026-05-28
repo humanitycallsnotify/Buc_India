@@ -155,6 +155,13 @@ export const profileService = {
     });
     return response.data;
   },
+  createOrUpdate: async (formData) => {
+    return profileService.update(formData);
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/profile/${id}`);
+    return response.data;
+  },
 };
 
 export const clubService = {
@@ -174,6 +181,10 @@ export const clubService = {
   },
   updateStatus: async (id, status) => {
     const response = await api.patch(`/clubs/${id}/status`, { status });
+    return response.data;
+  },
+  deleteAdmin: async (id) => {
+    const response = await api.delete(`/clubs/${id}`);
     return response.data;
   },
 };
@@ -235,17 +246,6 @@ export const certificateService = {
   },
   getStats: async () => {
     const response = await api.get("/certificates/stats");
-    return response.data;
-  },
-};
-
-export const siteContentService = {
-  getHumanityCallsCarousel: async () => {
-    const response = await api.get("/site-content/humanity-calls-carousel");
-    return response.data;
-  },
-  updateHumanityCallsCarousel: async (images) => {
-    const response = await api.put("/site-content/humanity-calls-carousel", { images });
     return response.data;
   },
 };
