@@ -74,3 +74,56 @@ export const sendOTP = async (email, otp, type) => {
     throw error;
   }
 };
+
+export const sendRegistrationConfirmation = async ({
+  email,
+  fullName,
+  registrationType,
+}) => {
+  try {
+    await client.transactionalEmails.sendTransacEmail({
+      subject: "BUC India Registration Confirmation",
+      sender: {
+        name: process.env.BREVO_SENDER_NAME,
+        email: process.env.BREVO_SENDER_EMAIL,
+      },
+      to: [{ email }],
+      htmlContent: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 24px auto; background: #ffffff; border-radius: 10px; overflow: hidden; border: 1px solid #e8e8e8; }
+          .header { background: #111111; color: #ffffff; padding: 20px; text-align: center; }
+          .content { padding: 24px; color: #1d1d1d; line-height: 1.6; }
+          .badge { display: inline-block; background: #f3e3cf; color: #7a4f20; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+          .footer { padding: 16px 24px; background: #fafafa; border-top: 1px solid #eee; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin:0;">Bikers Unity Calls - India</h2>
+          </div>
+          <div class="content">
+            <p>Hi ${fullName || "Rider"},</p>
+            <p>Thank you for registering with BUC India. Your registration has been received successfully.</p>
+            <p><span class="badge">${registrationType || "Registration"}</span></p>
+            <p>Our team will reach out if anything else is needed.</p>
+            <p>Ride safe,<br/>BUC India Team</p>
+          </div>
+          <div class="footer">
+            For support, contact the BUC India team.
+          </div>
+        </div>
+      </body>
+      </html>
+      `,
+    });
+    return true;
+  } catch (error) {
+    console.error("Registration confirmation email failed:", error?.message || error);
+    return false;
+  }
+};

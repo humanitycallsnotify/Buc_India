@@ -16,11 +16,8 @@ import clubMembershipRoutes from "./routes/clubMembershipRoutes.js";
 import certificateRoutes from "./routes/certificateRoutes.js";
 import otpRoutes from "./routes/otpRoutes.js";
 import userAuthRoutes from "./routes/userAuthRoutes.js";
-<<<<<<< HEAD
 import talentRoutes from "./routes/talentRoutes.js";
-=======
 import siteContentRoutes from "./routes/siteContentRoutes.js";
->>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
 
 const app = express();
 
@@ -145,11 +142,8 @@ app.use("/api/club-memberships", clubMembershipRoutes);
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/user-auth", userAuthRoutes);
-<<<<<<< HEAD
 app.use("/api/talent", talentRoutes);
-=======
 app.use("/api/site-content", siteContentRoutes);
->>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
 
 // Error handler
 app.use((err, req, res, next) => {
