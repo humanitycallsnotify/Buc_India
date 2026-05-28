@@ -124,6 +124,32 @@
   box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
 }
 
+.export-button.word {
+  background: #2b579a;
+  color: #fff;
+}
+
+.export-button.word:hover {
+  background: #1e3f72;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(43, 87, 154, 0.3);
+}
+
+.export-button.excel-secondary,
+.export-button.pdf-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #e5e7eb;
+  font-size: 13px;
+  padding: 8px 14px;
+}
+
+.export-button.excel-secondary:hover,
+.export-button.pdf-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
 .refresh-button {
   padding: 10px;
   background: #2d2d2d;
