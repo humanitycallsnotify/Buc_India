@@ -19,7 +19,11 @@ import {
   ChevronLeft,
   User,
   Bell,
+<<<<<<< HEAD
   Star
+=======
+  Layers
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
 } from "lucide-react";
 import DashboardHome from "../DashboardHome/DashboardHome";
 import EventManagement from "../EventManagement/EventManagement";
@@ -29,6 +33,7 @@ import GalleryManagement from "../GalleryManagement.jsx";
 import ClubManagement from "../ClubManagement/ClubManagement.jsx";
 import ViewTalents from "../ViewTalents/ViewTalents.jsx";
 import { authService, profileService } from "../../services/api";
+import SiteContentManagement from "../SiteContentManagement.jsx";
 
 const logo = "/logo copy copy.jpg";
 const DRAWER_WIDTH = 260;
@@ -72,9 +77,14 @@ const AdminDashboard = () => {
     { path: "/admin/events", name: "Events", icon: <Calendar size={20} /> },
     { path: "/admin/registrations", name: "Event Registrations", icon: <FileText size={20} /> },
     { path: "/admin/users", name: "Users", icon: <User size={20} /> },
+<<<<<<< HEAD
     { path: "/admin/talents", name: "Talents", icon: <Star size={20} /> },
     { path: "/admin/gallery", name: "Gallery", icon: <ImageIcon size={20} /> },
     { path: "/admin/gallery", name: "Cover Photo", icon: <ImageIcon size={20} /> },
+=======
+    { path: "/admin/gallery", name: "Gallery", icon: <ImageIcon size={20} /> },
+    { path: "/admin/site-content", name: "Site Content", icon: <Layers size={20} /> },
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
     { path: "/admin/clubs", name: "Clubs", icon: <Bike size={20} /> },
   ];
 
@@ -240,8 +250,12 @@ const AdminDashboard = () => {
             <Route path="events" element={<EventManagement />} />
             <Route path="registrations" element={<ViewRegistrations />} />
             <Route path="users" element={<ViewUsers />} />
+<<<<<<< HEAD
             <Route path="talents" element={<ViewTalents />} />
+=======
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
             <Route path="gallery" element={<GalleryManagement />} />
+            <Route path="site-content" element={<SiteContentManagement />} />
             <Route path="clubs" element={<ClubManagement />} />
           </Routes>
         </main>

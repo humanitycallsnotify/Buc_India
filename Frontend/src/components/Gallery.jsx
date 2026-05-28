@@ -1,11 +1,8 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { 
   motion, 
   AnimatePresence, 
-  useScroll, 
-  useTransform, 
-  useSpring,
-  useMotionValue 
+  useReducedMotion
 } from "framer-motion";
 import { 
   Heart, 
@@ -20,53 +17,25 @@ import {
 import { galleryService } from "../services/api";
 
 const GalleryCard = ({ item, index, onClick }) => {
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [10, -10]), { stiffness: 150, damping: 15 });
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-10, 10]), { stiffness: 150, damping: 15 });
-  
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    mouseX.set(x);
-    mouseY.set(y);
-  };
-
-  const handleMouseLeave = () => {
-    mouseX.set(0);
-    mouseY.set(0);
-  };
-
-  // No offsets for symmetrical grid
-  const xOffset = "0%";
-  const yOffset = "0px";
+  const reduceMotion = useReducedMotion();
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.8, delay: (index % 3) * 0.1 }}
-      style={{ x: xOffset, y: yOffset }}
-      className="relative mb-12"
+      initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 24 }}
+      whileInView={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.45, delay: (index % 3) * 0.05 }}
+      className="relative mb-10 sm:mb-12"
     >
-      <motion.div
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+      <button
+        type="button"
         onClick={() => onClick(item)}
-        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-        className="group relative aspect-[4/5] bg-carbon border border-white/5 overflow-hidden cursor-none"
+        className="group relative aspect-[4/5] w-full bg-carbon border border-white/5 overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-copper/40"
       >
-        {/* Hover Aura */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-[radial-gradient(circle_at_var(--x)_var(--y),rgba(184,115,51,0.15)_0%,transparent_70%)] pointer-events-none" 
-             style={{ "--x": "50%", "--y": "50%" }}></div>
-
         {item.type === "video" ? (
           <video
             src={item.src}
-            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-110 group-hover:scale-100"
+            className="w-full h-full object-cover transition-transform duration-300 ease-out motion-reduce:transition-none sm:group-hover:scale-[1.02]"
             muted
             loop
             onMouseEnter={(e) => e.currentTarget.play()}
@@ -79,31 +48,32 @@ const GalleryCard = ({ item, index, onClick }) => {
           <img
             src={item.src}
             alt={item.title}
-            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-110 group-hover:scale-100"
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-300 ease-out motion-reduce:transition-none sm:group-hover:scale-[1.02]"
           />
         )}
 
         {/* Content Overlay */}
-        <div className="absolute inset-0 flex flex-col justify-end p-8 translate-z-[40px] opacity-0 group-hover:opacity-100 transition-all duration-500">
+        <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-8 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] font-bold text-copper uppercase tracking-[0.2em]">{item.category}</span>
           </div>
-          <h3 className="font-heading text-2xl text-white uppercase leading-none mb-4">{item.title}</h3>
+          <h3 className="font-heading text-xl sm:text-2xl text-white uppercase leading-none mb-3 sm:mb-4 line-clamp-2">{item.title}</h3>
           
           <div className="flex items-center gap-6 text-white/60">
             <div className="flex items-center gap-1.5"><Heart size={14} /> <span className="text-xs font-bold">{item.likes}</span></div>
             <div className="flex items-center gap-1.5"><MessageCircle size={14} /> <span className="text-xs font-bold">{item.comments || 0}</span></div>
-            <div className="ml-auto w-8 h-8 rounded-full border border-white/20 flex items-center justify-center group-hover:border-copper group-hover:bg-copper group-hover:text-carbon transition-all">
+            <div className="ml-auto w-8 h-8 rounded-full border border-white/20 flex items-center justify-center sm:group-hover:border-copper sm:group-hover:bg-copper sm:group-hover:text-carbon transition-colors duration-200 motion-reduce:transition-none">
                <Maximize2 size={14} />
             </div>
           </div>
         </div>
         
         {/* Top Right Tag */}
-        <div className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 border border-white/10 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-4 right-4 hidden sm:flex items-center justify-center w-8 h-8 border border-white/10 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
            {item.type === "video" ? <Play size={12} className="text-white" /> : <ChevronRight size={12} className="text-white" />}
         </div>
-      </motion.div>
+      </button>
     </motion.div>
   );
 };
@@ -114,6 +84,7 @@ const Gallery = () => {
   const [galleryItems, setGalleryItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [visibleCount, setVisibleCount] = useState(9);
+  const reduceMotion = useReducedMotion();
 
   const categories = [
     { id: "all", name: "All Media" },
@@ -188,44 +159,44 @@ const Gallery = () => {
   }, []);
 
   return (
-    <section id="gallery" className="relative pt-40 pb-32 bg-carbon-dark min-h-screen">
+    <section id="gallery" className="relative pt-28 sm:pt-36 lg:pt-40 pb-20 sm:pb-28 lg:pb-32 bg-carbon-dark min-h-screen">
       {/* Background Decor */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[20%] -left-[10%] w-[600px] h-[600px] bg-copper/5 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[20%] -right-[10%] w-[500px] h-[500px] bg-copper/5 rounded-full blur-[100px]"></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
+        <div className="absolute top-[20%] -left-[10%] w-[520px] h-[520px] bg-copper/5 rounded-full blur-[110px]"></div>
+        <div className="absolute bottom-[20%] -right-[10%] w-[440px] h-[440px] bg-copper/5 rounded-full blur-[95px]"></div>
         
         {/* Kinetic Watermark */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] select-none pointer-events-none">
-           <h2 className="text-[40vw] font-heading leading-none text-white whitespace-nowrap">VAULT</h2>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] select-none pointer-events-none hidden md:block">
+           <h2 className="text-[32vw] font-heading leading-none text-white whitespace-nowrap">VAULT</h2>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <header className="flex flex-col md:flex-row justify-between items-end gap-12 mb-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 md:gap-12 mb-12 sm:mb-16 lg:mb-24">
           <div className="max-w-2xl">
             <motion.span 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={reduceMotion ? { opacity: 1 } : { opacity: 0, x: -12 }}
+              whileInView={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
               className="text-copper font-body tracking-[0.5em] text-xs uppercase mb-4 block font-bold"
             >
               The BUC Chronicles
             </motion.span>
             <motion.h2 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="font-heading text-7xl md:text-8xl text-white uppercase leading-none"
+              initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 18 }}
+              whileInView={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.55 }}
+              className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white uppercase leading-none"
             >
               The <span className="text-copper">Vault</span>
             </motion.h2>
           </div>
           
-          <nav className="flex flex-wrap gap-x-12 gap-y-6">
+          <nav className="flex flex-wrap gap-x-6 sm:gap-x-10 gap-y-4 sm:gap-y-6">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`relative group font-heading text-sm uppercase tracking-widest transition-colors ${activeCategory === cat.id ? "text-white" : "text-white/40 hover:text-white"}`}
+                className={`relative group font-heading text-xs sm:text-sm uppercase tracking-widest transition-colors ${activeCategory === cat.id ? "text-white" : "text-white/40 hover:text-white"}`}
               >
                 {cat.name}
                 <motion.div 
@@ -240,7 +211,7 @@ const Gallery = () => {
         </header>
 
         {/* Broken Grid Masonry */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-16 gap-y-24">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 sm:gap-x-10 lg:gap-x-16 gap-y-10 sm:gap-y-16 lg:gap-y-24">
           {filteredMedia.slice(0, visibleCount).map((item, index) => (
             <GalleryCard 
               key={item.id} 
@@ -253,10 +224,10 @@ const Gallery = () => {
 
         {/* Load More Strategem */}
         {visibleCount < filteredMedia.length && (
-          <div className="mt-32 flex justify-center">
+          <div className="mt-14 sm:mt-24 lg:mt-32 flex justify-center">
             <button 
               onClick={() => setVisibleCount(prev => prev + 6)}
-              className="relative px-12 py-5 group overflow-hidden border border-white/10"
+              className="relative px-10 sm:px-12 py-4 sm:py-5 group overflow-hidden border border-white/10"
             >
               <div className="absolute inset-0 bg-copper translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
               <span className="relative z-10 font-heading text-xs tracking-[0.4em] uppercase text-white group-hover:text-carbon transition-colors duration-500">

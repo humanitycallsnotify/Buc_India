@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import gsap from "gsap";
 import GlareHover from "./animations/GlareHover";
 
 const navigation = [
@@ -35,19 +34,6 @@ const Header = () => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      // GSAP Staggered Animation for Links
-      gsap.fromTo(
-        linksRef.current,
-        { y: 100, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.8,
-          stagger: 0.1,
-          ease: "power4.out",
-          delay: 0.3,
-        },
-      );
     } else {
       document.body.style.overflow = "auto";
     }
@@ -63,17 +49,17 @@ const Header = () => {
       {/* Logo */}
       <div
         onClick={() => navigate("/")}
-        className="fixed top-5 left-5 z-[1001] cursor-pointer group interactive-item"
+        className="fixed top-4 left-4 sm:top-5 sm:left-5 z-[1001] cursor-pointer group interactive-item"
       >
         <img
           src="/bucpng.png"
           alt="BUC India"
-          className="h-20 w-auto brightness-0 invert opacity-100 group-hover:opacity-100 transition-opacity duration-500"
+          className="h-14 sm:h-20 w-auto brightness-0 invert opacity-100 transition-opacity duration-200"
         />
       </div>
 
       {/* Premium Menu Trigger Wrapper */}
-      <div className="fixed top-10 right-10 z-[1001] flex items-center gap-6">
+      <div className="fixed top-5 right-5 sm:top-10 sm:right-10 z-[1001] flex items-center gap-4 sm:gap-6">
         {/* Hover Side Label */}
         <AnimatePresence>
           {isHovered && (
@@ -220,8 +206,11 @@ const Header = () => {
                     ref={(el) => (linksRef.current[index] = el)}
                     className="overflow-hidden"
                   >
-                    <button
+                    <motion.button
                       onClick={() => handleNavigate(item.path)}
+                      initial={{ y: 24, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ duration: 0.35, delay: 0.08 + index * 0.05, ease: [0.2, 0, 0, 1] }}
                       className={`nav-link-btn group flex items-center gap-12 interactive-item ${
                         location.pathname === item.path ? "active" : ""
                       }`}
@@ -239,7 +228,7 @@ const Header = () => {
                       <span className="opacity-0 group-hover:opacity-100 transition-all duration-300 font-body text-[10px] tracking-[0.3em] text-copper uppercase">
                         {item.label}
                       </span>
-                    </button>
+                    </motion.button>
                   </div>
                 ))}
               </nav>
@@ -260,7 +249,7 @@ const Header = () => {
                     <GlareHover>
                       <button
                         onClick={() => handleNavigate("/signup")}
-                        className="px-10 py-4 bg-transparent border border-copper/30 text-copper font-heading text-xl tracking-widest relative overflow-hidden group/btn hover:border-copper transition-colors duration-500 interactive-item"
+                        className="px-10 py-4 bg-transparent border border-copper/30 text-copper font-heading text-xl tracking-widest relative overflow-hidden group/btn hover:border-copper transition-colors duration-300 interactive-item"
                       >
                         <span className="relative z-10 transition-colors duration-500 group-hover/btn:text-carbon">
                           JOIN BROTHERHOOD

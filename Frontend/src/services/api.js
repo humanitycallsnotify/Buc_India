@@ -250,4 +250,29 @@ export const siteContentService = {
   },
 };
 
+export const talentService = {
+  submit: async (formData) => {
+    const response = await api.post("/talent", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+  getAll: async () => {
+    const response = await api.get("/talent");
+    return response.data;
+  },
+  approve: async (id) => {
+    const response = await api.patch(`/talent/${id}/approve`);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/talent/${id}`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/talent/${id}`);
+    return response.data;
+  },
+};
+
 export default api;

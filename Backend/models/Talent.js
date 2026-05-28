@@ -47,6 +47,14 @@ const talentSchema = new mongoose.Schema(
     consentInfoTrue: { type: Boolean, required: true },
     consentRules: { type: Boolean, required: true },
     consentMedia: { type: Boolean, required: true },
+
+    // Admin workflow
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved"],
+      default: "pending",
+    },
+    approvedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

@@ -1,5 +1,4 @@
-import React, { useRef } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import React from "react";
 import { 
   Instagram, 
   Youtube, 
@@ -15,45 +14,8 @@ import {
   HeartPulse,
   Baby
 } from "lucide-react";
-import gsap from "gsap";
-import { ScrollToPlugin } from "gsap/ScrollToPlugin";
-
-gsap.registerPlugin(ScrollToPlugin);
 
 const buclogo = "/logo.jpg";
-
-const MagneticLink = ({ children, href, className = "" }) => {
-  const ref = useRef(null);
-  const [position, setPosition] = React.useState({ x: 0, y: 0 });
-
-  const handleMouse = (e) => {
-    const { clientX, clientY } = e;
-    const { height, width, left, top } = ref.current.getBoundingClientRect();
-    const middleX = clientX - (left + width / 2);
-    const middleY = clientY - (top + height / 2);
-    setPosition({ x: middleX, y: middleY });
-  };
-
-  const reset = () => {
-    setPosition({ x: 0, y: 0 });
-  };
-
-  const { x, y } = position;
-
-  return (
-    <motion.a
-      ref={ref}
-      href={href}
-      onMouseMove={handleMouse}
-      onMouseLeave={reset}
-      animate={{ x, y }}
-      transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
-      className={`relative inline-block ${className}`}
-    >
-      {children}
-    </motion.a>
-  );
-};
 
 const FooterSection = ({ title, links }) => (
   <div className="flex flex-col gap-6">
@@ -80,17 +42,8 @@ const FooterSection = ({ title, links }) => (
 );
 
 const Footer = () => {
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end end"]
-  });
-
-  const x1 = useTransform(scrollYProgress, [0, 1], [0, -200]);
-  const x2 = useTransform(scrollYProgress, [0, 1], [0, 200]);
-
   const scrollToTop = () => {
-    gsap.to(window, { duration: 1.5, scrollTo: 0, ease: "power4.inOut" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const emergencyContacts = [
@@ -114,11 +67,10 @@ const Footer = () => {
 
   return (
     <footer 
-      ref={containerRef}
-      className="relative bg-[#050505] pt-32 pb-12 overflow-hidden border-t border-white/5"
+      className="relative bg-[#050505] pt-16 sm:pt-24 lg:pt-32 pb-10 sm:pb-12 overflow-hidden border-t border-white/5"
     >
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 mb-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 sm:gap-16 mb-14 sm:mb-24">
           {/* Brand Column */}
           <div className="lg:col-span-4 space-y-12">
             <div>
@@ -135,9 +87,9 @@ const Footer = () => {
             </div>
 
             {/* Humanity Calls Sub-Brand */}
-            <div className="p-6 border border-white/5 bg-carbon/50 backdrop-blur-sm group hover:border-copper/20 transition-colors duration-500">
+            <div className="p-6 border border-white/5 bg-carbon/50 backdrop-blur-sm hover:border-copper/20 transition-colors duration-300">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1.5 grayscale group-hover:grayscale-0 transition-all duration-700">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1.5">
                   <img src="https://static.wixstatic.com/media/2d0007_ccad2163f88540659e8212ff5138666c~mv2.png/v1/fit/w_2500,h_1330,al_c/2d0007_ccad2163f88540659e8212ff5138666c~mv2.png" alt="Humanity Calls" className="w-full h-full object-contain" />
                 </div>
                 <div>
@@ -154,16 +106,16 @@ const Footer = () => {
                   { Icon: Instagram, href: "https://www.instagram.com/humanitycalls_/" },
                   { Icon: Globe, href: "https://www.humanitycalls.org" }
                 ].map((item, i) => (
-                  <MagneticLink key={i} href={item.href} className="text-white/40 hover:text-copper transition-colors">
+                  <a key={i} href={item.href} className="text-white/40 hover:text-copper transition-colors duration-200">
                     <item.Icon size={18} />
-                  </MagneticLink>
+                  </a>
                 ))}
               </div>
             </div>
           </div>
 
           {/* Links Grid */}
-          <div className="lg:col-span-5 flex flex-col items-center lg:items-start">
+          <div className="lg:col-span-5 flex flex-col items-start sm:items-center lg:items-start">
             <FooterSection 
               title="Navigation" 
               links={navigationLinks} 
@@ -201,21 +153,20 @@ const Footer = () => {
 
             <div className="flex gap-4">
               {[Instagram, Twitter, Youtube, Facebook].map((Icon, i) => (
-                <MagneticLink 
+                <a 
                   key={i} 
                   href="#" 
-                  className="w-10 h-10 border border-white/10 flex items-center justify-center rounded-sm bg-carbon/30 hover:bg-copper/10 hover:border-copper/40 transition-all duration-300"
+                  className="w-10 h-10 border border-white/10 flex items-center justify-center rounded-sm bg-carbon/30 hover:bg-copper/10 hover:border-copper/40 transition-colors duration-200"
                 >
-                  <Icon size={18} className="text-white/60 group-hover:text-copper" />
-                </MagneticLink>
+                  <Icon size={18} className="text-white/60" />
+                </a>
               ))}
             </div>
           </div>
         </div>
 
         {/* Strategic Emergency Manifest */}
-        <div className="p-8 border border-white/5 bg-carbon/80 backdrop-blur-md rounded-sm grid grid-cols-2 lg:grid-cols-4 gap-8 relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-[2px] h-0 bg-copper group-hover:h-full transition-all duration-700"></div>
+        <div className="p-6 sm:p-8 border border-white/5 bg-carbon/80 backdrop-blur-md rounded-sm grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 relative overflow-hidden">
           {emergencyContacts.map((contact, i) => (
             <a 
               key={i} 
@@ -226,21 +177,21 @@ const Footer = () => {
                 <contact.icon size={14} className={contact.color} />
                 <span className="text-[10px] font-bold text-steel-dim uppercase tracking-tighter">{contact.name}</span>
               </div>
-              <div className="text-xl font-heading text-white group-hover/call:text-copper transition-colors flex items-center gap-2">
+              <div className="text-lg sm:text-xl font-heading text-white group-hover/call:text-copper transition-colors duration-200 flex items-center gap-2">
                 {contact.number}
-                <ArrowUpRight size={14} className="opacity-0 group-hover/call:opacity-100 -translate-x-2 group-hover/call:translate-x-0 transition-all" />
+                <ArrowUpRight size={14} className="hidden sm:block opacity-0 group-hover/call:opacity-100 transition-opacity duration-200" />
               </div>
             </a>
           ))}
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-20 pt-8 border-t border-white/5 flex flex-col items-center gap-10">
+        <div className="mt-14 sm:mt-20 pt-8 border-t border-white/5 flex flex-col items-center gap-8 sm:gap-10">
           <p className="text-[10px] text-steel-dim uppercase tracking-[0.2em] opacity-40">
             © {new Date().getFullYear()} BUC INDIA. FORGED IN BROTHERHOOD.
           </p>
           
-          <div className="flex gap-12 items-center justify-center">
+          <div className="flex flex-wrap gap-x-8 gap-y-4 items-center justify-center">
              {["Privacy Policy", "Terms of Service", "Conduct Code"].map((legal) => (
                <a 
                  key={legal} 
@@ -257,7 +208,7 @@ const Footer = () => {
             onClick={scrollToTop}
             className="group flex flex-col items-center gap-3 text-xs font-heading text-white/30 hover:text-copper transition-colors uppercase tracking-widest pt-4"
           >
-            <div className="w-12 h-12 border border-white/5 flex items-center justify-center rounded-full group-hover:border-copper group-hover:-translate-y-2 transition-all duration-500">
+            <div className="w-12 h-12 border border-white/5 flex items-center justify-center rounded-full group-hover:border-copper transition-colors duration-200">
               <ArrowUpRight size={16} />
             </div>
             <span className="text-[9px] tracking-[0.4em]">Back to Top</span>

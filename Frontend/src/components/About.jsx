@@ -1,15 +1,26 @@
 import { motion } from "framer-motion";
 import { Heart, Compass, Users, Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import GalleryGlimpse from "./GalleryGlimpse";
 import joinFamilyImg from "../assets/gallery/WhatsApp Image 2025-08-11 at 20.21.15_0db94979.jpg";
 
 const About = () => {
+  const navigate = useNavigate();
   const highlights = [
     "Weekly group rides and touring adventures",
     "Safety training and motorcycle maintenance workshops",
     "Charity rides and community service projects",
     "Annual rallies and motorcycle shows",
   ];
+
+  const handleCtaClick = () => {
+    const loggedIn = sessionStorage.getItem("userLoggedIn") === "true";
+    if (loggedIn) {
+      navigate("/profile");
+    } else {
+      navigate("/signup");
+    }
+  };
 
   return (
     <section id="about" className="section-container py-32 bg-carbon relative">
@@ -42,7 +53,10 @@ const About = () => {
           </div>
           
           <div className="relative group inline-block overflow-hidden">
-            <button className="relative px-12 py-4 border border-copper/40 text-copper font-body font-bold uppercase tracking-widest hover:text-carbon transition-colors duration-500 overflow-hidden">
+            <button
+              onClick={handleCtaClick}
+              className="relative px-12 py-4 border border-copper/40 text-copper font-body font-bold uppercase tracking-widest hover:text-carbon transition-colors duration-500 overflow-hidden"
+            >
               <span className="relative z-10 transition-colors duration-500">Join The Legacy</span>
               <div className="absolute inset-0 bg-copper translate-x-[-105%] group-hover:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.7,0,0.3,1)]"></div>
             </button>
@@ -195,7 +209,10 @@ const About = () => {
               </ul>
               
               <div className="relative group/btn inline-block self-start overflow-hidden">
-                <button className="relative px-12 py-5 bg-copper text-carbon font-heading text-lg uppercase tracking-widest hover:bg-white transition-colors duration-500 overflow-hidden">
+              <button
+                onClick={handleCtaClick}
+                className="relative px-12 py-5 bg-copper text-carbon font-heading text-lg uppercase tracking-widest hover:bg-white transition-colors duration-500 overflow-hidden"
+              >
                   <span className="relative z-10">Get Started</span>
                 </button>
               </div>

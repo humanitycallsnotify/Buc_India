@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useCallback } from "react";
+<<<<<<< HEAD
 import { Download, RefreshCw, Filter, X } from "lucide-react";
 import { profileService } from "../../services/api";
 
 const REGISTRATION_TYPES = ["All", "PC", "Rider", "Student Rider", "Student"];
 
+=======
+import { Download, RefreshCw } from "lucide-react";
+import { profileService } from "../../services/api";
+
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
 const ViewUsers = () => {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filterName, setFilterName] = useState("");
+<<<<<<< HEAD
   const [filterType, setFilterType] = useState("All");
+=======
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
   const [isLoading, setIsLoading] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -32,21 +41,34 @@ const ViewUsers = () => {
   const filterData = useCallback(() => {
     let filtered = [...users];
     if (filterName.trim()) {
+<<<<<<< HEAD
       filtered = filtered.filter(u =>
+=======
+      filtered = filtered.filter(u => 
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
         (u.fullName && u.fullName.toLowerCase().includes(filterName.toLowerCase())) ||
         (u.email && u.email.toLowerCase().includes(filterName.toLowerCase()))
       );
     }
+<<<<<<< HEAD
     if (filterType !== "All") {
       filtered = filtered.filter(u => u.registrationType === filterType);
     }
     setFilteredUsers(filtered);
   }, [users, filterName, filterType]);
+=======
+    setFilteredUsers(filtered);
+  }, [users, filterName]);
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
 
   useEffect(() => {
     filterData();
   }, [filterData]);
 
+<<<<<<< HEAD
+=======
+  // Convert camelCase to readable format
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
   const formatColumnName = (key) => {
     return key
       .replace(/([A-Z])/g, " $1")
@@ -55,6 +77,7 @@ const ViewUsers = () => {
   };
 
   const getDynamicColumns = () => {
+<<<<<<< HEAD
     const excludeFields = [
       "_id", "password", "licenseImagePublicId", "profileImagePublicId", "__v", "updatedAt"
     ];
@@ -64,6 +87,21 @@ const ViewUsers = () => {
       return [
         { key: "sno", label: "S.No", width: "60px" },
         ...keys.map(key => ({ key, label: formatColumnName(key), width: "auto" }))
+=======
+    const excludeFields = ["_id", "password", "licenseImagePublicId", "profileImagePublicId", "__v", "createdAt", "updatedAt"];
+    
+    if (filteredUsers.length > 0) {
+      const firstReg = filteredUsers[0];
+      const keys = Object.keys(firstReg).filter(key => !excludeFields.includes(key));
+
+      return [
+        { key: "sno", label: "S.No", width: "60px" },
+        ...keys.map(key => ({
+          key: key,
+          label: formatColumnName(key),
+          width: "auto",
+        }))
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
       ];
     }
     return [];
@@ -73,7 +111,13 @@ const ViewUsers = () => {
 
   const renderCellValue = (column, user, index) => {
     if (column.key === "sno") return index + 1;
+<<<<<<< HEAD
     const value = user[column.key];
+=======
+    
+    const value = user[column.key];
+    
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
     if (column.key === "profileImage" || column.key === "licenseImage") {
       if (!value) return "-";
       return (
@@ -82,6 +126,10 @@ const ViewUsers = () => {
         </a>
       );
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
     if (column.key.toLowerCase().includes("date") || column.key.toLowerCase().includes("at")) {
       if (value) {
         try {
@@ -90,6 +138,7 @@ const ViewUsers = () => {
         } catch (e) {}
       }
     }
+<<<<<<< HEAD
     if (value === null || value === undefined || value === "") return "-";
     if (typeof value === "object") return JSON.stringify(value);
     return value;
@@ -164,11 +213,21 @@ const ViewUsers = () => {
     setFilterType("All");
   };
 
+=======
+
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "object") return JSON.stringify(value);
+    
+    return value;
+  };
+
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
   return (
     <div className="view-registrations">
       <div className="page-header">
         <div>
           <h1 className="page-title">Registered Users</h1>
+<<<<<<< HEAD
           <p className="page-subtitle">
             Total: {filteredUsers.length} user(s)
             {filterType !== "All" && <span style={{ color: "#c19a6b", marginLeft: 8 }}>— {filterType}</span>}
@@ -176,6 +235,11 @@ const ViewUsers = () => {
         </div>
         <div className="header-actions" style={{ flexWrap: "wrap", gap: "8px" }}>
           {/* Search */}
+=======
+          <p className="page-subtitle">Total: {filteredUsers.length} user(s)</p>
+        </div>
+        <div className="header-actions">
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
           <input
             type="text"
             placeholder="Search by name or email..."
@@ -183,6 +247,7 @@ const ViewUsers = () => {
             onChange={(e) => setFilterName(e.target.value)}
             className="filter-input"
           />
+<<<<<<< HEAD
 
           {/* Role Type Filter */}
           <select
@@ -212,6 +277,13 @@ const ViewUsers = () => {
             <Download size={16} /> PDF
           </button>
 
+=======
+          {filterName && (
+            <button onClick={() => setFilterName("")} className="clear-filters-button">
+              Clear Filters
+            </button>
+          )}
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
           <button
             onClick={loadData}
             className="refresh-button"
@@ -223,6 +295,7 @@ const ViewUsers = () => {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Role Filter Badges */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
         {REGISTRATION_TYPES.map(type => (
@@ -253,6 +326,8 @@ const ViewUsers = () => {
         ))}
       </div>
 
+=======
+>>>>>>> c3886d94ac2e2fa4c0bb0c41397e802944516db5
       {isLoading ? (
         <div className="loading-container">
           <div className="loader"></div>

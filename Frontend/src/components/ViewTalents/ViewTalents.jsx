@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Download, RefreshCw, X, Star } from "lucide-react";
+import {
+  Download,
+  RefreshCw,
+  X,
+  Star,
+  Trash2,
+  AlertTriangle,
+  CheckCircle2,
+  Save,
+  Edit3,
+} from "lucide-react";
 import { talentService } from "../../services/api";
 
 const EXPERIENCE_LEVELS = ["All", "Beginner", "Intermediate", "Professional"];
@@ -10,6 +20,12 @@ const ViewTalents = () => {
   const [filterName, setFilterName] = useState("");
   const [filterLevel, setFilterLevel] = useState("All");
   const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [approvingId, setApprovingId] = useState(null);
+  const [editingTalent, setEditingTalent] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -65,11 +81,123 @@ const ViewTalents = () => {
     { key: "availableDates", label: "Available Dates" },
     { key: "pastAchievements", label: "Achievements" },
     { key: "socialMediaLinks", label: "Social Links" },
+    { key: "approvalStatus", label: "Approval" },
     { key: "createdAt", label: "Registered On" },
+    { key: "actions", label: "Actions" },
   ];
+
+  const openEditModal = (talent) => {
+    setEditingTalent(talent);
+    setEditData({
+      fullName: talent.fullName || "",
+      age: talent.age || "",
+      gender: talent.gender || "",
+      phone: talent.phone || "",
+      email: talent.email || "",
+      city: talent.city || "",
+      talentCategory: talent.talentCategory || "",
+      subTalentDescription: talent.subTalentDescription || "",
+      experienceLevel: talent.experienceLevel || "Beginner",
+      yearsOfExperience: talent.yearsOfExperience || "",
+      shortDescription: talent.shortDescription || "",
+      approvalStatus: talent.approvalStatus || "pending",
+    });
+  };
+
+  const handleApprove = async (talentId) => {
+    try {
+      setApprovingId(talentId);
+      const response = await talentService.approve(talentId);
+      const updated = response?.talent;
+      if (!updated) {
+        await loadData();
+        return;
+      }
+      setTalents((prev) => prev.map((t) => (t._id === talentId ? updated : t)));
+      setFiltered((prev) => prev.map((t) => (t._id === talentId ? updated : t)));
+    } catch (error) {
+      console.error("Approve talent failed:", error);
+      alert(error?.response?.data?.message || "Failed to approve talent.");
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleDelete = async (talentId) => {
+    try {
+      setDeletingId(talentId);
+      await talentService.delete(talentId);
+      setTalents((prev) => prev.filter((t) => t._id !== talentId));
+      setFiltered((prev) => prev.filter((t) => t._id !== talentId));
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error("Delete talent failed:", error);
+      alert(error?.response?.data?.message || "Failed to delete talent.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTalent?._id) return;
+    try {
+      setSavingEdit(true);
+      const response = await talentService.update(editingTalent._id, editData);
+      const updated = response?.talent;
+      if (!updated) {
+        await loadData();
+      } else {
+        setTalents((prev) =>
+          prev.map((t) => (t._id === editingTalent._id ? updated : t)),
+        );
+        setFiltered((prev) =>
+          prev.map((t) => (t._id === editingTalent._id ? updated : t)),
+        );
+      }
+      setEditingTalent(null);
+    } catch (error) {
+      console.error("Edit talent failed:", error);
+      alert(error?.response?.data?.message || "Failed to update talent.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const renderCell = (col, talent, index) => {
     if (col.key === "sno") return index + 1;
+    if (col.key === "actions") {
+      return (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handleApprove(talent._id)}
+            disabled={approvingId === talent._id || talent.approvalStatus === "approved"}
+            className="view-license-button"
+            title={talent.approvalStatus === "approved" ? "Already approved" : "Approve"}
+          >
+            {approvingId === talent._id ? "..." : "Approve"}
+          </button>
+          <button
+            type="button"
+            onClick={() => openEditModal(talent)}
+            className="view-license-button"
+            title="Edit talent"
+          >
+            <Edit3 size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(talent._id)}
+            className={`delete-button-small ${deletingId === talent._id ? "deleting" : ""}`}
+            title="Delete talent"
+            disabled={deletingId === talent._id}
+          >
+            {deletingId === talent._id ? "..." : <Trash2 size={16} />}
+          </button>
+        </div>
+      );
+    }
+
     const val = talent[col.key];
     if (val === null || val === undefined || val === "") return "-";
     if (col.key === "isRider" || col.key === "openToPerformLive" || col.key === "openToCompetition") {
@@ -77,6 +205,17 @@ const ViewTalents = () => {
     }
     if (col.key === "portfolioLink" && val) {
       return <a href={val} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs">View Link</a>;
+    }
+    if (col.key === "approvalStatus") {
+      const approved = val === "approved";
+      return (
+        <span
+          className="text-xs font-semibold"
+          style={{ color: approved ? "#22c55e" : "#c19a6b" }}
+        >
+          {approved ? "Approved" : "Pending"}
+        </span>
+      );
     }
     if (col.key === "createdAt" && val) {
       try {
@@ -88,7 +227,7 @@ const ViewTalents = () => {
 
   const handleExportPDF = () => {
     const printWindow = window.open("", "_blank");
-    const pdfCols = TABLE_COLUMNS.filter(c => !["portfolioLink", "socialMediaLinks"].includes(c.key));
+    const pdfCols = TABLE_COLUMNS.filter(c => !["portfolioLink", "socialMediaLinks", "actions"].includes(c.key));
 
     const tableRows = filtered.map((t, i) =>
       `<tr>${pdfCols.map(col => {
@@ -98,6 +237,9 @@ const ViewTalents = () => {
         if (["isRider", "openToPerformLive", "openToCompetition"].includes(col.key)) return `<td>${val ? "Yes" : "No"}</td>`;
         if (col.key === "createdAt") {
           try { return `<td>${new Date(val).toLocaleDateString()}</td>`; } catch { return `<td>${val}</td>`; }
+        }
+        if (col.key === "approvalStatus") {
+          return `<td>${val === "approved" ? "Approved" : "Pending"}</td>`;
         }
         return `<td>${String(val).slice(0, 80)}</td>`;
       }).join("")}</tr>`
@@ -234,6 +376,125 @@ const ViewTalents = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="delete-modal-overlay">
+          <div className="delete-modal-content">
+            <div className="delete-modal-icon">
+              <AlertTriangle size={48} color="#3B82F6" />
+            </div>
+            <h2>Confirm Delete</h2>
+            <p>
+              Are you sure you want to delete this talent registration? This action
+              cannot be undone.
+            </p>
+            <div className="delete-modal-actions">
+              <button className="cancel-btn" onClick={() => setShowDeleteConfirm(null)}>
+                Cancel
+              </button>
+              <button
+                className="confirm-delete-btn"
+                onClick={() => handleDelete(showDeleteConfirm)}
+              >
+                Delete Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingTalent && (
+        <div className="delete-modal-overlay" onClick={() => setEditingTalent(null)}>
+          <div
+            className="delete-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 700, width: "92%" }}
+          >
+            <div className="delete-modal-icon">
+              <CheckCircle2 size={40} color="#3B82F6" />
+            </div>
+            <h2>Edit Talent Registration</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-left">
+              {[
+                ["fullName", "Full Name"],
+                ["age", "Age"],
+                ["gender", "Gender"],
+                ["phone", "Phone"],
+                ["email", "Email"],
+                ["city", "City"],
+                ["talentCategory", "Talent"],
+                ["subTalentDescription", "Description"],
+                ["experienceLevel", "Experience Level"],
+                ["yearsOfExperience", "Years of Experience"],
+                ["approvalStatus", "Approval Status"],
+              ].map(([key, label]) => (
+                <label key={key} className="text-xs uppercase tracking-wide text-gray-400">
+                  {label}
+                  {key === "experienceLevel" || key === "approvalStatus" || key === "gender" ? (
+                    <select
+                      value={editData[key] || ""}
+                      onChange={(e) =>
+                        setEditData((prev) => ({ ...prev, [key]: e.target.value }))
+                      }
+                      className="w-full mt-1 bg-[#111] border border-white/10 p-2 text-white"
+                    >
+                      {key === "experienceLevel" && (
+                        <>
+                          <option value="Beginner">Beginner</option>
+                          <option value="Intermediate">Intermediate</option>
+                          <option value="Professional">Professional</option>
+                        </>
+                      )}
+                      {key === "approvalStatus" && (
+                        <>
+                          <option value="pending">Pending</option>
+                          <option value="approved">Approved</option>
+                        </>
+                      )}
+                      {key === "gender" && (
+                        <>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                          <option value="Prefer not to say">Prefer not to say</option>
+                        </>
+                      )}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={editData[key] || ""}
+                      onChange={(e) =>
+                        setEditData((prev) => ({ ...prev, [key]: e.target.value }))
+                      }
+                      className="w-full mt-1 bg-[#111] border border-white/10 p-2 text-white"
+                    />
+                  )}
+                </label>
+              ))}
+              <label className="md:col-span-2 text-xs uppercase tracking-wide text-gray-400">
+                About
+                <textarea
+                  value={editData.shortDescription || ""}
+                  onChange={(e) =>
+                    setEditData((prev) => ({ ...prev, shortDescription: e.target.value }))
+                  }
+                  className="w-full mt-1 bg-[#111] border border-white/10 p-2 text-white min-h-[90px]"
+                />
+              </label>
+            </div>
+            <div className="delete-modal-actions mt-5">
+              <button className="cancel-btn" onClick={() => setEditingTalent(null)}>
+                Cancel
+              </button>
+              <button className="confirm-delete-btn" onClick={handleSaveEdit} disabled={savingEdit}>
+                <Save size={14} style={{ marginRight: 6 }} />
+                {savingEdit ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

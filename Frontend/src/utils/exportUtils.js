@@ -1,6 +1,93 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { getRegistrationTypeLabel, resolveClubName } from '../constants/registrationConstants';
+
+export const STANDARD_EXPORT_FIELDS = [
+  { key: 'fullName', label: 'Name' },
+  { key: 'registrationType', label: 'Type' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'email', label: 'Email' },
+  { key: 'resolvedClubName', label: 'Club Name' },
+  { key: 'city', label: 'City' },
+  { key: 'registeredAt', label: 'Registration Date' },
+];
+
+const formatExportValue = (reg, columnKey, getEventName) => {
+  if (columnKey === 'eventName') {
+    return getEventName ? getEventName(reg.eventId) : 'Unknown Event';
+  }
+  if (columnKey === 'registrationType') {
+    return getRegistrationTypeLabel(reg.registrationType);
+  }
+  if (columnKey === 'resolvedClubName' || columnKey === 'clubDisplay') {
+    return reg.resolvedClubName || resolveClubName(reg);
+  }
+  if (columnKey === 'clubName' && reg.clubName === 'Others' && reg.clubNameCustom) {
+    return reg.clubNameCustom;
+  }
+  if (columnKey === 'requestRidingGears') {
+    return reg.requestRidingGears === true ? 'Yes' : 'No';
+  }
+  if (columnKey === 'requestedGears') {
+    const value = reg.requestedGears;
+    if (!value || typeof value !== 'object') return '';
+    const gears = [];
+    if (value.helmet) gears.push('Helmet');
+    if (value.gloves) gears.push('Gloves');
+    if (value.jacket) gears.push('Jacket');
+    if (value.boots) gears.push('Boots');
+    if (value.kneeGuards) gears.push('Knee Guards');
+    if (value.elbowGuards) gears.push('Elbow Guards');
+    return gears.join(', ');
+  }
+  if (columnKey === 'acceptedTerms') {
+    return reg.acceptedTerms === true ? 'Yes' : 'No';
+  }
+  const keyLower = columnKey.toLowerCase();
+  const value = reg[columnKey];
+  if (
+    (keyLower.includes('license') && keyLower.includes('image')) ||
+    keyLower === 'profileimage' ||
+    (keyLower.includes('proof') && typeof value === 'string' && value.length > 100)
+  ) {
+    return value ? '[Image Attached]' : '';
+  }
+  if (columnKey === 'registeredAt' || columnKey === 'createdAt' || keyLower.includes('date')) {
+    if (!value) return '';
+    try {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) return date.toLocaleString('en-IN');
+    } catch {
+      /* ignore */
+    }
+  }
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+};
+
+export const buildExportColumns = (registrations, selectedFields = null) => {
+  const standardKeys = STANDARD_EXPORT_FIELDS.map((f) => f.key);
+  if (selectedFields?.length) {
+    const cols = [];
+    selectedFields.forEach((key) => {
+      const std = STANDARD_EXPORT_FIELDS.find((f) => f.key === key);
+      if (std) cols.push(std);
+      else cols.push({ key, label: formatColumnName(key) });
+    });
+    if (selectedFields.includes('eventName') && !cols.find((c) => c.key === 'eventName')) {
+      cols.push({ key: 'eventName', label: 'Event Name' });
+    }
+    return cols;
+  }
+  const dynamic = getExportColumns(registrations);
+  const hasClub = dynamic.some((c) => c.key === 'resolvedClubName' || c.key === 'clubName');
+  if (!hasClub) {
+    dynamic.splice(4, 0, { key: 'resolvedClubName', label: 'Club Name' });
+  }
+  return dynamic;
+};
 
 // Convert camelCase to readable format
 const formatColumnName = (key) => {
@@ -16,7 +103,17 @@ const getExportColumns = (registrations) => {
     return [];
   }
   
-  const excludeFields = ['_id', 'eventId', 'licenseImagePublicId', 'licenseImage', '__v', 'createdAt', 'updatedAt'];
+  const excludeFields = [
+    '_id',
+    'eventId',
+    'licenseImagePublicId',
+    'licenseImage',
+    'profileImage',
+    'profileImagePublicId',
+    '__v',
+    'createdAt',
+    'updatedAt',
+  ];
   const firstReg = registrations[0];
   const keys = Object.keys(firstReg).filter(key => !excludeFields.includes(key));
   
@@ -32,93 +129,14 @@ export const exportToExcel = (registrations, getEventName, selectedFields = null
     return;
   }
 
-  let columns = getExportColumns(registrations);
-  
-  // Filter columns based on selected fields if provided
-  if (selectedFields && selectedFields.length > 0) {
-    // Check if eventName is selected
-    const includeEventName = selectedFields.includes('eventName');
-    columns = columns.filter(col => selectedFields.includes(col.key));
-    
-    // Add eventName column if selected but not in regular columns
-    if (includeEventName && !columns.find(col => col.key === 'eventName')) {
-      columns.push({ key: 'eventName', label: 'Event Name' });
-    }
-  }
-  
-  // Prepare data for Excel dynamically
+  const columns = buildExportColumns(registrations, selectedFields);
+
   const excelData = registrations.map((reg, index) => {
     const row = { 'S.No': index + 1 };
-    columns.forEach(column => {
-      // Handle special eventName field
-      if (column.key === 'eventName') {
-        row[column.label] = getEventName ? getEventName(reg.eventId) : 'Unknown Event';
-        return;
-      }
-      
-      const value = reg[column.key];
-      const keyLower = column.key.toLowerCase();
-      
-      // Handle license proof/images - show indicator instead of base64
-      if ((keyLower.includes('license') && keyLower.includes('proof')) || 
-          keyLower.includes('licenseproof') ||
-          keyLower === 'image' ||
-          keyLower === 'licenseimage' ||
-          (keyLower.includes('proof') && typeof value === 'string' && value.length > 100)) {
-        if (value && typeof value === 'string' && 
-            (value.startsWith('data:image') || value.startsWith('blob:') || value.length > 200)) {
-          row[column.label] = '[Image File Attached]';
-        } else {
-          row[column.label] = value || '';
-        }
-      }
-      // Handle riding gears
-      else if (column.key === 'requestRidingGears') {
-        row[column.label] = value === true ? 'Yes' : 'No';
-      }
-      else if (column.key === 'requestedGears') {
-        if (!value || typeof value !== 'object') {
-          row[column.label] = '';
-        } else {
-          const gears = [];
-          if (value.helmet) gears.push('Helmet');
-          if (value.gloves) gears.push('Gloves');
-          if (value.jacket) gears.push('Jacket');
-          if (value.boots) gears.push('Boots');
-          if (value.kneeGuards) gears.push('Knee Guards');
-          if (value.elbowGuards) gears.push('Elbow Guards');
-          row[column.label] = gears.length > 0 ? gears.join(', ') : '';
-        }
-      }
-      // Handle date fields
-      else if (keyLower.includes('date') || keyLower.includes('at')) {
-        if (value) {
-          try {
-            const date = new Date(value);
-            if (!isNaN(date.getTime())) {
-              row[column.label] = date.toLocaleString();
-            } else {
-              row[column.label] = value || '';
-            }
-          } catch (e) {
-            row[column.label] = value || '';
-          }
-        } else {
-          row[column.label] = '';
-        }
-      } else if (value === null || value === undefined) {
-        row[column.label] = '';
-      } else if (typeof value === 'object') {
-        row[column.label] = JSON.stringify(value);
-      } else {
-        // For very long text, truncate in Excel
-        const stringValue = String(value);
-        if (stringValue.length > 32767) { // Excel cell limit
-          row[column.label] = stringValue.substring(0, 32764) + '...';
-        } else {
-          row[column.label] = stringValue;
-        }
-      }
+    columns.forEach((column) => {
+      let cell = formatExportValue(reg, column.key, getEventName);
+      if (cell.length > 32767) cell = cell.substring(0, 32764) + '...';
+      row[column.label] = cell;
     });
     return row;
   });
@@ -145,21 +163,8 @@ export const exportToPDF = (registrations, getEventName, selectedFields = null, 
     return;
   }
 
-  let columns = getExportColumns(registrations);
-  
-  // Filter columns based on selected fields if provided
-  if (selectedFields && selectedFields.length > 0) {
-    // Check if eventName is selected
-    const includeEventName = selectedFields.includes('eventName');
-    columns = columns.filter(col => selectedFields.includes(col.key));
-    
-    // Add eventName column if selected but not in regular columns
-    if (includeEventName && !columns.find(col => col.key === 'eventName')) {
-      columns.push({ key: 'eventName', label: 'Event Name' });
-    }
-  }
-  
-  // Helper function to format cell value
+  const columns = buildExportColumns(registrations, selectedFields);
+
   const formatCellValue = (value, columnKey) => {
     // Handle license proof/images - show indicator instead of base64
     const keyLower = columnKey.toLowerCase();
@@ -243,7 +248,7 @@ export const exportToPDF = (registrations, getEventName, selectedFields = null, 
       // Find max data length in this column
       let maxDataLength = labelLength;
       registrations.forEach(reg => {
-        const value = formatCellValue(reg[col.key], col.key);
+        const value = formatCellValue(formatExportValue(reg, col.key, getEventName), col.key);
         const valueLength = String(value).length;
         if (valueLength > maxDataLength) {
           maxDataLength = valueLength;
@@ -269,19 +274,13 @@ export const exportToPDF = (registrations, getEventName, selectedFields = null, 
 
   const columnWidths = calculateColumnWidths();
 
-  // Prepare table data dynamically
-  const tableData = registrations.map((reg, index) => {
-    return [
-      index + 1,
-      ...columns.map(column => {
-        // Handle special eventName field
-        if (column.key === 'eventName') {
-          return getEventName ? getEventName(reg.eventId) : 'Unknown Event';
-        }
-        return formatCellValue(reg[column.key], column.key);
-      })
-    ];
-  });
+  const tableData = registrations.map((reg, index) => [
+    index + 1,
+    ...columns.map((column) => {
+      const raw = formatExportValue(reg, column.key, getEventName);
+      return formatCellValue(raw, column.key);
+    }),
+  ]);
 
   // Split data into pages if needed
   const rowsPerPage = 20; // Adjust based on font size
@@ -396,4 +395,86 @@ export const exportToPDF = (registrations, getEventName, selectedFields = null, 
 
   // Save file
   doc.save(filename);
+};
+
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+export const exportToDocx = (
+  registrations,
+  getEventName,
+  selectedFields = null,
+  options = {},
+) => {
+  if (!registrations || registrations.length === 0) {
+    alert('No data to export');
+    return;
+  }
+
+  let columns = selectedFields?.length
+    ? STANDARD_EXPORT_FIELDS.filter((c) => selectedFields.includes(c.key))
+    : STANDARD_EXPORT_FIELDS;
+
+  if (columns.length === 0) {
+    columns = STANDARD_EXPORT_FIELDS;
+  }
+
+  const headerRow = columns
+    .map(
+      (col) =>
+        `<th style="background:#C19A6B;color:#fff;padding:8px;border:1px solid #ddd;">${escapeHtml(col.label)}</th>`,
+    )
+    .join('');
+
+  const bodyRows = registrations
+    .map((reg) => {
+      const cells = columns
+        .map((col) => {
+          const text =
+            col.key === 'fullName'
+              ? String(reg.fullName || reg.name || '-')
+              : formatExportValue(reg, col.key, getEventName);
+          return `<td style="padding:8px;border:1px solid #ddd;">${escapeHtml(text || '-')}</td>`;
+        })
+        .join('');
+      return `<tr>${cells}</tr>`;
+    })
+    .join('');
+
+  const html = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:w="urn:schemas-microsoft-com:office:word"
+          xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="utf-8">
+      <title>BUC India Registrations</title>
+    </head>
+    <body>
+      <h1 style="color:#C19A6B;font-family:Segoe UI,sans-serif;">BUC India — Registrations</h1>
+      <p style="font-family:Segoe UI,sans-serif;color:#555;">
+        Generated: ${escapeHtml(new Date().toLocaleString('en-IN'))}
+        ${options?.eventTitle ? ` | Event: ${escapeHtml(options.eventTitle)}` : ''}
+      </p>
+      <table style="border-collapse:collapse;width:100%;font-family:Segoe UI,sans-serif;font-size:12px;">
+        <thead><tr>${headerRow}</tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\ufeff', html], {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `BUC_Registrations_${new Date().toISOString().split('T')[0]}.docx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };

@@ -2,7 +2,17 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { Download, Trash2, X, AlertTriangle, RefreshCw } from "lucide-react";
 import { eventService, registrationService } from "../../services/api";
-import { exportToExcel, exportToPDF } from "../../utils/exportUtils";
+import {
+  exportToExcel,
+  exportToPDF,
+  exportToDocx,
+  STANDARD_EXPORT_FIELDS,
+} from "../../utils/exportUtils";
+import {
+  getRegistrationTypeLabel,
+  resolveClubName,
+  REGISTRATION_TYPES,
+} from "../../constants/registrationConstants";
 import { generateCertificate } from "../../utils/certificateUtils";
 import "./ViewRegistrations.css";
 
@@ -15,8 +25,10 @@ const ViewRegistrations = () => {
   const [viewingLicense, setViewingLicense] = useState(null);
   const [filterEventName, setFilterEventName] = useState("");
   const [filterEventDate, setFilterEventDate] = useState("");
+  const [filterClubName, setFilterClubName] = useState("");
+  const [filterRegistrationType, setFilterRegistrationType] = useState("");
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportType, setExportType] = useState(null); // 'excel' or 'pdf'
+  const [exportType, setExportType] = useState(null); // 'excel', 'pdf', or 'docx'
   const [availableFields, setAvailableFields] = useState([]);
   const [selectedFields, setSelectedFields] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -109,34 +121,111 @@ const ViewRegistrations = () => {
       });
     }
 
+    if (filterClubName.trim()) {
+      const clubSearch = filterClubName.trim().toLowerCase();
+      filtered = filtered.filter((reg) => {
+        const club = resolveClubName(reg).toLowerCase();
+        return club !== "-" && club.includes(clubSearch);
+      });
+    }
+
+    if (filterRegistrationType) {
+      filtered = filtered.filter(
+        (reg) => reg.registrationType === filterRegistrationType,
+      );
+    }
+
     setFilteredRegistrations(filtered);
-  }, [registrations, filterEventName, filterEventDate, events, getEventName]);
+  }, [registrations, filterEventName, filterEventDate, filterClubName, filterRegistrationType, events, getEventName]);
 
   useEffect(() => {
     filterRegistrations();
   }, [filterRegistrations]);
 
+  const FIELD_LABELS = {
+    registrationType: "Registration Type",
+    resolvedClubName: "Club Name",
+    clubName: "Club (Selected)",
+    clubNameCustom: "Club (Custom Name)",
+    fullName: "Full Name",
+    collegeName: "College",
+    department: "Department",
+    year: "Year",
+    ridingExperience: "Riding Experience",
+    interestReason: "Interest / Reason",
+    acceptedTerms: "Terms Accepted",
+    tShirtSize: "T-shirt Size",
+    hasLinkedPillion: "Linked Pillion",
+    linkedPillion: "Linked Pillion Details",
+    riderReference: "Mapped Rider",
+    registeredAt: "Registered At",
+  };
+
   const getAvailableFields = () => {
     if (filteredRegistrations.length === 0) return [];
 
-    const excludeFields = ["_id", "eventId", "licenseImagePublicId", "licenseImage", "__v", "createdAt", "updatedAt"];
+    const excludeFields = [
+      "_id",
+      "eventId",
+      "licenseImagePublicId",
+      "licenseImage",
+      "profileImage",
+      "profileImagePublicId",
+      "__v",
+      "createdAt",
+      "updatedAt",
+    ];
     const firstReg = filteredRegistrations[0];
     const keys = Object.keys(firstReg).filter(
       (key) => !excludeFields.includes(key),
     );
 
     const fields = keys.map((key) => ({
-      key: key,
-      label: formatColumnName(key),
+      key,
+      label: FIELD_LABELS[key] || formatColumnName(key),
     }));
 
-    // Add Event Name as a special field
-    fields.push({
-      key: "eventName",
-      label: "Event Name",
-    });
+    if (!fields.find((f) => f.key === "resolvedClubName")) {
+      fields.unshift({ key: "resolvedClubName", label: "Club Name" });
+    }
+    if (!fields.find((f) => f.key === "registrationType")) {
+      fields.unshift({ key: "registrationType", label: "Registration Type" });
+    }
+
+    fields.push({ key: "eventName", label: "Event Name" });
 
     return fields;
+  };
+
+  const handleQuickExport = (type) => {
+    if (filteredRegistrations.length === 0) {
+      alert("No registrations to export");
+      return;
+    }
+    const keys = [
+      ...STANDARD_EXPORT_FIELDS.map((f) => f.key),
+      "collegeName",
+      "department",
+      "year",
+      "address",
+      "state",
+      "pincode",
+      "emergencyContactName",
+      "emergencyContactPhone",
+      "ridingExperience",
+      "interestReason",
+      "tShirtSize",
+      "hasLinkedPillion",
+      "linkedPillion",
+      "riderReference",
+      "eventName",
+    ];
+    const title = getCurrentEventHeading();
+    if (type === "excel") {
+      exportToExcel(filteredRegistrations, getEventName, keys);
+    } else if (type === "pdf") {
+      exportToPDF(filteredRegistrations, getEventName, keys, { eventTitle: title });
+    }
   };
 
   const handleExportClick = (type) => {
@@ -167,6 +256,10 @@ const ViewRegistrations = () => {
       exportToExcel(filteredRegistrations, getEventName, selectedFields);
     } else if (exportType === "pdf") {
       exportToPDF(filteredRegistrations, getEventName, selectedFields, {
+        eventTitle: exportEventTitle,
+      });
+    } else if (exportType === "docx") {
+      exportToDocx(filteredRegistrations, getEventName, selectedFields, {
         eventTitle: exportEventTitle,
       });
     }
@@ -313,28 +406,54 @@ const ViewRegistrations = () => {
 
   // Dynamically generate columns from registration data
   const getDynamicColumns = () => {
-    // Fields to exclude from display
-    const excludeFields = ["_id", "eventId", "licenseImagePublicId", "licenseImage", "__v", "createdAt", "updatedAt"];
-    
-    // Fields to include with special formatting
-    const specialFields = ["requestRidingGears", "requestedGears"];
+    const excludeFields = [
+      "_id",
+      "eventId",
+      "licenseImagePublicId",
+      "licenseImage",
+      "profileImage",
+      "profileImagePublicId",
+      "__v",
+      "createdAt",
+      "updatedAt",
+      "clubNameCustom",
+      "resolvedClubName",
+    ];
 
-    // If we have registrations, extract columns from the first one
+    const priorityKeys = [
+      { key: "registrationType", label: "Type" },
+      { key: "fullName", label: "Name" },
+      { key: "email", label: "Email" },
+      { key: "phone", label: "Phone" },
+      { key: "clubDisplay", label: "Club Name" },
+      { key: "city", label: "City" },
+      { key: "registeredAt", label: "Registered At" },
+    ];
+
     if (filteredRegistrations.length > 0) {
       const firstReg = filteredRegistrations[0];
       const keys = Object.keys(firstReg).filter(
-        (key) => !excludeFields.includes(key),
+        (key) =>
+          !excludeFields.includes(key) &&
+          !priorityKeys.some((p) => p.key === key || p.key === "clubDisplay" && key === "clubName"),
       );
 
-      // Create columns array
       const dynamicColumns = [
         { key: "sno", label: "S.No", type: "sno", width: "60px" },
-        ...keys.map((key) => ({
-          key: key,
-          label: formatColumnName(key),
+        ...priorityKeys.map((col) => ({
+          key: col.key,
+          label: col.label,
           type: "text",
           width: "auto",
         })),
+        ...keys
+          .filter((key) => key !== "clubName" && key !== "registrationType")
+          .map((key) => ({
+            key,
+            label: formatColumnName(key),
+            type: "text",
+            width: "auto",
+          })),
         { key: "licenseProof", label: "License Image", type: "image", width: "120px" },
         { key: "eventName", label: "Event", type: "text", width: "200px" },
         { key: "certificate", label: "Certificate", type: "certificate", width: "130px" },
@@ -344,7 +463,6 @@ const ViewRegistrations = () => {
       return dynamicColumns;
     }
 
-    // If no registrations, return empty array
     return [];
   };
 
@@ -357,6 +475,34 @@ const ViewRegistrations = () => {
 
     if (column.key === "eventName") {
       return getEventName(reg.eventId) || "-";
+    }
+
+    if (column.key === "registrationType") {
+      return getRegistrationTypeLabel(reg.registrationType) || "-";
+    }
+
+    if (column.key === "clubDisplay" || column.key === "resolvedClubName") {
+      return reg.resolvedClubName || resolveClubName(reg);
+    }
+
+    if (column.key === "acceptedTerms") {
+      return reg.acceptedTerms === true ? "Yes" : "No";
+    }
+
+    if (column.key === "hasLinkedPillion") {
+      return reg.hasLinkedPillion === true ? "Yes" : "No";
+    }
+
+    if (column.key === "linkedPillion") {
+      const linked = reg.linkedPillion;
+      if (!linked || !linked.name) return "-";
+      return `${linked.name} | ${linked.mobile || "-"} | ${linked.tShirtSize || "-"}`;
+    }
+
+    if (column.key === "riderReference") {
+      const ref = reg.riderReference;
+      if (!ref || (!ref.riderRegistrationId && !ref.riderPhone)) return "-";
+      return `${ref.riderName || "-"} (${ref.riderPhone || "-"})`;
     }
 
     if (column.key === "actions") {
@@ -548,11 +694,35 @@ const ViewRegistrations = () => {
             className="filter-input"
             placeholder="Filter by date"
           />
-          {(filterEventName || filterEventDate) && (
+          <input
+            type="text"
+            placeholder="Filter by club..."
+            value={filterClubName}
+            onChange={(e) => setFilterClubName(e.target.value)}
+            className="filter-input"
+          />
+          <select
+            value={filterRegistrationType}
+            onChange={(e) => setFilterRegistrationType(e.target.value)}
+            className="filter-input"
+          >
+            <option value="">All types</option>
+            {REGISTRATION_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          {(filterEventName ||
+            filterEventDate ||
+            filterClubName ||
+            filterRegistrationType) && (
             <button
               onClick={() => {
                 setFilterEventName("");
                 setFilterEventDate("");
+                setFilterClubName("");
+                setFilterRegistrationType("");
               }}
               className="clear-filters-button"
             >
@@ -568,16 +738,50 @@ const ViewRegistrations = () => {
             <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
           </button>
           <button
-            onClick={() => handleExportClick("excel")}
+            onClick={() => handleQuickExport("excel")}
             className="export-button excel"
+            disabled={filteredRegistrations.length === 0}
+            title="Export all key fields to Excel"
           >
             Export Excel
           </button>
           <button
-            onClick={() => handleExportClick("pdf")}
+            onClick={() => handleQuickExport("pdf")}
             className="export-button pdf"
+            disabled={filteredRegistrations.length === 0}
+            title="Export all key fields to PDF"
           >
             Export PDF
+          </button>
+          <button
+            onClick={() => handleExportClick("excel")}
+            className="export-button excel-secondary"
+            disabled={filteredRegistrations.length === 0}
+            title="Choose columns to export"
+          >
+            Custom Excel
+          </button>
+          <button
+            onClick={() => handleExportClick("pdf")}
+            className="export-button pdf-secondary"
+            disabled={filteredRegistrations.length === 0}
+            title="Choose columns to export"
+          >
+            Custom PDF
+          </button>
+          <button
+            onClick={() => {
+              setSelectedFields(STANDARD_EXPORT_FIELDS.map((f) => f.key));
+              setExportType("docx");
+              setShowExportModal(false);
+              exportToDocx(filteredRegistrations, getEventName, STANDARD_EXPORT_FIELDS.map((f) => f.key), {
+                eventTitle: getCurrentEventHeading(),
+              });
+            }}
+            className="export-button word"
+            disabled={filteredRegistrations.length === 0}
+          >
+            Export Word
           </button>
         </div>
       </div>
@@ -744,7 +948,11 @@ const ViewRegistrations = () => {
             <div className="export-modal-header">
               <h3>
                 Select Fields to Export (
-                {exportType === "excel" ? "Excel" : "PDF"})
+                {exportType === "excel"
+                  ? "Excel"
+                  : exportType === "docx"
+                    ? "Word"
+                    : "PDF"})
               </h3>
               <button onClick={handleExportCancel} className="close-button">
                 ✕
@@ -791,7 +999,12 @@ const ViewRegistrations = () => {
                 className="confirm-export-button"
                 disabled={selectedFields.length === 0}
               >
-                Export {exportType === "excel" ? "Excel" : "PDF"}
+                Export{" "}
+                {exportType === "excel"
+                  ? "Excel"
+                  : exportType === "docx"
+                    ? "Word"
+                    : "PDF"}
               </button>
             </div>
           </div>
