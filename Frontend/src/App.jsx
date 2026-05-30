@@ -8,6 +8,7 @@ import Safety from "./components/Safety.jsx";
 import Marquee from "./components/Marquee.jsx";
 import Footer from "./components/Footer.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
+import RegistrationClosed from "./components/RegistrationClosed.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -56,6 +57,9 @@ function App() {
   return (
     <Router>
       <SmoothScroll>
+        {/* Registration Closed Overlay - Always on top */}
+        <RegistrationClosed />
+        
         <AnimatePresence>
           {isLoading && (
             <Preloader 
