@@ -17,6 +17,7 @@ import certificateRoutes from "./routes/certificateRoutes.js";
 import otpRoutes from "./routes/otpRoutes.js";
 import userAuthRoutes from "./routes/userAuthRoutes.js";
 import talentRoutes from "./routes/talentRoutes.js";
+import siteContentRoutes from "./routes/siteContentRoutes.js";
 
 const app = express();
 
@@ -137,6 +138,7 @@ app.use("/api/certificates", certificateRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/user-auth", userAuthRoutes);
 app.use("/api/talent", talentRoutes);
+app.use("/api/site-content", siteContentRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

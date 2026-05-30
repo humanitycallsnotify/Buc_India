@@ -126,7 +126,7 @@ const Hero = () => {
   }, [isLoading]);
 
   const handleJoinClick = () => {
-    if (!isLoggedIn) navigate("/signup");
+    navigate("/register");
   };
 
   return (

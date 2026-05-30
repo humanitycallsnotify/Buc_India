@@ -29,7 +29,7 @@ const galleryItemSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['all', 'rides', 'events', 'bikes', 'rallies', 'highlights'],
+      enum: ['all', 'rides', 'events', 'bikes', 'rallies', 'highlights', 'cover'],
       default: 'all',
     },
   },

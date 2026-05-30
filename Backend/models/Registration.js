@@ -21,6 +21,52 @@ const registrationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  registrationType: {
+    type: String,
+    enum: ['student', 'student_rider', 'rider', 'pillion', 'public', ''],
+    default: ''
+  },
+  clubName: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  clubNameCustom: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  collegeName: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  department: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  year: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  ridingExperience: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  interestReason: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  facebookUrl: { type: String, trim: true, default: '' },
+  instagramUrl: { type: String, trim: true, default: '' },
+  twitterUrl: { type: String, trim: true, default: '' },
+  youtubeUrl: { type: String, trim: true, default: '' },
+  websiteUrl: { type: String, trim: true, default: '' },
+  acceptedTerms: { type: Boolean, default: false },
   dateOfBirth: {
     type: Date
   },
@@ -60,6 +106,20 @@ const registrationSchema = new mongoose.Schema({
   tShirtSize: {
     type: String
   },
+  hasLinkedPillion: {
+    type: Boolean,
+    default: false
+  },
+  linkedPillion: {
+    name: { type: String, trim: true, default: "" },
+    mobile: { type: String, trim: true, default: "" },
+    tShirtSize: { type: String, trim: true, default: "" }
+  },
+  riderReference: {
+    riderRegistrationId: { type: String, trim: true, default: "" },
+    riderPhone: { type: String, trim: true, default: "" },
+    riderName: { type: String, trim: true, default: "" }
+  },
   licenseImage: {
     type: String,
     default: ''
@@ -97,8 +157,14 @@ const registrationSchema = new mongoose.Schema({
 // Event-scoped uniqueness indexes
 registrationSchema.index({ eventId: 1, email: 1 }, { unique: true });
 registrationSchema.index({ eventId: 1, phone: 1 }, { unique: true });
-registrationSchema.index({ eventId: 1, bikeRegistrationNumber: 1 }, { unique: true });
-registrationSchema.index({ eventId: 1, licenseNumber: 1 }, { unique: true });
+registrationSchema.index(
+  { eventId: 1, bikeRegistrationNumber: 1 },
+  { unique: true, sparse: true }
+);
+registrationSchema.index(
+  { eventId: 1, licenseNumber: 1 },
+  { unique: true, sparse: true }
+);
 
 const Registration = mongoose.model('Registration', registrationSchema);
 export default Registration;

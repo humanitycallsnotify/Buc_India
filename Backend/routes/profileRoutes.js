@@ -5,8 +5,10 @@ import {
   userSignup,
   userLogin,
   updateUserProfile,
+  deleteUserProfile,
 } from "../controllers/profileController.js";
 import { profileUpload } from "../middleware/cloudinaryConfig.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -32,5 +34,7 @@ router.put(
   ]),
   updateUserProfile,
 );
+
+router.delete("/:id", protect, deleteUserProfile);
 
 export default router;

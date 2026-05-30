@@ -34,6 +34,18 @@
   }
 }
 
+/* Custom bike cursor for desktop (place image in /public as /buc-bike-cursor.png) */
+@media (min-width: 1024px) and (pointer: fine) {
+  body,
+  a,
+  button,
+  input,
+  textarea,
+  select {
+    cursor: url("/buc-bike-cursor.png") 16 16, auto;
+  }
+}
+
 @layer components {
   /* Metallica Button Gradient as requested */
   .btn-metallica {

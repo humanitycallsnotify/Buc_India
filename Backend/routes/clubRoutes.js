@@ -4,6 +4,7 @@ import {
   getAllClubs,
   createClubRequest,
   updateClubStatus,
+  deleteClub,
 } from '../controllers/clubController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { clubUpload } from '../middleware/cloudinaryConfig.js';
@@ -28,5 +29,6 @@ router.post(
 // Admin
 router.get('/', protect, getAllClubs);
 router.patch('/:id/status', protect, updateClubStatus);
+router.delete('/:id', protect, deleteClub);
 
 export default router;

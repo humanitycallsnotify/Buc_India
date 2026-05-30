@@ -19,7 +19,7 @@ import {
   ChevronLeft,
   User,
   Bell,
-  Star
+  Star,
 } from "lucide-react";
 import DashboardHome from "../DashboardHome/DashboardHome";
 import EventManagement from "../EventManagement/EventManagement";
@@ -74,7 +74,7 @@ const AdminDashboard = () => {
     { path: "/admin/users", name: "Users", icon: <User size={20} /> },
     { path: "/admin/talents", name: "Talents", icon: <Star size={20} /> },
     { path: "/admin/gallery", name: "Gallery", icon: <ImageIcon size={20} /> },
-    { path: "/admin/gallery", name: "Cover Photo", icon: <ImageIcon size={20} /> },
+    { path: "/admin/cover-photo", name: "Cover Photo", icon: <ImageIcon size={20} /> },
     { path: "/admin/clubs", name: "Clubs", icon: <Bike size={20} /> },
   ];
 
@@ -242,6 +242,7 @@ const AdminDashboard = () => {
             <Route path="users" element={<ViewUsers />} />
             <Route path="talents" element={<ViewTalents />} />
             <Route path="gallery" element={<GalleryManagement />} />
+            <Route path="cover-photo" element={<GalleryManagement isCoverOnly={true} />} />
             <Route path="clubs" element={<ClubManagement />} />
           </Routes>
         </main>

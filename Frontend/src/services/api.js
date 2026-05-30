@@ -103,8 +103,8 @@ export const registrationService = {
     });
     return response.data;
   },
-  getAll: async (eventId) => {
-    const params = {};
+  getAll: async (eventId, filters = {}) => {
+    const params = { ...filters };
     if (eventId && eventId !== "all") {
       params.eventId = eventId;
     }
@@ -183,6 +183,10 @@ export const clubService = {
     const response = await api.patch(`/clubs/${id}/status`, { status });
     return response.data;
   },
+  deleteAdmin: async (id) => {
+    const response = await api.delete(`/clubs/${id}`);
+    return response.data;
+  },
 };
 
 export const clubMembershipService = {
@@ -249,14 +253,24 @@ export const certificateService = {
 export const talentService = {
   submit: async (formData) => {
     const response = await api.post("/talent", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+      headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
   },
   getAll: async () => {
     const response = await api.get("/talent");
+    return response.data;
+  },
+  approve: async (id) => {
+    const response = await api.patch(`/talent/${id}/approve`);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/talent/${id}`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/talent/${id}`);
     return response.data;
   },
 };

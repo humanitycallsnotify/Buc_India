@@ -10,7 +10,7 @@ export const requestOTP = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    if (!["signup", "forgot_password"].includes(type)) {
+    if (!["signup", "forgot_password", "talent_signup", "club_signup"].includes(type)) {
       return res.status(400).json({ message: "Invalid OTP type" });
     }
 

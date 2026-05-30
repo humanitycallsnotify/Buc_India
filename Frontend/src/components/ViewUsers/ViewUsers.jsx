@@ -1,8 +1,59 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Download, RefreshCw, Filter, X } from "lucide-react";
-import { profileService } from "../../services/api";
+import { Download, RefreshCw, X, Trash2 } from "lucide-react";
+import { profileService, clubService } from "../../services/api";
+import { exportToExcel, exportToPDF } from "../../utils/exportUtils";
+import EditUserModal from "./EditUserModal";
 
-const REGISTRATION_TYPES = ["All", "PC", "Rider", "Student Rider", "Student"];
+const REGISTRATION_TYPES = [
+  "All",
+  "PC",
+  "Rider",
+  "Student Rider",
+  "Student",
+  "Public",
+  "Pillion",
+];
+
+const columns = [
+  { key: "sno", label: "S.No", width: "60px" },
+  { key: "actions", label: "Actions", width: "120px" },
+  { key: "profileImage", label: "Profile Image", width: "110px" },
+  { key: "licenseImage", label: "License Image", width: "110px" },
+  { key: "bucId", label: "BUC ID", width: "110px" },
+  { key: "registrationType", label: "Registration Type", width: "140px" },
+  { key: "fullName", label: "Full Name", width: "150px" },
+  { key: "phone", label: "Phone Number", width: "120px" },
+  { key: "email", label: "Email Address", width: "180px" },
+  { key: "collegeName", label: "College Name", width: "150px" },
+  { key: "collegeIdNo", label: "Student ID Number", width: "140px" },
+  { key: "dateOfBirth", label: "Date of Birth", width: "110px" },
+  { key: "bloodGroup", label: "Blood Group", width: "100px" },
+  { key: "address", label: "Address", width: "200px" },
+  { key: "city", label: "City", width: "120px" },
+  { key: "state", label: "State", width: "120px" },
+  { key: "pincode", label: "Pincode", width: "100px" },
+  { key: "bikeModel", label: "Bike Model", width: "120px" },
+  { key: "bikeRegistrationNumber", label: "Bike Registration", width: "150px" },
+  { key: "licenseNumber", label: "License Number", width: "150px" },
+  { key: "clubName", label: "Associated Club", width: "150px" },
+  { key: "emergencyContactName", label: "Emergency Contact Name", width: "160px" },
+  { key: "emergencyContactPhone", label: "Emergency Contact Phone", width: "160px" },
+  { key: "facebookUrl", label: "Facebook", width: "150px" },
+  { key: "instagramUrl", label: "Instagram", width: "150px" },
+  { key: "twitterUrl", label: "Twitter / X", width: "150px" },
+  { key: "youtubeUrl", label: "YouTube", width: "150px" },
+  { key: "websiteUrl", label: "Personal Website", width: "150px" },
+  { key: "createdAt", label: "Registered At", width: "120px" },
+];
+
+const EXCLUDE_EXPORT_FIELDS = new Set([
+  "_id",
+  "password",
+  "licenseImagePublicId",
+  "profileImagePublicId",
+  "__v",
+  "updatedAt",
+]);
 
 const ViewUsers = () => {
   const [users, setUsers] = useState([]);
@@ -11,12 +62,43 @@ const ViewUsers = () => {
   const [filterType, setFilterType] = useState("All");
   const [isLoading, setIsLoading] = useState(false);
 
+  const [clubs, setClubs] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState(null);
+  const [availableFields, setAvailableFields] = useState([]);
+  const [selectedFields, setSelectedFields] = useState([]);
+
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const clubData = await clubService.getPublic();
+        setClubs(clubData || []);
+      } catch (err) {
+        console.error("Failed to fetch clubs:", err);
+      }
+    };
+    fetchClubs();
+  }, []);
+
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       const allUsers = await profileService.getAllAdmin();
-      setUsers(allUsers);
-      setFilteredUsers(allUsers);
+      const processedUsers = (allUsers || []).map((u) => {
+        const next = { ...u };
+        next.clubName = "-";
+        if (next.clubId && typeof next.clubId === "object" && next.clubId.name) {
+          next.clubName = next.clubId.name;
+        } else if (typeof next.clubId === "string" && next.clubId) {
+          next.clubName = next.clubId;
+        }
+        return next;
+      });
+      setUsers(processedUsers);
+      setFilteredUsers(processedUsers);
     } catch (error) {
       console.error("Error loading users:", error);
       alert("Failed to load users from server");
@@ -32,13 +114,16 @@ const ViewUsers = () => {
   const filterData = useCallback(() => {
     let filtered = [...users];
     if (filterName.trim()) {
-      filtered = filtered.filter(u =>
-        (u.fullName && u.fullName.toLowerCase().includes(filterName.toLowerCase())) ||
-        (u.email && u.email.toLowerCase().includes(filterName.toLowerCase()))
+      const q = filterName.toLowerCase();
+      filtered = filtered.filter(
+        (u) =>
+          (u.fullName && u.fullName.toLowerCase().includes(q)) ||
+          (u.email && u.email.toLowerCase().includes(q)) ||
+          (u.phone && String(u.phone).toLowerCase().includes(q)),
       );
     }
     if (filterType !== "All") {
-      filtered = filtered.filter(u => u.registrationType === filterType);
+      filtered = filtered.filter((u) => u.registrationType === filterType);
     }
     setFilteredUsers(filtered);
   }, [users, filterName, filterType]);
@@ -47,121 +132,174 @@ const ViewUsers = () => {
     filterData();
   }, [filterData]);
 
-  const formatColumnName = (key) => {
-    return key
-      .replace(/([A-Z])/g, " $1")
-      .replace(/^./, (str) => str.toUpperCase())
-      .trim();
+  const clearFilters = () => {
+    setFilterName("");
+    setFilterType("All");
   };
 
-  const getDynamicColumns = () => {
-    const excludeFields = [
-      "_id", "password", "licenseImagePublicId", "profileImagePublicId", "__v", "updatedAt"
-    ];
-    if (filteredUsers.length > 0) {
-      const firstReg = filteredUsers[0];
-      const keys = Object.keys(firstReg).filter(key => !excludeFields.includes(key));
-      return [
-        { key: "sno", label: "S.No", width: "60px" },
-        ...keys.map(key => ({ key, label: formatColumnName(key), width: "auto" }))
-      ];
+  const openEdit = (user) => {
+    setSelectedUser(user);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteUser = async (id, fullName) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to permanently delete user "${fullName || "this user"}"? This action cannot be undone.`,
+      )
+    ) {
+      return;
     }
-    return [];
+    try {
+      setIsLoading(true);
+      await profileService.delete(id);
+      alert("User deleted successfully");
+      await loadData();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      alert(error?.response?.data?.message || "Failed to delete user");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const columns = getDynamicColumns();
+  const getAvailableFields = () => {
+    if (filteredUsers.length === 0) return [];
+    const keys = Object.keys(filteredUsers[0]).filter(
+      (k) => !EXCLUDE_EXPORT_FIELDS.has(k),
+    );
+    return keys.map((key) => ({ key, label: key }));
+  };
+
+  const handleExportClick = (type) => {
+    if (filteredUsers.length === 0) {
+      alert("No users to export");
+      return;
+    }
+    const fields = getAvailableFields();
+    setAvailableFields(fields);
+    setSelectedFields(fields.map((f) => f.key));
+    setExportType(type);
+    setShowExportModal(true);
+  };
+
+  const handleExportConfirm = () => {
+    if (selectedFields.length === 0) {
+      alert("Please select at least one field to export");
+      return;
+    }
+    setShowExportModal(false);
+
+    const title = `BUC India - Registered Users${
+      filterType !== "All" ? ` (${filterType})` : ""
+    }`;
+
+    if (exportType === "excel") {
+      exportToExcel(filteredUsers, null, selectedFields);
+    } else if (exportType === "pdf") {
+      exportToPDF(filteredUsers, null, selectedFields, { eventTitle: title });
+    }
+
+    setExportType(null);
+    setSelectedFields([]);
+  };
+
+  const handleExportCancel = () => {
+    setShowExportModal(false);
+    setExportType(null);
+    setSelectedFields([]);
+  };
+
+  const toggleFieldSelection = (fieldKey) => {
+    setSelectedFields((prev) =>
+      prev.includes(fieldKey)
+        ? prev.filter((k) => k !== fieldKey)
+        : [...prev, fieldKey],
+    );
+  };
+
+  const selectAllFields = () => setSelectedFields(availableFields.map((f) => f.key));
+  const deselectAllFields = () => setSelectedFields([]);
 
   const renderCellValue = (column, user, index) => {
     if (column.key === "sno") return index + 1;
+    if (column.key === "actions") {
+      return (
+        <div
+          style={{
+            display: "flex",
+            gap: "6px",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <button
+            onClick={() => openEdit(user)}
+            title="Edit User"
+            style={{
+              background: "rgba(193, 154, 107, 0.15)",
+              color: "#c19a6b",
+              border: "1px solid rgba(193, 154, 107, 0.3)",
+              borderRadius: "6px",
+              padding: "6px 10px",
+              cursor: "pointer",
+              fontSize: "10px",
+              fontWeight: "bold",
+            }}
+          >
+            EDIT
+          </button>
+          <button
+            onClick={() => handleDeleteUser(user._id, user.fullName)}
+            title="Delete User"
+            style={{
+              background: "rgba(239, 68, 68, 0.1)",
+              color: "#ef4444",
+              border: "1px solid rgba(239, 68, 68, 0.2)",
+              borderRadius: "6px",
+              padding: "6px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      );
+    }
+
     const value = user[column.key];
+
     if (column.key === "profileImage" || column.key === "licenseImage") {
       if (!value) return "-";
       return (
-        <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-500 hover:underline"
+        >
           View Image
         </a>
       );
     }
+
     if (column.key.toLowerCase().includes("date") || column.key.toLowerCase().includes("at")) {
       if (value) {
         try {
           const date = new Date(value);
           if (!isNaN(date.getTime())) return date.toLocaleDateString();
-        } catch (e) {}
+        } catch {
+          // ignore
+        }
       }
     }
+
     if (value === null || value === undefined || value === "") return "-";
     if (typeof value === "object") return JSON.stringify(value);
     return value;
-  };
-
-  // PDF Export
-  const handleExportPDF = () => {
-    const printWindow = window.open("", "_blank");
-    const pdfColumns = columns.filter(c =>
-      !["profileImage", "licenseImage"].includes(c.key)
-    );
-
-    const tableRows = filteredUsers.map((user, index) =>
-      `<tr>${pdfColumns.map(col => {
-        if (col.key === "sno") return `<td>${index + 1}</td>`;
-        const val = user[col.key];
-        if (val === null || val === undefined || val === "") return `<td>-</td>`;
-        if (col.key.toLowerCase().includes("date") || col.key.toLowerCase().includes("at")) {
-          try {
-            const date = new Date(val);
-            if (!isNaN(date.getTime())) return `<td>${date.toLocaleDateString()}</td>`;
-          } catch (e) {}
-        }
-        if (typeof val === "object") return `<td>${JSON.stringify(val)}</td>`;
-        return `<td>${val}</td>`;
-      }).join("")}</tr>`
-    ).join("");
-
-    const filterLabel = filterType !== "All" ? ` — ${filterType}` : "";
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>BUC India — Registered Users${filterLabel}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; font-size: 9px; padding: 16px; color: #111; }
-          h1 { font-size: 16px; margin-bottom: 4px; }
-          .subtitle { font-size: 10px; color: #666; margin-bottom: 12px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-          th { background: #1a1a1a; color: #fff; padding: 6px 8px; text-align: left; font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
-          td { padding: 5px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
-          tr:nth-child(even) { background: #f9f9f9; }
-          .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; border-bottom: 2px solid #c19a6b; padding-bottom: 12px; }
-          .header-text h1 { color: #1a1a1a; }
-          .header-text p { color: #c19a6b; font-size: 10px; }
-          .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 7px; font-weight: bold; text-transform: uppercase; background: #c19a6b22; color: #c19a6b; border: 1px solid #c19a6b55; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="header-text">
-            <h1>BUC India — Registered Users${filterLabel}</h1>
-            <p>Bikers Unity Calls | Total: ${filteredUsers.length} registrations | Generated: ${new Date().toLocaleString()}</p>
-          </div>
-        </div>
-        <table>
-          <thead>
-            <tr>${pdfColumns.map(col => `<th>${col.label}</th>`).join("")}</tr>
-          </thead>
-          <tbody>${tableRows}</tbody>
-        </table>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  };
-
-  const clearFilters = () => {
-    setFilterName("");
-    setFilterType("All");
   };
 
   return (
@@ -171,43 +309,69 @@ const ViewUsers = () => {
           <h1 className="page-title">Registered Users</h1>
           <p className="page-subtitle">
             Total: {filteredUsers.length} user(s)
-            {filterType !== "All" && <span style={{ color: "#c19a6b", marginLeft: 8 }}>— {filterType}</span>}
+            {filterType !== "All" && (
+              <span style={{ color: "#c19a6b", marginLeft: 8 }}>— {filterType}</span>
+            )}
           </p>
         </div>
+
         <div className="header-actions" style={{ flexWrap: "wrap", gap: "8px" }}>
-          {/* Search */}
           <input
             type="text"
-            placeholder="Search by name or email..."
+            placeholder="Search by name, email, or phone..."
             value={filterName}
             onChange={(e) => setFilterName(e.target.value)}
             className="filter-input"
           />
-
-          {/* Role Type Filter */}
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
             className="filter-input"
             style={{ minWidth: 140 }}
           >
-            {REGISTRATION_TYPES.map(type => (
-              <option key={type} value={type}>{type}</option>
+            {REGISTRATION_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
           </select>
 
           {(filterName || filterType !== "All") && (
-            <button onClick={clearFilters} className="clear-filters-button" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button
+              onClick={clearFilters}
+              className="clear-filters-button"
+              style={{ display: "flex", alignItems: "center", gap: 4 }}
+            >
               <X size={14} /> Clear
             </button>
           )}
 
-          {/* PDF Export */}
           <button
-            onClick={handleExportPDF}
+            onClick={() => handleExportClick("excel")}
+            className="refresh-button"
+            title="Export to Excel"
+            style={{
+              background: "#217346",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Download size={16} /> Excel
+          </button>
+
+          <button
+            onClick={() => handleExportClick("pdf")}
             className="refresh-button"
             title="Export to PDF"
-            style={{ background: "#c19a6b", color: "#111", display: "flex", alignItems: "center", gap: 6 }}
+            style={{
+              background: "#c19a6b",
+              color: "#111",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
           >
             <Download size={16} /> PDF
           </button>
@@ -223,16 +387,18 @@ const ViewUsers = () => {
         </div>
       </div>
 
-      {/* Role Filter Badges */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-        {REGISTRATION_TYPES.map(type => (
+        {REGISTRATION_TYPES.map((type) => (
           <button
             key={type}
             onClick={() => setFilterType(type)}
             style={{
               padding: "4px 14px",
               borderRadius: 999,
-              border: filterType === type ? "1px solid #c19a6b" : "1px solid rgba(255,255,255,0.1)",
+              border:
+                filterType === type
+                  ? "1px solid #c19a6b"
+                  : "1px solid rgba(255,255,255,0.1)",
               background: filterType === type ? "rgba(193,154,107,0.15)" : "transparent",
               color: filterType === type ? "#c19a6b" : "#888",
               fontSize: 10,
@@ -240,13 +406,12 @@ const ViewUsers = () => {
               textTransform: "uppercase",
               letterSpacing: "0.1em",
               cursor: "pointer",
-              transition: "all 0.2s",
             }}
           >
             {type}
             {type !== "All" && (
               <span style={{ marginLeft: 6, opacity: 0.6 }}>
-                ({users.filter(u => u.registrationType === type).length})
+                ({users.filter((u) => u.registrationType === type).length})
               </span>
             )}
           </button>
@@ -258,17 +423,16 @@ const ViewUsers = () => {
           <div className="loader"></div>
           <p>Loading users...</p>
         </div>
-      ) : columns.length === 0 ? (
-        <div className="empty-state">
-          <p>No users found for the selected criteria.</p>
-        </div>
       ) : (
         <div className="registrations-table-container">
           <table className="registrations-table">
             <thead>
               <tr>
                 {columns.map((column) => (
-                  <th key={column.key} style={column.width !== "auto" ? { width: column.width } : {}}>
+                  <th
+                    key={column.key}
+                    style={column.width !== "auto" ? { width: column.width } : {}}
+                  >
                     {column.label}
                   </th>
                 ))}
@@ -296,8 +460,191 @@ const ViewUsers = () => {
           </table>
         </div>
       )}
+
+      {showExportModal && (
+        <div
+          className="export-modal-overlay"
+          onClick={handleExportCancel}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.8)",
+            zIndex: 1000,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <div
+            className="export-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#111",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "8px",
+              width: "90%",
+              maxWidth: "500px",
+              display: "flex",
+              flexDirection: "column",
+              maxHeight: "80vh",
+            }}
+          >
+            <div
+              className="export-modal-header"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "16px",
+                borderBottom: "1px solid rgba(255,255,255,0.1)",
+              }}
+            >
+              <h3 style={{ margin: 0, color: "#fff" }}>
+                Select Fields to Export ({exportType === "excel" ? "Excel" : "PDF"})
+              </h3>
+              <button
+                onClick={handleExportCancel}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#888",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              className="export-modal-content"
+              style={{ padding: "16px", overflowY: "auto", flex: 1 }}
+            >
+              <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+                <button
+                  onClick={selectAllFields}
+                  style={{
+                    background: "#c19a6b",
+                    color: "#111",
+                    border: "none",
+                    padding: "4px 12px",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Select All
+                </button>
+                <button
+                  onClick={deselectAllFields}
+                  style={{
+                    background: "rgba(255,255,255,0.1)",
+                    color: "#fff",
+                    border: "none",
+                    padding: "4px 12px",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                  }}
+                >
+                  Deselect All
+                </button>
+                <span style={{ color: "#888", fontSize: "12px", marginLeft: "auto" }}>
+                  {selectedFields.length} of {availableFields.length} selected
+                </span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                {availableFields.map((field) => (
+                  <label
+                    key={field.key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      color: "#ccc",
+                      fontSize: "13px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedFields.includes(field.key)}
+                      onChange={() => toggleFieldSelection(field.key)}
+                      style={{ accentColor: "#c19a6b" }}
+                    />
+                    <span
+                      style={{
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {field.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="export-modal-footer"
+              style={{
+                padding: "16px",
+                borderTop: "1px solid rgba(255,255,255,0.1)",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
+              <button
+                onClick={handleExportCancel}
+                style={{
+                  background: "transparent",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  color: "#fff",
+                  padding: "8px 16px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExportConfirm}
+                disabled={selectedFields.length === 0}
+                style={{
+                  background:
+                    selectedFields.length === 0 ? "rgba(255,255,255,0.1)" : "#c19a6b",
+                  color: selectedFields.length === 0 ? "#888" : "#111",
+                  border: "none",
+                  padding: "8px 16px",
+                  borderRadius: "4px",
+                  cursor: selectedFields.length === 0 ? "not-allowed" : "pointer",
+                  fontWeight: "bold",
+                }}
+              >
+                Export {exportType === "excel" ? "Excel" : "PDF"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <EditUserModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        user={selectedUser}
+        clubs={clubs}
+        onSuccess={loadData}
+      />
     </div>
   );
 };
 
 export default ViewUsers;
+
