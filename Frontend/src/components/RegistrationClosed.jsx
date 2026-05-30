@@ -30,7 +30,7 @@ const RegistrationClosed = () => {
         
         <div className="registration-closed-contact">
           <p>For more information, please contact us:</p>
-          <p className="contact-email">Email: info@bucIndia.org</p>
+          <p className="contact-email">Email: bucindianotify@gmail.com</p>
         </div>
       </div>
     </div>
