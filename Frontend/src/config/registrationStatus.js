@@ -1,6 +1,6 @@
 // Registration Status Configuration
 export const REGISTRATION_CONFIG = {
-  isOpen: false,
+  isOpen: true,
   closedMessage: "Registrations have been closed",
   closedDate: new Date().toISOString(),
 };
