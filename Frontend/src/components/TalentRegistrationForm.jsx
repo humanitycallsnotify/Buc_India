@@ -6,12 +6,7 @@ import {
   Upload, Image as ImageIcon, Video as VideoIcon
 } from "lucide-react";
 import { talentService, clubService, otpService } from "../services/api";
-import TermsModal from "./TermsModal";
 import DobPicker from "./DobPicker";
-import {
-  CLUB_COLLABORATION_TERMS,
-  CLUB_COLLABORATION_FINAL_ACCEPTANCE,
-} from "../constants/clubRegistrationTerms";
 
 const TALENT_CATEGORIES = {
   "🎤 Performing Arts": [
@@ -70,8 +65,6 @@ const TalentRegistrationForm = () => {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const [talentImage, setTalentImage] = useState(null);
   const [talentVideo, setTalentVideo] = useState(null);
@@ -175,9 +168,6 @@ const TalentRegistrationForm = () => {
     if (!formData.consentInfoTrue || !formData.consentRules || !formData.consentMedia) {
       return toast.error("Please check all three consent checkboxes before submitting.");
     }
-    if (!termsAccepted) {
-      return toast.error("Please accept the BUC India Club Collaboration Terms and Conditions to proceed.");
-    }
 
     setIsSubmitting(true);
     try {
@@ -201,7 +191,6 @@ const TalentRegistrationForm = () => {
       setTalentVideo(null);
       setTalentImagePreview("");
       setTalentVideoPreview("");
-      setTermsAccepted(false);
     } catch (err) {
       toast.error(err.response?.data?.message || "Submission failed. Please try again.");
     } finally {
@@ -592,30 +581,6 @@ const TalentRegistrationForm = () => {
           </div>
         </Section>
 
-        {/* BUC India Club Collaboration Terms */}
-        <Section title="🤝 BUC India Club Collaboration Terms">
-          <div className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              id="acceptTalentCollaborationTerms"
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 cursor-pointer"
-            />
-            <label htmlFor="acceptTalentCollaborationTerms" className="font-text text-xs text-steel-dim leading-relaxed cursor-pointer select-none">
-              I confirm that I have read and understood the{" "}
-              <button
-                type="button"
-                onClick={() => setShowTermsModal(true)}
-                className="text-copper hover:underline hover:text-white transition-all font-semibold"
-              >
-                BUC India Club Collaboration Terms and Conditions
-              </button>
-              , voluntarily agree to abide by them, and accept this agreement in the spirit of unity, safety, and brotherhood. <span className="text-red-500">*</span>
-            </label>
-          </div>
-        </Section>
-
         <button
           type="submit"
           disabled={isSubmitting}
@@ -624,22 +589,6 @@ const TalentRegistrationForm = () => {
           {isSubmitting ? "Submitting..." : "Submit Talent Registration"}
         </button>
       </form>
-
-      <TermsModal
-        isOpen={showTermsModal}
-        onClose={() => setShowTermsModal(false)}
-        title="Club Collaboration"
-        subtitle="Declaration & Legal Agreement (Club Level)"
-        introText="By registering as a club/community partner with BUC_India, we agree to the following terms:"
-        terms={CLUB_COLLABORATION_TERMS}
-        finalAcceptanceTitle="14. Final Acceptance"
-        finalAcceptanceItems={CLUB_COLLABORATION_FINAL_ACCEPTANCE}
-        onAccept={() => {
-          setTermsAccepted(true);
-          setShowTermsModal(false);
-          toast.success("Club collaboration terms accepted!");
-        }}
-      />
     </div>
   );
 };

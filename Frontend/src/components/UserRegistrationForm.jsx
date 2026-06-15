@@ -22,16 +22,13 @@ import {
   GraduationCap,
   Users,
   Plus,
-  ChevronDown
+  ChevronDown,
+  Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { profileService, otpService, clubService } from "../services/api";
 import TermsModal from "./TermsModal";
 import DobPicker from "./DobPicker";
-import {
-  CLUB_COLLABORATION_TERMS,
-  CLUB_COLLABORATION_FINAL_ACCEPTANCE,
-} from "../constants/clubRegistrationTerms";
 
 const USER_TERMS = [
   {
@@ -109,7 +106,7 @@ const USER_TERMS = [
 ];
 
 const SOCIAL_PLATFORMS = [
-  { value: "whatsapp", label: "WhatsApp", placeholder: "e.g. https://wa.me/91XXXXXXXXXX" },
+  { value: "facebook", label: "Facebook", placeholder: "e.g. https://facebook.com/yourprofile", field: "facebookUrl" },
   { value: "instagram", label: "Instagram", placeholder: "e.g. https://instagram.com/yourusername", field: "instagramUrl" },
   { value: "twitter", label: "Twitter/X", placeholder: "e.g. https://x.com/yourusername", field: "twitterUrl" },
   { value: "website", label: "Personal Website", placeholder: "e.g. https://yourwebsite.com", field: "websiteUrl" },
@@ -121,7 +118,7 @@ const getSocialPlaceholder = (platform) => {
 };
 
 const mapSocialProfilesToFields = (profiles) => {
-  const fields = { instagramUrl: "", twitterUrl: "", websiteUrl: "" };
+  const fields = { facebookUrl: "", instagramUrl: "", twitterUrl: "", websiteUrl: "" };
   profiles.forEach(({ platform, url }) => {
     const trimmed = url.trim();
     if (!trimmed) return;
@@ -172,8 +169,6 @@ const UserRegistrationForm = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [collaborationTermsAccepted, setCollaborationTermsAccepted] = useState(false);
-  const [showCollaborationTermsModal, setShowCollaborationTermsModal] = useState(false);
   const [clubs, setClubs] = useState([]);
   const [socialProfiles, setSocialProfiles] = useState([{ platform: "", url: "" }]);
 
@@ -231,6 +226,11 @@ const UserRegistrationForm = () => {
 
   const handleAddSocialProfile = () => {
     setSocialProfiles((prev) => [...prev, { platform: "", url: "" }]);
+  };
+
+  const handleRemoveSocialProfile = (index) => {
+    if (index === 0) return;
+    setSocialProfiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSendOtp = async () => {
@@ -341,10 +341,6 @@ const UserRegistrationForm = () => {
       return toast.error("Please accept the Declaration & Legal Agreement to proceed.");
     }
 
-    if (!collaborationTermsAccepted) {
-      return toast.error("Please accept the BUC India Club Collaboration Terms and Conditions to proceed.");
-    }
-
     setIsSubmitting(true);
     try {
       const data = new FormData();
@@ -373,6 +369,7 @@ const UserRegistrationForm = () => {
       // Social details & Profile image (Common to non-PS)
       if (!isPS) {
         const socialFields = mapSocialProfilesToFields(socialProfiles);
+        if (socialFields.facebookUrl) data.append("facebookUrl", socialFields.facebookUrl);
         if (socialFields.instagramUrl) data.append("instagramUrl", socialFields.instagramUrl);
         if (socialFields.twitterUrl) data.append("twitterUrl", socialFields.twitterUrl);
         if (socialFields.websiteUrl) data.append("websiteUrl", socialFields.websiteUrl);
@@ -427,7 +424,6 @@ const UserRegistrationForm = () => {
         setSocialProfiles([{ platform: "", url: "" }]);
         setOtpSent(false);
         setTermsAccepted(false);
-        setCollaborationTermsAccepted(false);
       }, 3000);
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed. Please try again.");
@@ -769,7 +765,10 @@ const UserRegistrationForm = () => {
                 <p className="font-text text-xs text-steel-dim">Select a platform from the dropdown and add your profile link.</p>
                 <div className="space-y-4">
                   {socialProfiles.map((profile, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div
+                      key={index}
+                      className={`grid grid-cols-1 gap-6 items-end ${index > 0 ? "md:grid-cols-[1fr_1fr_auto]" : "md:grid-cols-2"}`}
+                    >
                       <div className="space-y-1">
                         <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Platform</label>
                         <div className="relative">
@@ -796,6 +795,16 @@ const UserRegistrationForm = () => {
                           className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors placeholder:text-white/30"
                         />
                       </div>
+                      {index > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSocialProfile(index)}
+                          aria-label="Remove social presence row"
+                          className="inline-flex items-center justify-center gap-1.5 px-4 py-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest text-red-400 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-300 transition-all"
+                        >
+                          <Trash2 size={14} /> Remove
+                        </button>
+                      )}
                     </div>
                   ))}
                   <button
@@ -839,34 +848,6 @@ const UserRegistrationForm = () => {
             </div>
             )}
 
-            {/* BUC India Club Collaboration Terms */}
-            <div className="space-y-6 bg-carbon/50 p-6 border border-white/5 rounded-small">
-              <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2 flex items-center gap-2">
-                <Shield size={14} /> BUC India Club Collaboration Terms
-              </h3>
-
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="acceptCollaborationTerms"
-                  checked={collaborationTermsAccepted}
-                  onChange={(e) => setCollaborationTermsAccepted(e.target.checked)}
-                  className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 rounded cursor-pointer"
-                />
-                <label htmlFor="acceptCollaborationTerms" className="font-text text-xs text-steel-dim leading-relaxed cursor-pointer select-none">
-                  I confirm that I have read and understood the{" "}
-                  <button
-                    type="button"
-                    onClick={() => setShowCollaborationTermsModal(true)}
-                    className="text-copper hover:underline hover:text-white transition-all font-semibold"
-                  >
-                    BUC India Club Collaboration Terms and Conditions
-                  </button>
-                  , voluntarily agree to abide by them, and accept this agreement in the spirit of unity, safety, and brotherhood. <span className="text-red-500">*</span>
-                </label>
-              </div>
-            </div>
-
             <button type="submit" disabled={isSubmitting} className="w-full md:w-auto px-16 py-6 bg-copper text-carbon font-heading text-2xl uppercase hover:bg-white transition-all duration-500 disabled:opacity-50">
               {isSubmitting ? "Processing..." : "Complete Registration"}
             </button>
@@ -891,21 +872,6 @@ const UserRegistrationForm = () => {
         }}
       />
 
-      <TermsModal
-        isOpen={showCollaborationTermsModal}
-        onClose={() => setShowCollaborationTermsModal(false)}
-        title="Club Collaboration"
-        subtitle="Declaration & Legal Agreement (Club Level)"
-        introText="By registering as a club/community partner with BUC_India, we agree to the following terms:"
-        terms={CLUB_COLLABORATION_TERMS}
-        finalAcceptanceTitle="14. Final Acceptance"
-        finalAcceptanceItems={CLUB_COLLABORATION_FINAL_ACCEPTANCE}
-        onAccept={() => {
-          setCollaborationTermsAccepted(true);
-          setShowCollaborationTermsModal(false);
-          toast.success("Club collaboration terms accepted!");
-        }}
-      />
     </div>
   );
 };
