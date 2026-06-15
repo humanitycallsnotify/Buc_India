@@ -191,6 +191,10 @@ const ViewUsers = () => {
       );
     }
     const value = user[column.key];
+    if (column.key === "email") {
+      if (value === null || value === undefined || value === "") return "-";
+      return String(value);
+    }
     if (column.key === "profileImage" || column.key === "licenseImage") {
       if (!value) return "-";
       return (
@@ -199,7 +203,7 @@ const ViewUsers = () => {
         </a>
       );
     }
-    if (column.key.toLowerCase().includes("date") || column.key.toLowerCase().includes("at")) {
+    if (column.key === "dateOfBirth" || column.key === "createdAt" || column.key === "updatedAt") {
       if (value) {
         try {
           const date = new Date(value);

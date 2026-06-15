@@ -11,7 +11,6 @@ import {
   MapPin,
   Bike,
   Camera,
-  Calendar,
   AlertCircle,
   FileText,
   Image as ImageIcon,
@@ -28,6 +27,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { profileService, otpService, clubService } from "../services/api";
 import TermsModal from "./TermsModal";
+import DobPicker from "./DobPicker";
 import {
   CLUB_COLLABORATION_TERMS,
   CLUB_COLLABORATION_FINAL_ACCEPTANCE,
@@ -642,7 +642,9 @@ const UserRegistrationForm = () => {
                       </div>
                     </div>
                     {isPublicUser && (
-                      <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
+                      <div className="md:col-span-2">
+                        <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
+                      </div>
                     )}
                   </>
                 )}
@@ -657,7 +659,9 @@ const UserRegistrationForm = () => {
                   <InputField label="College Name" name="collegeName" icon={GraduationCap} value={formData.collegeName} onChange={handleInputChange} required />
                   <InputField label="Student ID Number" name="collegeIdNo" icon={FileText} value={formData.collegeIdNo} onChange={handleInputChange} required />
                   {formData.registrationType === "Student" && (
-                    <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
+                    <div className="md:col-span-2">
+                      <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
+                    </div>
                   )}
                 </div>
               </div>
@@ -668,7 +672,7 @@ const UserRegistrationForm = () => {
               <div className="space-y-6">
                 <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Personal Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
+                  <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
                   <div className="space-y-1">
                     <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Blood Group <span className="text-red-500">*</span></label>
                     <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm text-white outline-none focus:border-copper transition-colors appearance-none">
@@ -685,7 +689,7 @@ const UserRegistrationForm = () => {
               <div className="space-y-6">
                 <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Pillion Riding Connection</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
+                  <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
                   <InputField label="Associated Rider's Phone Number" name="riderPhone" icon={Phone} type="tel" value={formData.riderPhone} onChange={handleInputChange} required />
                   <InputField label="Associated Rider's BUC ID (Optional)" name="riderRegistrationId" icon={User} value={formData.riderRegistrationId} onChange={handleInputChange} />
                 </div>

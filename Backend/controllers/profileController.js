@@ -94,7 +94,8 @@ export const userSignup = async (req, res) => {
       }
     }
 
-    if (!isPS) {
+    // Use registrationType directly — Public User must never be grouped with PS for auth/email
+    if (registrationType !== 'PS') {
       if (!email || !password || !otp) {
         return res.status(400).json({ 
           message: "Email, Password, and OTP are required." 
@@ -134,7 +135,7 @@ export const userSignup = async (req, res) => {
       }
     }
 
-    if (!isPS) {
+    if (registrationType !== 'PS') {
       const existingUser = await User.findOne({
         $or: [{ phone }, { email: email.toLowerCase() }],
       });
@@ -192,7 +193,7 @@ export const userSignup = async (req, res) => {
       clubId: clubId || null,
     };
 
-    if (!isPS) {
+    if (registrationType !== 'PS') {
       userData.email = email.toLowerCase();
       userData.password = password;
       if (!isPublicUser) {
@@ -252,7 +253,7 @@ export const userSignup = async (req, res) => {
     }
 
     // Send confirmation email
-    if (!isPS) {
+    if (registrationType !== 'PS') {
       let clubName = "";
       if (clubId) {
         const club = await Club.findById(clubId);
