@@ -8,13 +8,16 @@ import {
   Handshake,
   Upload,
   User,
-  Mail,
-  Phone,
   Calendar,
   Zap,
   Trash2
 } from "lucide-react";
 import { clubService } from "../../services/api";
+import TermsModal from "../TermsModal";
+import {
+  CLUB_COLLABORATION_TERMS,
+  CLUB_COLLABORATION_FINAL_ACCEPTANCE,
+} from "../../constants/clubRegistrationTerms";
 
 const initialRequestState = {
   name: "",
@@ -41,6 +44,8 @@ const ClubCollaborate = () => {
 
   const [requestForm, setRequestForm] = useState(initialRequestState);
   const [submitting, setSubmitting] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const updateField = (field, value) =>
     setRequestForm((prev) => ({ ...prev, [field]: value }));
@@ -73,6 +78,9 @@ const ClubCollaborate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!termsAccepted) {
+      return toast.error("Please accept the Declaration & Legal Agreement to proceed.");
+    }
 
     setSubmitting(true);
     try {
@@ -102,6 +110,7 @@ const ClubCollaborate = () => {
         "Request submitted! BUC admin will review and respond shortly."
       );
       setRequestForm(initialRequestState);
+      setTermsAccepted(false);
       navigate("/register/june-21-event");
     } catch (error) {
       toast.error(
@@ -142,7 +151,41 @@ const ClubCollaborate = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-12">
-          {/* Section: Club Information */}
+          {/* Section: Visual Assets */}
+          <div className="bg-carbon-light border border-white/5 p-8 md:p-12">
+            <h2 className="font-heading text-3xl uppercase mb-8 flex items-center gap-4">
+               <Upload size={24} className="text-copper" />
+               Visual Assets
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               {[
+                 { label: "Club Insignia (Logo)", field: "logo", icon: <Shield size={20} /> },
+                 { label: "Brotherhood Moment (Ride Photo)", field: "firstRideImage", icon: <Zap size={20} /> },
+                 { label: "Institutional ID (Reg. Doc)", field: "governmentIdImage", icon: <Calendar size={20} /> },
+                 { label: "Founder Verification (Passport)", field: "founderPassport", icon: <User size={20} /> },
+               ].map((item) => (
+                 <label key={item.field} className="group cursor-pointer">
+                    <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
+                       <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
+                          {item.icon}
+                       </div>
+                       <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">{item.label}</span>
+                       <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
+                          {requestForm[item.field] ? requestForm[item.field].name : "Deploy File (IMG, PDF)"}
+                       </span>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(item.field, e.target.files?.[0])}
+                    />
+                 </label>
+               ))}
+            </div>
+          </div>
+
+          {/* Section: Club Identity */}
           <div className="bg-carbon-light border border-white/5 p-8 md:p-12">
             <h2 className="font-heading text-3xl uppercase mb-8 flex items-center gap-4">
                <Zap size={24} className="text-copper" />
@@ -157,7 +200,7 @@ const ClubCollaborate = () => {
                   className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
                   value={requestForm.name}
                   onChange={(e) => updateField("name", e.target.value)}
-                  placeholder="e.g. DARK RIDERS PUNE"
+                  placeholder="BUC India"
                   required
                 />
               </div>
@@ -179,7 +222,7 @@ const ClubCollaborate = () => {
                     className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
                     value={requestForm.moto}
                     onChange={(e) => updateField("moto", e.target.value)}
-                    placeholder="e.g. HONOR OVER SPEED"
+                    placeholder="Unity for Humanity"
                   />
                 </div>
               </div>
@@ -197,7 +240,7 @@ const ClubCollaborate = () => {
             </div>
           </div>
 
-          {/* Section: Founder & Leadership */}
+          {/* Section: Command & Control */}
           <div className="bg-carbon-light border border-white/5 p-8 md:p-12">
             <h2 className="font-heading text-3xl uppercase mb-8 flex items-center gap-4">
                <User size={24} className="text-copper" />
@@ -284,37 +327,31 @@ const ClubCollaborate = () => {
             </button>
           </div>
 
-          {/* Section: Assets & Verification */}
-          <div className="bg-carbon-light border border-white/5 p-8 md:p-12">
-            <h2 className="font-heading text-3xl uppercase mb-8 flex items-center gap-4">
-               <Upload size={24} className="text-copper" />
-               Visual Assets
-            </h2>
+          {/* Declaration & Legal Agreement */}
+          <div className="space-y-6 bg-carbon/50 p-6 border border-white/5 rounded-small">
+            <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2 flex items-center gap-2">
+              <Shield size={14} /> Declaration & Legal Agreement
+            </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               {[
-                 { label: "Club Insignia (Logo)", field: "logo", icon: <Shield size={20} /> },
-                 { label: "Brotherhood Moment (Ride Photo)", field: "firstRideImage", icon: <Zap size={20} /> },
-                 { label: "Institutional ID (Reg. Doc)", field: "governmentIdImage", icon: <Calendar size={20} /> },
-                 { label: "Founder Verification (Passport)", field: "founderPassport", icon: <User size={20} /> },
-               ].map((item) => (
-                 <label key={item.field} className="group cursor-pointer">
-                    <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
-                       <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
-                          {item.icon}
-                       </div>
-                       <span className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-1 group-hover:text-white">{item.label}</span>
-                       <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
-                          {requestForm[item.field] ? requestForm[item.field].name : "Deploy File (IMG, PDF)"}
-                       </span>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => handleFileChange(item.field, e.target.files?.[0])}
-                    />
-                 </label>
-               ))}
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="acceptClubTerms"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 rounded cursor-pointer"
+              />
+              <label htmlFor="acceptClubTerms" className="font-text text-xs text-steel-dim leading-relaxed cursor-pointer select-none">
+                I confirm that I have read and understood all{" "}
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-copper hover:underline hover:text-white transition-all font-semibold"
+                >
+                  Terms and Conditions
+                </button>
+                , voluntarily agree to abide by them, and accept full responsibility for our club collaboration. <span className="text-red-500">*</span>
+              </label>
             </div>
           </div>
 
@@ -337,6 +374,22 @@ const ClubCollaborate = () => {
           </div>
         </form>
       </div>
+
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        title="Club Collaboration"
+        subtitle="Declaration & Legal Agreement (Club Level)"
+        introText="By registering as a club/community partner with BUC_India, we agree to the following terms:"
+        terms={CLUB_COLLABORATION_TERMS}
+        finalAcceptanceTitle="14. Final Acceptance"
+        finalAcceptanceItems={CLUB_COLLABORATION_FINAL_ACCEPTANCE}
+        onAccept={() => {
+          setTermsAccepted(true);
+          setShowTermsModal(false);
+          toast.success("Declaration accepted!");
+        }}
+      />
     </div>
   );
 };

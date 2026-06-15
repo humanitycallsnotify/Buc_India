@@ -7,7 +7,7 @@ import { cloudinary } from "../middleware/cloudinaryConfig.js";
 export const submitTalent = async (req, res) => {
   try {
     const {
-      fullName, age, gender, phone, email, city,
+      fullName, age, dateOfBirth, gender, phone, email, city,
       talentCategory, subTalentDescription, experienceLevel, yearsOfExperience,
       portfolioLink,
       isRider, bikeModel, ridingExperience,
@@ -22,11 +22,11 @@ export const submitTalent = async (req, res) => {
 
     // Required field validation
     if (
-      !fullName || !age || !gender || !phone || !email || !city ||
+      !fullName || !age || !dateOfBirth || !gender || !phone || !email || !city ||
       !talentCategory || !subTalentDescription || !experienceLevel || !yearsOfExperience ||
       !shortDescription || !whyParticipate || !availableDates || !tshirtSize || !otp
     ) {
-      return res.status(400).json({ message: "Please fill all required fields, including OTP." });
+      return res.status(400).json({ message: "Please fill all required fields, including Date of Birth and OTP." });
     }
 
     if (!consentInfoTrue || consentInfoTrue === "false") {
@@ -59,6 +59,7 @@ export const submitTalent = async (req, res) => {
       bucId,
       fullName,
       age: Number(age),
+      dateOfBirth: dateOfBirth || null,
       gender,
       phone,
       email,

@@ -68,6 +68,7 @@ const ViewTalents = () => {
     { key: "bucId", label: "BUC ID" },
     { key: "fullName", label: "Full Name" },
     { key: "age", label: "Age" },
+    { key: "dateOfBirth", label: "Date of Birth" },
     { key: "gender", label: "Gender" },
     { key: "phone", label: "Phone" },
     { key: "email", label: "Email" },
@@ -111,6 +112,11 @@ const ViewTalents = () => {
       return <a href={val} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs">View Link</a>;
     }
     if (col.key === "createdAt" && val) {
+      try {
+        return new Date(val).toLocaleDateString();
+      } catch { return val; }
+    }
+    if (col.key === "dateOfBirth" && val) {
       try {
         return new Date(val).toLocaleDateString();
       } catch { return val; }

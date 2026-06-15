@@ -217,6 +217,8 @@ export const userSignup = async (req, res) => {
       userData.bikeModel = bikeModel || "";
       userData.bikeRegistrationNumber = bikeRegistrationNumber || "";
       userData.licenseNumber = licenseNumber || "";
+    } else if (['Student', 'Pillion', 'Public User'].includes(registrationType)) {
+      userData.dateOfBirth = dateOfBirth || null;
     }
 
     if (isStudent) {

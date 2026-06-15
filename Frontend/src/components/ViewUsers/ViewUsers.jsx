@@ -102,6 +102,7 @@ const ViewUsers = () => {
     { key: "fullName", label: "Full Name", width: "150px" },
     { key: "phone", label: "Phone Number", width: "120px" },
     { key: "email", label: "Email Address", width: "180px" },
+    { key: "tshirtSize", label: "T-Shirt Size", width: "110px" },
     { key: "collegeName", label: "College Name", width: "150px" },
     { key: "collegeIdNo", label: "Student ID Number", width: "140px" },
     { key: "dateOfBirth", label: "Date of Birth", width: "110px" },

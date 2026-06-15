@@ -11,7 +11,7 @@ import {
   Loader2
 } from "lucide-react";
 
-const logo = "/logo copy copy.jpg";
+const logo = "/logo.jpg";
 
 const AdminLogin = () => {
   const [username, setUsername] = useState("");

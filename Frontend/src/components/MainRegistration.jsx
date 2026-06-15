@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import UserRegistrationForm from "./UserRegistrationForm";
 import TalentRegistrationForm from "./TalentRegistrationForm";
 import ClubCollaborate from "./Clubs/ClubCollaborate";
+import TermsModal from "./TermsModal";
+import {
+  CLUB_COLLABORATION_TERMS,
+  CLUB_COLLABORATION_FINAL_ACCEPTANCE,
+} from "../constants/clubRegistrationTerms";
 import { User, Shield, Star, Heart, Calendar, ArrowRight } from "lucide-react";
 import { galleryService, eventService } from "../services/api";
 
@@ -11,6 +17,8 @@ const MainRegistration = () => {
   const [activeTab, setActiveTab] = useState("user");
   const [coverPhoto, setCoverPhoto] = useState(null);
   const [event, setEvent] = useState(null);
+  const [volunteerTermsAccepted, setVolunteerTermsAccepted] = useState(false);
+  const [showVolunteerTermsModal, setShowVolunteerTermsModal] = useState(false);
 
   const loadEventAndCover = useCallback(async () => {
     // 1. Fetch general cover photo
@@ -34,17 +42,16 @@ const MainRegistration = () => {
     try {
       const allEvents = await eventService.getAll();
       const slugify = (text) => text.toString().toLowerCase()
-        .replace(/\s+/g, '-')           // Replace spaces with -
-        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-        .replace(/^-+/, '')             // Trim - from start
-        .replace(/-+$/, '');            // Trim - from end
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
 
       const found = allEvents.find((e) => slugify(e.title) === currentSlug || e._id === currentSlug);
       if (found) {
         setEvent(found);
       } else {
-        // Fallback title parsed from slug
         const formattedTitle = currentSlug
           .split('-')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -59,6 +66,13 @@ const MainRegistration = () => {
   useEffect(() => {
     loadEventAndCover();
   }, [slug, loadEventAndCover]);
+
+  const handleVolunteerRegisterClick = (e) => {
+    if (!volunteerTermsAccepted) {
+      e.preventDefault();
+      toast.error("Please accept the BUC India Club Collaboration Terms and Conditions to proceed.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-carbon text-white relative">
@@ -86,7 +100,6 @@ const MainRegistration = () => {
           className="w-full h-full object-contain transition-transform duration-1000 transform hover:scale-102"
           style={{ opacity: 0.95 }}
         />
-        {/* Subtle overlay gradient at the very bottom to blend with the carbon background without covering content */}
         <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-carbon to-transparent pointer-events-none" />
       </div>
 
@@ -180,11 +193,39 @@ const MainRegistration = () => {
                 <p className="font-text text-steel-dim text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-10">
                   Serving those in need through emergency blood support, uplifting the underprivileged, and protecting our animal companions nationwide.
                 </p>
+
+                <div className="w-full max-w-2xl mb-10 bg-carbon/50 p-6 border border-white/5 rounded-small text-left">
+                  <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2 flex items-center gap-2 mb-4">
+                    <Shield size={14} /> BUC India Club Collaboration Terms
+                  </h3>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id="acceptVolunteerTerms"
+                      checked={volunteerTermsAccepted}
+                      onChange={(e) => setVolunteerTermsAccepted(e.target.checked)}
+                      className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 rounded cursor-pointer"
+                    />
+                    <label htmlFor="acceptVolunteerTerms" className="font-text text-xs text-steel-dim leading-relaxed cursor-pointer select-none">
+                      I confirm that I have read and understood the{" "}
+                      <button
+                        type="button"
+                        onClick={() => setShowVolunteerTermsModal(true)}
+                        className="text-copper hover:underline hover:text-white transition-all font-semibold"
+                      >
+                        BUC India Club Collaboration Terms and Conditions
+                      </button>
+                      , voluntarily agree to abide by them, and accept this agreement in the spirit of unity, safety, and brotherhood. <span className="text-red-500">*</span>
+                    </label>
+                  </div>
+                </div>
+
                 <a 
                   href="https://humanitycalls.org/volunteer" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-3 px-8 py-4 bg-copper text-carbon font-heading text-lg md:text-xl uppercase hover:bg-white transition-all duration-300"
+                  onClick={handleVolunteerRegisterClick}
+                  className={`inline-flex items-center gap-3 px-8 py-4 bg-copper text-carbon font-heading text-lg md:text-xl uppercase hover:bg-white transition-all duration-300 ${!volunteerTermsAccepted ? "opacity-50 pointer-events-none" : ""}`}
                 >
                   Register as Volunteer <ArrowRight size={20} />
                 </a>
@@ -193,6 +234,22 @@ const MainRegistration = () => {
           </div>
         </div>
       </div>
+
+      <TermsModal
+        isOpen={showVolunteerTermsModal}
+        onClose={() => setShowVolunteerTermsModal(false)}
+        title="Club Collaboration"
+        subtitle="Declaration & Legal Agreement (Club Level)"
+        introText="By registering as a club/community partner with BUC_India, we agree to the following terms:"
+        terms={CLUB_COLLABORATION_TERMS}
+        finalAcceptanceTitle="14. Final Acceptance"
+        finalAcceptanceItems={CLUB_COLLABORATION_FINAL_ACCEPTANCE}
+        onAccept={() => {
+          setVolunteerTermsAccepted(true);
+          setShowVolunteerTermsModal(false);
+          toast.success("Club collaboration terms accepted!");
+        }}
+      />
     </div>
   );
 };

@@ -30,7 +30,7 @@ import ClubManagement from "../ClubManagement/ClubManagement.jsx";
 import ViewTalents from "../ViewTalents/ViewTalents.jsx";
 import { authService, profileService } from "../../services/api";
 
-const logo = "/logo copy copy.jpg";
+const logo = "/logo.jpg";
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_COLLAPSED = 80;
 

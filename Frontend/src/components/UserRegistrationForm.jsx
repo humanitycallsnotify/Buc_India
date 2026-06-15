@@ -22,11 +22,16 @@ import {
   X,
   GraduationCap,
   Users,
-  Plus
+  Plus,
+  ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { profileService, otpService, clubService } from "../services/api";
 import TermsModal from "./TermsModal";
+import {
+  CLUB_COLLABORATION_TERMS,
+  CLUB_COLLABORATION_FINAL_ACCEPTANCE,
+} from "../constants/clubRegistrationTerms";
 
 const USER_TERMS = [
   {
@@ -110,8 +115,10 @@ const SOCIAL_PLATFORMS = [
   { value: "website", label: "Personal Website", placeholder: "e.g. https://yourwebsite.com", field: "websiteUrl" },
 ];
 
-const getSocialPlaceholder = (platform) =>
-  SOCIAL_PLATFORMS.find((p) => p.value === platform)?.placeholder || "Enter profile link";
+const getSocialPlaceholder = (platform) => {
+  if (!platform) return "Please select your presence";
+  return SOCIAL_PLATFORMS.find((p) => p.value === platform)?.placeholder || "Enter profile link";
+};
 
 const mapSocialProfilesToFields = (profiles) => {
   const fields = { instagramUrl: "", twitterUrl: "", websiteUrl: "" };
@@ -165,8 +172,10 @@ const UserRegistrationForm = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [collaborationTermsAccepted, setCollaborationTermsAccepted] = useState(false);
+  const [showCollaborationTermsModal, setShowCollaborationTermsModal] = useState(false);
   const [clubs, setClubs] = useState([]);
-  const [socialProfiles, setSocialProfiles] = useState([{ platform: "whatsapp", url: "" }]);
+  const [socialProfiles, setSocialProfiles] = useState([{ platform: "", url: "" }]);
 
   useEffect(() => {
     let timer;
@@ -221,7 +230,7 @@ const UserRegistrationForm = () => {
   };
 
   const handleAddSocialProfile = () => {
-    setSocialProfiles((prev) => [...prev, { platform: "instagram", url: "" }]);
+    setSocialProfiles((prev) => [...prev, { platform: "", url: "" }]);
   };
 
   const handleSendOtp = async () => {
@@ -251,6 +260,11 @@ const UserRegistrationForm = () => {
     const isPS = formData.registrationType === "PS";
     const isPublicUser = formData.registrationType === "Public User";
     const isPillion = formData.registrationType === "Pillion";
+    const needsDob =
+      isRider ||
+      formData.registrationType === "Student" ||
+      isPillion ||
+      isPublicUser;
 
     // 1. Core validations common to ALL registration types
     if (
@@ -274,6 +288,11 @@ const UserRegistrationForm = () => {
     }
 
     if (formData.phone.length !== 10) return toast.error("Phone number must be exactly 10 digits");
+
+    if (needsDob && !isPS && !formData.dateOfBirth) {
+      return toast.error("Please fill Date of Birth.");
+    }
+
     if (!isPS && !isPublicUser) {
       if (formData.emergencyContactPhone.length !== 10) return toast.error("Emergency contact phone number must be exactly 10 digits");
 
@@ -318,8 +337,12 @@ const UserRegistrationForm = () => {
       }
     }
 
-    if (!termsAccepted) {
+    if (!isPS && !termsAccepted) {
       return toast.error("Please accept the Declaration & Legal Agreement to proceed.");
+    }
+
+    if (!collaborationTermsAccepted) {
+      return toast.error("Please accept the BUC India Club Collaboration Terms and Conditions to proceed.");
     }
 
     setIsSubmitting(true);
@@ -369,6 +392,8 @@ const UserRegistrationForm = () => {
         if (formData.clubId) data.append("clubId", formData.clubId);
 
         if (licenseImage) data.append("licenseImage", licenseImage);
+      } else if (needsDob && !isPS) {
+        data.append("dateOfBirth", formData.dateOfBirth);
       }
 
       // Conditionally append Student details
@@ -399,9 +424,10 @@ const UserRegistrationForm = () => {
         });
         setProfileImage(null); setProfileImagePreview(null);
         setLicenseImage(null); setLicenseImagePreview(null);
-        setSocialProfiles([{ platform: "whatsapp", url: "" }]);
+        setSocialProfiles([{ platform: "", url: "" }]);
         setOtpSent(false);
         setTermsAccepted(false);
+        setCollaborationTermsAccepted(false);
       }, 3000);
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed. Please try again.");
@@ -615,6 +641,9 @@ const UserRegistrationForm = () => {
                         </button>
                       </div>
                     </div>
+                    {isPublicUser && (
+                      <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
+                    )}
                   </>
                 )}
               </div>
@@ -627,6 +656,9 @@ const UserRegistrationForm = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InputField label="College Name" name="collegeName" icon={GraduationCap} value={formData.collegeName} onChange={handleInputChange} required />
                   <InputField label="Student ID Number" name="collegeIdNo" icon={FileText} value={formData.collegeIdNo} onChange={handleInputChange} required />
+                  {formData.registrationType === "Student" && (
+                    <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
+                  )}
                 </div>
               </div>
             )}
@@ -653,6 +685,7 @@ const UserRegistrationForm = () => {
               <div className="space-y-6">
                 <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Pillion Riding Connection</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <InputField label="Date of Birth" name="dateOfBirth" icon={Calendar} type="date" value={formData.dateOfBirth} onChange={handleInputChange} required />
                   <InputField label="Associated Rider's Phone Number" name="riderPhone" icon={Phone} type="tel" value={formData.riderPhone} onChange={handleInputChange} required />
                   <InputField label="Associated Rider's BUC ID (Optional)" name="riderRegistrationId" icon={User} value={formData.riderRegistrationId} onChange={handleInputChange} />
                 </div>
@@ -733,20 +766,25 @@ const UserRegistrationForm = () => {
             {!isPS && (
               <div className="space-y-6">
                 <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Social Presence</h3>
+                <p className="font-text text-xs text-steel-dim">Select a platform from the dropdown and add your profile link.</p>
                 <div className="space-y-4">
                   {socialProfiles.map((profile, index) => (
                     <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-1">
                         <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Platform</label>
-                        <select
-                          value={profile.platform}
-                          onChange={(e) => handleSocialPlatformChange(index, e.target.value)}
-                          className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm text-white outline-none focus:border-copper transition-colors appearance-none"
-                        >
-                          {SOCIAL_PLATFORMS.map((platform) => (
-                            <option key={platform.value} value={platform.value}>{platform.label}</option>
-                          ))}
-                        </select>
+                        <div className="relative">
+                          <select
+                            value={profile.platform}
+                            onChange={(e) => handleSocialPlatformChange(index, e.target.value)}
+                            className="w-full bg-carbon border border-white/10 px-6 py-4 pr-12 font-body text-sm text-white outline-none focus:border-copper transition-colors appearance-none"
+                          >
+                            <option value="">Please select your presence</option>
+                            {SOCIAL_PLATFORMS.map((platform) => (
+                              <option key={platform.value} value={platform.value}>{platform.label}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-steel-dim pointer-events-none" size={16} />
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Profile Link</label>
@@ -754,7 +792,7 @@ const UserRegistrationForm = () => {
                           type="url"
                           value={profile.url}
                           onChange={(e) => handleSocialUrlChange(index, e.target.value)}
-                          placeholder={getSocialPlaceholder(profile.platform)}
+                          placeholder={profile.platform ? getSocialPlaceholder(profile.platform) : "Please select your presence"}
                           className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors placeholder:text-white/30"
                         />
                       </div>
@@ -771,7 +809,8 @@ const UserRegistrationForm = () => {
               </div>
             )}
 
-            {/* Declaration & Legal Agreement */}
+            {/* Declaration & Legal Agreement — not shown for PS */}
+            {!isPS && (
             <div className="space-y-6 bg-carbon/50 p-6 border border-white/5 rounded-small">
               <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2 flex items-center gap-2">
                 <Shield size={14} /> Declaration & Legal Agreement
@@ -798,6 +837,35 @@ const UserRegistrationForm = () => {
                 </label>
               </div>
             </div>
+            )}
+
+            {/* BUC India Club Collaboration Terms */}
+            <div className="space-y-6 bg-carbon/50 p-6 border border-white/5 rounded-small">
+              <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2 flex items-center gap-2">
+                <Shield size={14} /> BUC India Club Collaboration Terms
+              </h3>
+
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="acceptCollaborationTerms"
+                  checked={collaborationTermsAccepted}
+                  onChange={(e) => setCollaborationTermsAccepted(e.target.checked)}
+                  className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 rounded cursor-pointer"
+                />
+                <label htmlFor="acceptCollaborationTerms" className="font-text text-xs text-steel-dim leading-relaxed cursor-pointer select-none">
+                  I confirm that I have read and understood the{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowCollaborationTermsModal(true)}
+                    className="text-copper hover:underline hover:text-white transition-all font-semibold"
+                  >
+                    BUC India Club Collaboration Terms and Conditions
+                  </button>
+                  , voluntarily agree to abide by them, and accept this agreement in the spirit of unity, safety, and brotherhood. <span className="text-red-500">*</span>
+                </label>
+              </div>
+            </div>
 
             <button type="submit" disabled={isSubmitting} className="w-full md:w-auto px-16 py-6 bg-copper text-carbon font-heading text-2xl uppercase hover:bg-white transition-all duration-500 disabled:opacity-50">
               {isSubmitting ? "Processing..." : "Complete Registration"}
@@ -820,6 +888,22 @@ const UserRegistrationForm = () => {
           setTermsAccepted(true);
           setShowTermsModal(false);
           toast.success("Declaration accepted!");
+        }}
+      />
+
+      <TermsModal
+        isOpen={showCollaborationTermsModal}
+        onClose={() => setShowCollaborationTermsModal(false)}
+        title="Club Collaboration"
+        subtitle="Declaration & Legal Agreement (Club Level)"
+        introText="By registering as a club/community partner with BUC_India, we agree to the following terms:"
+        terms={CLUB_COLLABORATION_TERMS}
+        finalAcceptanceTitle="14. Final Acceptance"
+        finalAcceptanceItems={CLUB_COLLABORATION_FINAL_ACCEPTANCE}
+        onAccept={() => {
+          setCollaborationTermsAccepted(true);
+          setShowCollaborationTermsModal(false);
+          toast.success("Club collaboration terms accepted!");
         }}
       />
     </div>
