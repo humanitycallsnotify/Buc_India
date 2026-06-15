@@ -243,7 +243,7 @@ const TalentRegistrationForm = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-8 mb-12 gap-6">
         <div className="flex items-center gap-4">
-          <img src="/logo.jpg" alt="BUC India Logo" className="w-16 h-16 rounded-full border border-copper/30 object-cover" />
+          <img src="/bucpng.png" alt="BUC India Logo" className="w-16 h-16 rounded-full border border-copper/30 object-contain p-1 bg-white" />
           <div>
             <h1 className="font-heading text-3xl uppercase tracking-wider text-white">BUC India</h1>
             <span className="text-copper font-body text-[10px] tracking-[0.2em] uppercase">Bikers Unity Calls</span>

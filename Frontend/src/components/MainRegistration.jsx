@@ -66,7 +66,7 @@ const MainRegistration = () => {
       <div className="w-full bg-carbon-light border-b border-white/5 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="BUC India" className="w-10 h-10 rounded-full border border-copper/30 object-cover" />
+            <img src="/bucpng.png" alt="BUC India" className="w-10 h-10 rounded-full border border-copper/30 object-contain p-1 bg-white" />
             <div className="flex flex-col leading-none">
               <span className="font-heading text-lg uppercase tracking-widest text-white">BUC India</span>
               <span className="font-body text-[9px] uppercase tracking-[0.25em] text-copper">Bikers Unity Calls</span>

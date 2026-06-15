@@ -178,6 +178,39 @@ export const userSignup = async (req, res) => {
 
     const bucId = await generateUniqueBucId();
 
+    let parsedSocialLinks = [];
+    let facebookUrlVal = req.body.facebookUrl || "";
+    let instagramUrlVal = req.body.instagramUrl || "";
+    let twitterUrlVal = req.body.twitterUrl || "";
+    let youtubeUrlVal = req.body.youtubeUrl || "";
+    let websiteUrlVal = req.body.websiteUrl || "";
+
+    if (req.body.socialLinks) {
+      try {
+        parsedSocialLinks = typeof req.body.socialLinks === "string" ? JSON.parse(req.body.socialLinks) : req.body.socialLinks;
+        if (Array.isArray(parsedSocialLinks)) {
+          parsedSocialLinks.forEach(link => {
+            if (link.platform && link.url) {
+              const platformLower = link.platform.toLowerCase();
+              if (platformLower === "facebook") facebookUrlVal = link.url;
+              else if (platformLower === "instagram") instagramUrlVal = link.url;
+              else if (platformLower === "twitter" || platformLower === "x") twitterUrlVal = link.url;
+              else if (platformLower === "youtube") youtubeUrlVal = link.url;
+              else if (platformLower === "website") websiteUrlVal = link.url;
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Error parsing socialLinks in userSignup:", e);
+      }
+    } else {
+      if (req.body.facebookUrl) parsedSocialLinks.push({ platform: "facebook", url: req.body.facebookUrl });
+      if (req.body.instagramUrl) parsedSocialLinks.push({ platform: "instagram", url: req.body.instagramUrl });
+      if (req.body.twitterUrl) parsedSocialLinks.push({ platform: "twitter", url: req.body.twitterUrl });
+      if (req.body.youtubeUrl) parsedSocialLinks.push({ platform: "youtube", url: req.body.youtubeUrl });
+      if (req.body.websiteUrl) parsedSocialLinks.push({ platform: "website", url: req.body.websiteUrl });
+    }
+
     const userData = {
       bucId,
       registrationType,
@@ -190,20 +223,19 @@ export const userSignup = async (req, res) => {
       pincode: pincode || "",
       tshirtSize: tshirtSize || "",
       clubId: clubId || null,
+      socialLinks: parsedSocialLinks,
     };
 
     if (!isPS) {
       userData.email = email.toLowerCase();
       userData.password = password;
-      if (!isPublicUser) {
-        userData.emergencyContactName = emergencyContactName || "";
-        userData.emergencyContactPhone = emergencyContactPhone || "";
-      }
-      userData.facebookUrl = req.body.facebookUrl || "";
-      userData.instagramUrl = req.body.instagramUrl || "";
-      userData.twitterUrl = req.body.twitterUrl || "";
-      userData.youtubeUrl = req.body.youtubeUrl || "";
-      userData.websiteUrl = req.body.websiteUrl || "";
+      userData.emergencyContactName = emergencyContactName || "";
+      userData.emergencyContactPhone = emergencyContactPhone || "";
+      userData.facebookUrl = facebookUrlVal;
+      userData.instagramUrl = instagramUrlVal;
+      userData.twitterUrl = twitterUrlVal;
+      userData.youtubeUrl = youtubeUrlVal;
+      userData.websiteUrl = websiteUrlVal;
     }
 
     if (isPS) {
@@ -328,6 +360,45 @@ export const updateUserProfile = async (req, res) => {
     const userData = { ...req.body };
     delete userData.password; // Don't allow password update here
     delete userData.email; // Don't allow email update here
+
+    let parsedSocialLinks = null;
+    if (userData.socialLinks) {
+      try {
+        parsedSocialLinks = typeof userData.socialLinks === "string" ? JSON.parse(userData.socialLinks) : userData.socialLinks;
+        if (Array.isArray(parsedSocialLinks)) {
+          userData.socialLinks = parsedSocialLinks;
+          parsedSocialLinks.forEach(link => {
+            if (link.platform && link.url) {
+              const platformLower = link.platform.toLowerCase();
+              if (platformLower === "facebook") userData.facebookUrl = link.url;
+              else if (platformLower === "instagram") userData.instagramUrl = link.url;
+              else if (platformLower === "twitter" || platformLower === "x") userData.twitterUrl = link.url;
+              else if (platformLower === "youtube") userData.youtubeUrl = link.url;
+              else if (platformLower === "website") userData.websiteUrl = link.url;
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Error parsing socialLinks in updateUserProfile:", e);
+      }
+    } else {
+      const hasLegacyField = 'facebookUrl' in userData || 'instagramUrl' in userData || 'twitterUrl' in userData || 'youtubeUrl' in userData || 'websiteUrl' in userData;
+      if (hasLegacyField) {
+        parsedSocialLinks = [];
+        const fb = 'facebookUrl' in userData ? userData.facebookUrl : user.facebookUrl;
+        const insta = 'instagramUrl' in userData ? userData.instagramUrl : user.instagramUrl;
+        const tw = 'twitterUrl' in userData ? userData.twitterUrl : user.twitterUrl;
+        const yt = 'youtubeUrl' in userData ? userData.youtubeUrl : user.youtubeUrl;
+        const web = 'websiteUrl' in userData ? userData.websiteUrl : user.websiteUrl;
+        
+        if (fb) parsedSocialLinks.push({ platform: "facebook", url: fb });
+        if (insta) parsedSocialLinks.push({ platform: "instagram", url: insta });
+        if (tw) parsedSocialLinks.push({ platform: "twitter", url: tw });
+        if (yt) parsedSocialLinks.push({ platform: "youtube", url: yt });
+        if (web) parsedSocialLinks.push({ platform: "website", url: web });
+        userData.socialLinks = parsedSocialLinks;
+      }
+    }
 
     if (userData.clubId === "" || userData.clubId === "null" || userData.clubId === "undefined") {
       userData.clubId = null;

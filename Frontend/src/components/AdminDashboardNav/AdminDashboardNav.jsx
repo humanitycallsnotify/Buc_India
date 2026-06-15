@@ -30,7 +30,7 @@ import ClubManagement from "../ClubManagement/ClubManagement.jsx";
 import ViewTalents from "../ViewTalents/ViewTalents.jsx";
 import { authService, profileService } from "../../services/api";
 
-const logo = "/logo copy copy.jpg";
+const logo = "/bucpng.png";
 const DRAWER_WIDTH = 260;
 const DRAWER_WIDTH_COLLAPSED = 80;
 
@@ -84,7 +84,7 @@ const AdminDashboard = () => {
       <div className="p-6 mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="w-10 h-10 rounded-full border border-copper/30 overflow-hidden flex-shrink-0">
-            <img src={logo} alt="BUC" className="w-full h-full object-cover grayscale" />
+            <img src={logo} alt="BUC" className="w-full h-full object-contain p-1 bg-white" />
           </div>
           {!isCollapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="whitespace-nowrap">

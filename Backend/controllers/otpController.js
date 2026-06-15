@@ -10,7 +10,7 @@ export const requestOTP = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    if (!["signup", "forgot_password", "talent_signup", "club_signup"].includes(type)) {
+    if (!["signup", "forgot_password", "talent_signup", "club_signup", "registration"].includes(type)) {
       return res.status(400).json({ message: "Invalid OTP type" });
     }
 
@@ -38,7 +38,7 @@ export const requestOTP = async (req, res) => {
     // Upsert OTP (update if exists for same email/type)
     await Otp.findOneAndUpdate(
       { email: email.toLowerCase(), type },
-      { otp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
+      { otp, isVerified: false, expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
       { upsert: true, new: true },
     );
 
@@ -80,9 +80,9 @@ export const verifyOTP = async (req, res) => {
       return res.status(400).json({ message: "OTP has expired" });
     }
 
-    // Do NOT delete yet if it's for signup, we need it during create profile
-    // Actually, for better security, we could mark it as verified
-    // For simplicity, we'll check its existence in the create profile flow
+    // Mark OTP as verified so it can be checked in registration/signup
+    otpRecord.isVerified = true;
+    await otpRecord.save();
 
     res.json({ message: "OTP verified successfully", verified: true });
   } catch (error) {

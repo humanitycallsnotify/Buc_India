@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Registration from "../models/Registration.js";
 import User from "../models/User.js";
+import Otp from "../models/Otp.js";
 import ClubMembership from "../models/ClubMembership.js";
 import Certificate from "../models/Certificate.js";
 import { cloudinary } from "../middleware/cloudinaryConfig.js";
@@ -71,6 +72,7 @@ export const createRegistration = async (req, res) => {
       licenseNumber,
       anyMedicalCondition,
       tShirtSize,
+      socialLinks,
       requestRidingGears,
       requestedGears,
     } = req.body;
@@ -81,6 +83,52 @@ export const createRegistration = async (req, res) => {
       if (errors.length > 0) {
         return res.status(400).json({ message: errors[0], errors });
       }
+
+      // Enforce OTP verification for non-legacy registrations
+      const verifiedOtp = await Otp.findOne({
+        email: email?.toLowerCase(),
+        type: "registration",
+        isVerified: true,
+      });
+
+      if (!verifiedOtp) {
+        return res.status(400).json({
+          message: "Email verification required. Please request and verify the OTP code first.",
+        });
+      }
+    }
+
+    let parsedSocialLinks = [];
+    let facebookUrlVal = facebookUrl || "";
+    let instagramUrlVal = instagramUrl || "";
+    let twitterUrlVal = twitterUrl || "";
+    let youtubeUrlVal = youtubeUrl || "";
+    let websiteUrlVal = websiteUrl || "";
+
+    if (socialLinks) {
+      try {
+        parsedSocialLinks = typeof socialLinks === "string" ? JSON.parse(socialLinks) : socialLinks;
+        if (Array.isArray(parsedSocialLinks)) {
+          parsedSocialLinks.forEach(link => {
+            if (link.platform && link.url) {
+              const platformLower = link.platform.toLowerCase();
+              if (platformLower === "facebook") facebookUrlVal = link.url;
+              else if (platformLower === "instagram") instagramUrlVal = link.url;
+              else if (platformLower === "twitter" || platformLower === "x") twitterUrlVal = link.url;
+              else if (platformLower === "youtube") youtubeUrlVal = link.url;
+              else if (platformLower === "website") websiteUrlVal = link.url;
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Error parsing socialLinks:", e);
+      }
+    } else {
+      if (facebookUrl) parsedSocialLinks.push({ platform: "facebook", url: facebookUrl });
+      if (instagramUrl) parsedSocialLinks.push({ platform: "instagram", url: instagramUrl });
+      if (twitterUrl) parsedSocialLinks.push({ platform: "twitter", url: twitterUrl });
+      if (youtubeUrl) parsedSocialLinks.push({ platform: "youtube", url: youtubeUrl });
+      if (websiteUrl) parsedSocialLinks.push({ platform: "website", url: websiteUrl });
     }
 
     const existingUser = await User.findOne({
@@ -178,6 +226,7 @@ export const createRegistration = async (req, res) => {
       ridingExperience: ridingExperience || "",
       interestReason: interestReason || "",
       tShirtSize: tShirtSize || "",
+      socialLinks: parsedSocialLinks,
       hasLinkedPillion: false,
       linkedPillion: { name: "", mobile: "", tShirtSize: "" },
       riderReference: {
@@ -258,11 +307,11 @@ export const createRegistration = async (req, res) => {
       registrationData.licenseNumber = licenseNumber || "";
       registrationData.anyMedicalCondition = anyMedicalCondition || "";
       registrationData.tShirtSize = tShirtSize || "";
-      registrationData.facebookUrl = facebookUrl || "";
-      registrationData.instagramUrl = instagramUrl || "";
-      registrationData.twitterUrl = twitterUrl || "";
-      registrationData.youtubeUrl = youtubeUrl || "";
-      registrationData.websiteUrl = websiteUrl || "";
+      registrationData.facebookUrl = facebookUrlVal;
+      registrationData.instagramUrl = instagramUrlVal;
+      registrationData.twitterUrl = twitterUrlVal;
+      registrationData.youtubeUrl = youtubeUrlVal;
+      registrationData.websiteUrl = websiteUrlVal;
       registrationData.acceptedTerms =
         acceptedTerms === true || acceptedTerms === "true";
       registrationData.requestRidingGears = false;
@@ -335,6 +384,13 @@ export const createRegistration = async (req, res) => {
 
     const registration = new Registration(registrationData);
     const newRegistration = await registration.save();
+
+    if (!isLegacy) {
+      await Otp.deleteMany({
+        email: email?.toLowerCase(),
+        type: "registration",
+      });
+    }
 
     if (registrationType && email) {
       sendRegistrationConfirmation({

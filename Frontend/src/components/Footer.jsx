@@ -15,7 +15,7 @@ import {
   Baby
 } from "lucide-react";
 
-const buclogo = "/logo.jpg";
+const buclogo = "/bucpng.png";
 
 const FooterSection = ({ title, links }) => (
   <div className="flex flex-col gap-6">
@@ -75,7 +75,7 @@ const Footer = () => {
           <div className="lg:col-span-4 space-y-12">
             <div>
               <div className="flex items-center gap-4 mb-6">
-                <img src={buclogo} alt="BUC" className="w-16 h-16 rounded-full border border-copper/30 p-1" />
+                <img src={buclogo} alt="BUC" className="w-28 h-28 rounded-full border border-copper/30 object-contain p-2 bg-white drop-shadow-xl" />
                 <div>
                   <h3 className="font-heading text-3xl text-white leading-none">BUC <span className="text-copper">INDIA</span></h3>
                   <p className="text-steel-dim text-[10px] tracking-[0.3em] uppercase mt-1">Premier Riding Community</p>

@@ -130,6 +130,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  socialLinks: [{
+    platform: { type: String, trim: true },
+    url: { type: String, trim: true }
+  }],
   profileImage: {
     type: String,
     default: ''

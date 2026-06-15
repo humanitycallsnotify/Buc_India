@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { eventService, registrationService, profileService } from "../../services/api";
+import { eventService, registrationService, profileService, otpService } from "../../services/api";
 import { TERMS_SUMMARY } from "../../constants/registrationConstants";
 import {
   User,
@@ -56,6 +56,7 @@ const INITIAL_FORM = {
   riderPhone: "",
   riderRegistrationId: "",
   acceptedTerms: false,
+  socialLinks: [],
 };
 
 const PublicRegister = () => {
@@ -70,6 +71,105 @@ const PublicRegister = () => {
   const [profileData, setProfileData] = useState(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
+
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [countdown, setCountdown] = useState(0);
+
+  const [socialPlatform, setSocialPlatform] = useState("");
+  const [socialUrl, setSocialUrl] = useState("");
+
+  useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
+
+  const handleSendOtp = async () => {
+    if (!formData.email) {
+      toast.error("Please enter your email first");
+      setFieldErrors(prev => ({ ...prev, email: "Email is required to send OTP" }));
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      setFieldErrors(prev => ({ ...prev, email: "Please enter a valid email address" }));
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      await otpService.send(formData.email, "registration");
+      setOtpSent(true);
+      setCountdown(60);
+      toast.success("OTP sent to your email!");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to send OTP. Please try again.",
+      );
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpValue || otpValue.length !== 6) {
+      toast.error("Please enter a 6-digit OTP code");
+      return;
+    }
+    setIsVerifyingOtp(true);
+    try {
+      await otpService.verify(formData.email, otpValue, "registration");
+      setOtpVerified(true);
+      toast.success("Email verified successfully!");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to verify OTP. Please try again.",
+      );
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleAddSocialLink = () => {
+    if (!socialPlatform) {
+      toast.error("Please select a platform");
+      return;
+    }
+    if (!socialUrl) {
+      toast.error("Please enter a URL");
+      return;
+    }
+    if (!socialUrl.startsWith("http://") && !socialUrl.startsWith("https://")) {
+      toast.error("URL must start with http:// or https://");
+      return;
+    }
+    if (formData.socialLinks.some(link => link.platform.toLowerCase() === socialPlatform.toLowerCase())) {
+      toast.error(`You have already added a link for ${socialPlatform}`);
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      socialLinks: [...prev.socialLinks, { platform: socialPlatform, url: socialUrl }]
+    }));
+    setSocialPlatform("");
+    setSocialUrl("");
+  };
+
+  const handleRemoveSocialLink = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      socialLinks: prev.socialLinks.filter((_, idx) => idx !== index)
+    }));
+  };
 
   const eventId = event ? event._id : (slug || "community");
 
@@ -159,6 +259,12 @@ const PublicRegister = () => {
 
   const handleInputChange = (e) => {
     const { name, value, files, type, checked } = e.target;
+    if (name === "email") {
+      setOtpVerified(false);
+      setOtpSent(false);
+      setOtpValue("");
+    }
+
     if (name === "licenseImage") {
       setFormData((prev) => ({ ...prev, licenseImage: files[0] }));
     } else if (name === "profileImage") {
@@ -194,6 +300,12 @@ const PublicRegister = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!otpVerified) {
+      setError("Please verify your email address with OTP first");
+      toast.error("Email verification is required");
+      return;
+    }
 
     // Base mandatory fields for all
     const mandatoryFields = [
@@ -318,6 +430,8 @@ const PublicRegister = () => {
         if (formData.profileImage) data.append("profileImage", formData.profileImage);
       } else if (key === "requestedGears") {
         data.append("requestedGears", JSON.stringify(formData.requestedGears));
+      } else if (key === "socialLinks") {
+        data.append("socialLinks", JSON.stringify(formData.socialLinks));
       } else if (key === "acceptedTerms") {
         data.append(key, formData.acceptedTerms ? "true" : "false");
       } else if (key === "hasLinkedPillion") {
@@ -496,21 +610,78 @@ const PublicRegister = () => {
                   )}
                 </div>
                 
-                <div className="form-group">
+                <div className="form-group email-otp-group">
                   <label>Email *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="your.email@example.com"
-                    className={fieldErrors.email ? "input-error" : ""}
-                  />
+                  <div className="email-input-wrapper flex gap-2">
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="your.email@example.com"
+                      className={fieldErrors.email ? "input-error flex-1" : "flex-1"}
+                      disabled={otpVerified}
+                      readOnly={otpVerified}
+                    />
+                    {!otpVerified && (
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={isSendingOtp || countdown > 0}
+                        className="send-otp-btn bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 rounded-xl disabled:bg-gray-700 transition-all text-sm whitespace-nowrap"
+                      >
+                        {isSendingOtp ? (
+                          <Loader2 className="animate-spin" size={16} />
+                        ) : otpSent ? (
+                          countdown > 0 ? `Resend in ${countdown}s` : "Resend OTP"
+                        ) : (
+                          "Send OTP"
+                        )}
+                      </button>
+                    )}
+                    {otpVerified && (
+                      <span className="email-verified-badge flex items-center gap-1 text-green-500 font-semibold text-sm bg-green-500/10 px-3 rounded-xl border border-green-500/20">
+                        <CheckCircle2 size={16} />
+                        Verified
+                      </span>
+                    )}
+                  </div>
                   {fieldErrors.email && (
                     <span className="field-error">{fieldErrors.email}</span>
                   )}
                 </div>
               </div>
+
+              {otpSent && !otpVerified && (
+                <div className="form-row animate-in fade-in duration-300">
+                  <div className="form-group md:max-w-[50%]">
+                    <label>Enter 6-Digit OTP *</label>
+                    <div className="otp-input-wrapper flex gap-2">
+                      <input
+                        type="text"
+                        name="otpValue"
+                        value={otpValue}
+                        onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="123456"
+                        maxLength="6"
+                        className={fieldErrors.otpValue ? "input-error flex-1" : "flex-1"}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOtp}
+                        disabled={isVerifyingOtp || otpValue.length !== 6}
+                        className="verify-otp-btn bg-green-600 hover:bg-green-700 text-white font-bold px-6 rounded-xl disabled:bg-gray-700 transition-all text-sm whitespace-nowrap"
+                      >
+                        {isVerifyingOtp ? (
+                          <Loader2 className="animate-spin" size={16} />
+                        ) : (
+                          "Verify OTP"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="form-row">
                 <div className="form-group">
@@ -949,7 +1120,75 @@ const PublicRegister = () => {
                   </div>
                 </div>
               </div>
-            )}
+            )}            {/* Social Media Links Section */}
+            <div className="form-section">
+              <h3>Social Media Links <span className="section-optional">(Optional)</span></h3>
+              <p className="section-desc text-gray-400 text-sm mb-4">
+                Add your social media profiles to help the community connect with you.
+              </p>
+
+              {formData.socialLinks && formData.socialLinks.length > 0 && (
+                <div className="social-links-list mb-4">
+                  {formData.socialLinks.map((link, index) => (
+                    <div key={index} className="social-link-item flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="social-platform-badge uppercase text-xs font-semibold px-2 py-1 bg-blue-500/20 text-blue-400 rounded">
+                          {link.platform}
+                        </span>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="social-url-text text-sm text-gray-300 truncate hover:text-white transition-colors">
+                          {link.url}
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSocialLink(index)}
+                        className="text-red-400 hover:text-red-300 p-1 transition-colors"
+                        title="Remove link"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="social-link-inputs flex flex-col md:flex-row gap-3">
+                <div className="form-group flex-1 md:max-w-[200px]">
+                  <select
+                    value={socialPlatform}
+                    onChange={(e) => setSocialPlatform(e.target.value)}
+                    className="w-full bg-gray-900 border border-white/10 rounded-xl px-3 py-2 text-white"
+                  >
+                    <option value="">Select Platform</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Facebook">Facebook</option>
+                    <option value="Twitter">Twitter/X</option>
+                    <option value="YouTube">YouTube</option>
+                    <option value="Website">Website</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="form-group flex-[2]">
+                  <input
+                    type="url"
+                    value={socialUrl}
+                    onChange={(e) => setSocialUrl(e.target.value)}
+                    placeholder="https://instagram.com/yourprofile"
+                    className="w-full bg-gray-900 border border-white/10 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+                <div className="form-group md:self-end">
+                  <button
+                    type="button"
+                    onClick={handleAddSocialLink}
+                    className="btn-add-social bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition-all h-[40px] flex items-center justify-center text-sm"
+                  >
+                    Add Link
+                  </button>
+                </div>
+              </div>
+            </div>
 
             {/* 6. Additional Information */}
             <div className="form-section">

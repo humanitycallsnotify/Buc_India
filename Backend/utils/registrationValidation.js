@@ -68,6 +68,27 @@ export const validateRegistrationPayload = (body) => {
     errors.push("You must accept the Terms and Conditions");
   }
 
+  if (body.socialLinks) {
+    let parsed = body.socialLinks;
+    if (typeof parsed === "string") {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch {
+        errors.push("Invalid social media links format");
+      }
+    }
+    if (Array.isArray(parsed)) {
+      parsed.forEach((link, idx) => {
+        if (!link.platform || String(link.platform).trim() === "") {
+          errors.push(`Platform name is required for social link ${idx + 1}`);
+        }
+        if (!link.url || String(link.url).trim() === "") {
+          errors.push(`URL is required for social link ${idx + 1}`);
+        }
+      });
+    }
+  }
+
   switch (registrationType) {
     case "student":
       requireField(body, "collegeName", errors, "College name is required");

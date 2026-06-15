@@ -11,7 +11,7 @@ import {
   Loader2
 } from "lucide-react";
 
-const logo = "/logo copy copy.jpg";
+const logo = "/bucpng.png";
 
 const AdminLogin = () => {
   const [username, setUsername] = useState("");
@@ -60,7 +60,7 @@ const AdminLogin = () => {
         <div className="text-center mb-12">
           <div className="inline-block p-1 border border-copper/30 rounded-full mb-6">
              <div className="w-20 h-20 rounded-full overflow-hidden border border-white/10">
-                <img src={logo} alt="BUC India" className="w-full h-full object-cover grayscale brightness-125" />
+                <img src={logo} alt="BUC India" className="w-full h-full object-contain p-4 drop-shadow-2xl bg-white" />
              </div>
           </div>
           <span className="text-copper font-body text-[10px] tracking-[0.4em] uppercase mb-2 block font-bold">Secure Access</span>

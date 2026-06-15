@@ -31,7 +31,7 @@ import {
     useSidebar,
 } from "./ui/sidebar";
 import { cn } from "../lib/utils";
-const buclogo = "/logo.jpg";
+const buclogo = "/bucpng.png";
 
 // Menu items.
 const items = [

@@ -66,6 +66,10 @@ const registrationSchema = new mongoose.Schema({
   twitterUrl: { type: String, trim: true, default: '' },
   youtubeUrl: { type: String, trim: true, default: '' },
   websiteUrl: { type: String, trim: true, default: '' },
+  socialLinks: [{
+    platform: { type: String, trim: true },
+    url: { type: String, trim: true }
+  }],
   acceptedTerms: { type: Boolean, default: false },
   dateOfBirth: {
     type: Date
