@@ -341,9 +341,7 @@ const TalentRegistrationForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField label="Full Name" name="fullName" icon={User} value={formData.fullName} onChange={handleChange} required />
             <InputField label="Age" name="age" type="number" icon={Clock} value={formData.age} onChange={handleChange} required />
-            <div className="md:col-span-2">
-              <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required />
-            </div>
+            <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required />
             <div className="space-y-1">
               <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Gender <span className="text-red-500">*</span></label>
               <select name="gender" value={formData.gender} onChange={handleChange} required className="w-full bg-carbon border border-white/10 px-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors appearance-none">

@@ -642,9 +642,7 @@ const UserRegistrationForm = () => {
                       </div>
                     </div>
                     {isPublicUser && (
-                      <div className="md:col-span-2">
-                        <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
-                      </div>
+                      <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
                     )}
                   </>
                 )}
@@ -659,9 +657,7 @@ const UserRegistrationForm = () => {
                   <InputField label="College Name" name="collegeName" icon={GraduationCap} value={formData.collegeName} onChange={handleInputChange} required />
                   <InputField label="Student ID Number" name="collegeIdNo" icon={FileText} value={formData.collegeIdNo} onChange={handleInputChange} required />
                   {formData.registrationType === "Student" && (
-                    <div className="md:col-span-2">
-                      <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
-                    </div>
+                    <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
                   )}
                 </div>
               </div>
