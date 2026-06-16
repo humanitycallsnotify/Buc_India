@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -10,9 +10,12 @@ import {
   User,
   Calendar,
   Zap,
-  Trash2
+  Trash2,
+  Key,
+  Mail,
+  Phone
 } from "lucide-react";
-import { clubService } from "../../services/api";
+import { clubService, otpService } from "../../services/api";
 import TermsModal from "../TermsModal";
 import {
   CLUB_COLLABORATION_TERMS,
@@ -29,6 +32,7 @@ const initialRequestState = {
   founderRole: "founder",
   founderEmail: "",
   founderPhone: "",
+  otp: "",
   admins: [{ name: "", role: "admin", email: "", phone: "" }],
   logo: null,
   firstRideImage: null,
@@ -38,7 +42,6 @@ const initialRequestState = {
 
 const ClubCollaborate = () => {
   const navigate = useNavigate();
-  const isLoggedIn = sessionStorage.getItem("userLoggedIn") === "true";
   const userEmail = sessionStorage.getItem("userEmail") || "";
   const userPhone = sessionStorage.getItem("userPhone") || "";
 
@@ -46,6 +49,17 @@ const ClubCollaborate = () => {
   const [submitting, setSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setInterval(() => setCountdown((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   const updateField = (field, value) =>
     setRequestForm((prev) => ({ ...prev, [field]: value }));
@@ -75,11 +89,42 @@ const ClubCollaborate = () => {
   const handleFileChange = (field, file) =>
     setRequestForm((prev) => ({ ...prev, [field]: file }));
 
+  const handleSendOtp = async () => {
+    const email = userEmail || requestForm.founderEmail;
+    if (!email) {
+      return toast.error("Please enter founder email first");
+    }
+    setIsSendingOtp(true);
+    try {
+      await otpService.send(email, "club_signup");
+      setOtpSent(true);
+      setCountdown(60);
+      toast.success("OTP sent to your email!");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to send OTP.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!termsAccepted) {
       return toast.error("Please accept the Declaration & Legal Agreement to proceed.");
+    }
+
+    const creatorEmail = userEmail || requestForm.founderEmail;
+    const creatorPhone = userPhone || requestForm.founderPhone;
+
+    if (!creatorEmail) {
+      return toast.error("Please provide founder email.");
+    }
+    if (!requestForm.otp) {
+      return toast.error("Please enter the OTP sent to your email.");
+    }
+    if (!otpSent) {
+      return toast.error("Please verify your email with OTP first.");
     }
 
     setSubmitting(true);
@@ -94,8 +139,9 @@ const ClubCollaborate = () => {
       data.append("founderRole", requestForm.founderRole);
       data.append("founderEmail", requestForm.founderEmail);
       data.append("founderPhone", requestForm.founderPhone);
-      data.append("creatorEmail", userEmail || requestForm.founderEmail);
-      data.append("creatorPhone", userPhone || requestForm.founderPhone);
+      data.append("creatorEmail", creatorEmail);
+      data.append("creatorPhone", creatorPhone);
+      data.append("otp", requestForm.otp);
       data.append("admins", JSON.stringify(requestForm.admins || []));
       if (requestForm.logo) data.append("logo", requestForm.logo);
       if (requestForm.firstRideImage)
@@ -111,6 +157,8 @@ const ClubCollaborate = () => {
       );
       setRequestForm(initialRequestState);
       setTermsAccepted(false);
+      setOtpSent(false);
+      setCountdown(0);
       navigate("/register/june-21-event");
     } catch (error) {
       toast.error(
@@ -272,6 +320,76 @@ const ClubCollaborate = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+              <div className="space-y-2">
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Founder Email *</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-grow">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                    <input
+                      type="email"
+                      className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors disabled:opacity-50"
+                      value={userEmail || requestForm.founderEmail}
+                      onChange={(e) => updateField("founderEmail", e.target.value)}
+                      placeholder="founder@club.com"
+                      required
+                      disabled={!!userEmail || (otpSent && countdown > 0)}
+                    />
+                  </div>
+                  {!userEmail && (
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={isSendingOtp || countdown > 0}
+                      className="px-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 min-w-[90px]"
+                    >
+                      {isSendingOtp ? "..." : countdown > 0 ? `${countdown}s` : "SEND OTP"}
+                    </button>
+                  )}
+                </div>
+                {userEmail && (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={isSendingOtp || countdown > 0}
+                    className="mt-2 px-4 py-3 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50"
+                  >
+                    {isSendingOtp ? "..." : countdown > 0 ? `Resend OTP in ${countdown}s` : otpSent ? "Resend OTP" : "Send OTP to Account Email"}
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Founder Phone</label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                  <input
+                    type="tel"
+                    className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors disabled:opacity-50"
+                    value={userPhone || requestForm.founderPhone}
+                    onChange={(e) => updateField("founderPhone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    placeholder="10 digit number"
+                    disabled={!!userPhone}
+                  />
+                </div>
+              </div>
+              {otpSent && (
+                <div className="space-y-2 md:col-span-2">
+                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">OTP *</label>
+                  <div className="relative">
+                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                    <input
+                      type="text"
+                      className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
+                      value={requestForm.otp}
+                      onChange={(e) => updateField("otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="Enter 6-digit OTP"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <h3 className="font-body text-[10px] uppercase tracking-[0.3em] text-copper mb-6">Additional Leadership</h3>
             <div className="space-y-4 mb-8">
               {requestForm.admins.map((admin, index) => (
@@ -359,18 +477,11 @@ const ClubCollaborate = () => {
           <div className="flex flex-col md:flex-row items-center gap-12 pt-8">
             <button
               type="submit"
-              disabled={submitting || !isLoggedIn}
+              disabled={submitting}
               className="w-full md:w-auto px-16 py-6 bg-copper text-carbon font-heading text-2xl uppercase hover:bg-white transition-all duration-500 disabled:opacity-50"
             >
               {submitting ? "Processing..." : "Submit Collaboration Request"}
             </button>
-            
-            {!isLoggedIn && (
-               <div className="flex items-center gap-4 text-red-500 animate-pulse">
-                  <Shield size={20} />
-                  <span className="font-body text-xs tracking-widest uppercase">AUTHENTICATION REQUIRED</span>
-               </div>
-            )}
           </div>
         </form>
       </div>
