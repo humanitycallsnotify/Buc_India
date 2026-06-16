@@ -13,7 +13,8 @@ import {
   Trash2,
   Key,
   Mail,
-  Phone
+  Phone,
+  CheckCircle
 } from "lucide-react";
 import { clubService, otpService, profileService } from "../../services/api";
 import TermsModal from "../TermsModal";
@@ -76,7 +77,13 @@ const ClubCollaborate = () => {
         admins[index].otp = "";
         setAdminOtpMeta((meta) => ({
           ...meta,
-          [index]: { otpSent: false, countdown: 0, isSending: false },
+          [index]: { otpSent: false, countdown: 0, isSending: false, verified: false, isVerifying: false },
+        }));
+      }
+      if (field === "otp") {
+        setAdminOtpMeta((meta) => ({
+          ...meta,
+          [index]: { ...(meta[index] || {}), verified: false },
         }));
       }
       return { ...prev, admins };
@@ -131,7 +138,7 @@ const ClubCollaborate = () => {
       await otpService.send(admin.email.trim(), "club_signup");
       setAdminOtpMeta((prev) => ({
         ...prev,
-        [index]: { otpSent: true, countdown: 60, isSending: false },
+        [index]: { otpSent: true, countdown: 60, isSending: false, verified: false, isVerifying: false },
       }));
       toast.success(`OTP sent to ${admin.email}!`);
     } catch (error) {
@@ -140,6 +147,34 @@ const ClubCollaborate = () => {
         [index]: { ...(prev[index] || {}), isSending: false },
       }));
       toast.error(error.response?.data?.message || "Failed to send OTP.");
+    }
+  };
+
+  const handleVerifyAdminOtp = async (index) => {
+    const admin = requestForm.admins[index];
+    if (!admin?.email?.trim()) {
+      return toast.error("Please enter leadership email first");
+    }
+    if (!admin?.otp || admin.otp.length !== 6) {
+      return toast.error("Please enter the 6-digit OTP");
+    }
+    setAdminOtpMeta((prev) => ({
+      ...prev,
+      [index]: { ...(prev[index] || {}), isVerifying: true, verified: false },
+    }));
+    try {
+      await otpService.verify(admin.email.trim(), admin.otp, "club_signup");
+      setAdminOtpMeta((prev) => ({
+        ...prev,
+        [index]: { ...(prev[index] || {}), isVerifying: false, verified: true },
+      }));
+      toast.success(`Leadership email verified: ${admin.email}`);
+    } catch (error) {
+      setAdminOtpMeta((prev) => ({
+        ...prev,
+        [index]: { ...(prev[index] || {}), isVerifying: false, verified: false },
+      }));
+      toast.error(error.response?.data?.message || "Invalid or expired OTP.");
     }
   };
 
@@ -209,7 +244,7 @@ const ClubCollaborate = () => {
       const admin = requestForm.admins[i];
       if (admin.email?.trim()) {
         const meta = adminOtpMeta[i];
-        if (!meta?.otpSent || !admin.otp) {
+        if (!meta?.verified) {
           return toast.error(`Please verify OTP for leadership email: ${admin.email}`);
         }
       }
@@ -303,7 +338,7 @@ const ClubCollaborate = () => {
                {[
                  { label: "Club Insignia (Logo)", field: "logo", icon: <Shield size={20} /> },
                  { label: "Brotherhood Moment (Ride Photo)", field: "firstRideImage", icon: <Zap size={20} /> },
-                 { label: "Please upload Club Id doc if your club has it else upload the club admin government issued ID.", field: "governmentIdImage", icon: <Calendar size={20} /> },
+                 { label: "Please upload your Club Registration ID (or Government-Issued ID of the Club Administrator)", field: "governmentIdImage", icon: <Calendar size={20} /> },
                  { label: "Founder Verification (Document)", field: "founderPassport", icon: <User size={20} /> },
                ].map((item) => (
                  <label key={item.field} className="group cursor-pointer">
@@ -517,15 +552,20 @@ const ClubCollaborate = () => {
                       value={admin.email}
                       onChange={(e) => updateAdminField(index, "email", e.target.value)}
                     />
-                    {admin.email?.trim() && (
+                    {admin.email?.trim() && !meta.verified && (
                       <button
                         type="button"
                         onClick={() => handleSendAdminOtp(index)}
                         disabled={meta.isSending || (meta.countdown > 0)}
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50"
                       >
-                        {meta.isSending ? "..." : meta.countdown > 0 ? `Resend OTP in ${meta.countdown}s` : meta.otpSent ? "Resend OTP" : "Send OTP"}
+                        {meta.isSending ? "..." : meta.countdown > 0 ? `Resend OTP in ${meta.countdown}s` : meta.otpSent ? "Resend OTP" : "SEND OTP"}
                       </button>
+                    )}
+                    {meta.verified && (
+                      <p className="font-body text-[10px] text-green-400 flex items-center gap-1">
+                        <CheckCircle size={12} /> Email Verified
+                      </p>
                     )}
                   </div>
                   <input
@@ -536,16 +576,26 @@ const ClubCollaborate = () => {
                     onChange={(e) => updateAdminField(index, "phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
                   />
                   </div>
-                  {admin.email?.trim() && meta.otpSent && (
-                    <div className="relative max-w-md">
-                      <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={14} />
-                      <input
-                        type="text"
-                        className="w-full bg-carbon border border-white/10 pl-10 pr-4 py-3 font-body text-xs outline-none focus:border-copper"
-                        placeholder="Enter 6-digit OTP"
-                        value={admin.otp || ""}
-                        onChange={(e) => updateAdminField(index, "otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      />
+                  {admin.email?.trim() && meta.otpSent && !meta.verified && (
+                    <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+                      <div className="relative flex-grow">
+                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={14} />
+                        <input
+                          type="text"
+                          className="w-full bg-carbon border border-white/10 pl-10 pr-4 py-3 font-body text-xs outline-none focus:border-copper"
+                          placeholder="Enter 6-digit OTP"
+                          value={admin.otp || ""}
+                          onChange={(e) => updateAdminField(index, "otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleVerifyAdminOtp(index)}
+                        disabled={meta.isVerifying || admin.otp?.length !== 6}
+                        className="px-4 py-3 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {meta.isVerifying ? "..." : "Verify OTP"}
+                      </button>
                     </div>
                   )}
                   {requestForm.admins.length > 1 && (
