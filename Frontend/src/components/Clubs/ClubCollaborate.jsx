@@ -523,81 +523,96 @@ const ClubCollaborate = () => {
             </div>
 
             <h3 className="font-body text-[10px] uppercase tracking-[0.3em] text-copper mb-6">Additional Leadership</h3>
-            <div className="space-y-4 mb-8">
+            <div className="space-y-6 mb-8">
               {requestForm.admins.map((admin, index) => {
                 const meta = adminOtpMeta[index] || {};
                 return (
-                <div key={index} className="p-4 border border-white/5 bg-carbon/50 relative group space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <input
-                    type="text"
-                    className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
-                    placeholder="NAME"
-                    value={admin.name}
-                    onChange={(e) => updateAdminField(index, "name", e.target.value)}
-                  />
-                  <select
-                    className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
-                    value={admin.role}
-                    onChange={(e) => updateAdminField(index, "role", e.target.value)}
-                  >
-                    <option value="admin">ADMIN</option>
-                    <option value="co-founder">CO-FOUNDER</option>
-                  </select>
-                  <div className="space-y-2">
+                <div key={index} className="p-4 md:p-6 border border-white/5 bg-carbon/50 relative group space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <input
-                      type="email"
+                      type="text"
                       className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
-                      placeholder="EMAIL"
-                      value={admin.email}
-                      onChange={(e) => updateAdminField(index, "email", e.target.value)}
+                      placeholder="NAME"
+                      value={admin.name}
+                      onChange={(e) => updateAdminField(index, "name", e.target.value)}
                     />
-                    {admin.email?.trim() && !meta.verified && (
-                      <button
-                        type="button"
-                        onClick={() => handleSendAdminOtp(index)}
-                        disabled={meta.isSending || (meta.countdown > 0)}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50"
-                      >
-                        {meta.isSending ? "..." : meta.countdown > 0 ? `Resend OTP in ${meta.countdown}s` : meta.otpSent ? "Resend OTP" : "SEND OTP"}
-                      </button>
-                    )}
-                    {meta.verified && (
-                      <p className="font-body text-[10px] text-green-400 flex items-center gap-1">
-                        <CheckCircle size={12} /> Email Verified
-                      </p>
-                    )}
+                    <select
+                      className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
+                      value={admin.role}
+                      onChange={(e) => updateAdminField(index, "role", e.target.value)}
+                    >
+                      <option value="admin">ADMIN</option>
+                      <option value="co-founder">CO-FOUNDER</option>
+                    </select>
+                    <input
+                      type="tel"
+                      className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
+                      placeholder="PHONE"
+                      value={admin.phone}
+                      onChange={(e) => updateAdminField(index, "phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    />
                   </div>
-                  <input
-                    type="tel"
-                    className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
-                    placeholder="PHONE"
-                    value={admin.phone}
-                    onChange={(e) => updateAdminField(index, "phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  />
-                  </div>
-                  {admin.email?.trim() && meta.otpSent && !meta.verified && (
-                    <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+
+                  <div className="space-y-3 pt-2 border-t border-white/5">
+                    <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim block">
+                      Leadership Email {admin.email?.trim() ? "*" : "(Optional)"}
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <div className="relative flex-grow">
-                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={14} />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={14} />
                         <input
-                          type="text"
+                          type="email"
                           className="w-full bg-carbon border border-white/10 pl-10 pr-4 py-3 font-body text-xs outline-none focus:border-copper"
-                          placeholder="Enter 6-digit OTP"
-                          value={admin.otp || ""}
-                          onChange={(e) => updateAdminField(index, "otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          placeholder="leadership@club.com"
+                          value={admin.email}
+                          onChange={(e) => updateAdminField(index, "email", e.target.value)}
                         />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleVerifyAdminOtp(index)}
-                        disabled={meta.isVerifying || admin.otp?.length !== 6}
-                        className="px-4 py-3 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {meta.isVerifying ? "..." : "Verify OTP"}
-                      </button>
+                      {admin.email?.trim() && !meta.verified && (
+                        <button
+                          type="button"
+                          onClick={() => handleSendAdminOtp(index)}
+                          disabled={meta.isSending || (meta.countdown > 0)}
+                          className="px-4 py-3 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 min-w-[100px] whitespace-nowrap"
+                        >
+                          {meta.isSending ? "..." : meta.countdown > 0 ? `${meta.countdown}s` : meta.otpSent ? "Resend OTP" : "SEND OTP"}
+                        </button>
+                      )}
                     </div>
-                  )}
+
+                    {meta.verified && (
+                      <p className="font-body text-[10px] text-green-400 flex items-center gap-1.5">
+                        <CheckCircle size={14} /> Email Verified
+                      </p>
+                    )}
+
+                    {admin.email?.trim() && meta.otpSent && !meta.verified && (
+                      <div className="space-y-2">
+                        <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim block">OTP *</label>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="relative flex-grow">
+                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={14} />
+                            <input
+                              type="text"
+                              className="w-full bg-carbon border border-white/10 pl-10 pr-4 py-3 font-body text-xs outline-none focus:border-copper"
+                              placeholder="Enter 6-digit OTP"
+                              value={admin.otp || ""}
+                              onChange={(e) => updateAdminField(index, "otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyAdminOtp(index)}
+                            disabled={meta.isVerifying || admin.otp?.length !== 6}
+                            className="px-4 py-3 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {meta.isVerifying ? "..." : "Verify OTP"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {requestForm.admins.length > 1 && (
                     <button
                       type="button"
