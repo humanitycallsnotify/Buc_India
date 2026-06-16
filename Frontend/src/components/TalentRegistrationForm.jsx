@@ -5,8 +5,10 @@ import {
   FileText, Calendar, Trophy, CheckCircle, Shield, ChevronDown, Key,
   Upload, Image as ImageIcon, Video as VideoIcon
 } from "lucide-react";
-import { talentService, clubService, otpService } from "../services/api";
+import { talentService, clubService, otpService, profileService } from "../services/api";
 import DobPicker from "./DobPicker";
+
+const DUPLICATE_PHONE_MESSAGE = "This mobile number is already registered.";
 
 const TALENT_CATEGORIES = {
   "🎤 Performing Arts": [
@@ -65,6 +67,7 @@ const TalentRegistrationForm = () => {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [phoneError, setPhoneError] = useState("");
 
   const [talentImage, setTalentImage] = useState(null);
   const [talentVideo, setTalentVideo] = useState(null);
@@ -139,9 +142,32 @@ const TalentRegistrationForm = () => {
     const { name, value, type, checked } = e.target;
     if (name === "phone") {
       setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, "").slice(0, 10) }));
+      setPhoneError("");
     } else {
       setFormData(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
     }
+  };
+
+  const checkPhoneDuplicate = async (phone) => {
+    if (phone.length !== 10) {
+      setPhoneError("");
+      return false;
+    }
+    try {
+      const result = await profileService.checkPhoneRegistered(phone);
+      if (result.registered) {
+        setPhoneError(DUPLICATE_PHONE_MESSAGE);
+        return true;
+      }
+      setPhoneError("");
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const handlePhoneBlur = async () => {
+    await checkPhoneDuplicate(formData.phone);
   };
 
   const handleGroupChange = (e) => {
@@ -164,6 +190,9 @@ const TalentRegistrationForm = () => {
     }
     if (!otpSent) {
       return toast.error("Please verify your email address with OTP first.");
+    }
+    if (await checkPhoneDuplicate(formData.phone)) {
+      return toast.error(DUPLICATE_PHONE_MESSAGE);
     }
     if (!formData.consentInfoTrue || !formData.consentRules || !formData.consentMedia) {
       return toast.error("Please check all three consent checkboxes before submitting.");
@@ -340,7 +369,22 @@ const TalentRegistrationForm = () => {
                 <option value="prefernottosay">Prefer not to say</option>
               </select>
             </div>
-            <InputField label="Phone Number" name="phone" type="tel" icon={Phone} value={formData.phone} onChange={handleChange} required />
+            <div className="space-y-1">
+              <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Phone Number <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  onBlur={handlePhoneBlur}
+                  required
+                  className={`w-full bg-carbon border pl-12 pr-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors ${phoneError ? "border-red-500" : "border-white/10"}`}
+                />
+              </div>
+              {phoneError && <p className="font-body text-[10px] text-red-400 mt-1">{phoneError}</p>}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end md:col-span-2">
               <div className="md:col-span-2">
                 <InputField label="Email ID" name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} required />

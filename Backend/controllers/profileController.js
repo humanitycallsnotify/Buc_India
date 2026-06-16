@@ -4,6 +4,7 @@ import Club from "../models/Club.js";
 import { cloudinary } from "../middleware/cloudinaryConfig.js";
 import { generateUniqueBucId } from "../utils/generateBucId.js";
 import { sendRegistrationConfirmation } from "../utils/mailSender.js";
+import { DUPLICATE_PHONE_MESSAGE, isPhoneRegistered } from "../utils/checkRegisteredPhone.js";
 
 export const getProfile = async (req, res) => {
   try {
@@ -67,7 +68,16 @@ export const userSignup = async (req, res) => {
       clubId,
       riderPhone,
       riderRegistrationId,
+      participatingInYoga,
+      participatingInRally,
+      participatingInMVD2026,
     } = req.body;
+
+    const parseBool = (val) => val === true || val === 'true';
+    const yoga = parseBool(participatingInYoga);
+    const rally = parseBool(participatingInRally);
+    const mvd = parseBool(participatingInMVD2026);
+    const needsTshirt = yoga || rally;
 
     const isRider = registrationType === 'Rider' || registrationType === 'Student Rider';
     const isStudent = registrationType === 'Student' || registrationType === 'Student Rider';
@@ -76,14 +86,19 @@ export const userSignup = async (req, res) => {
     const isPillion = registrationType === 'Pillion';
 
     // Check if it's a detailed registration (e.g. from the registration forms in registration branch)
-    // We determine this by checking if address or tshirtSize is provided.
-    const isDetailed = !!address || !!city || !!state || !!pincode || !!tshirtSize;
+    // We determine this by checking if address or participation/tshirt fields are provided.
+    const isDetailed = !!address || !!city || !!state || !!pincode || !!tshirtSize || yoga || rally || mvd;
 
     // 1. Mandatory overall validation (Common to ALL registration types)
     if (isDetailed) {
-      if (!phone || !fullName || !address || !city || !state || !pincode || !tshirtSize) {
+      if (!phone || !fullName || !address || !city || !state || !pincode) {
         return res.status(400).json({ 
-          message: "Full Name, Phone, T-Shirt Size, and Address details are required for all registrations." 
+          message: "Full Name, Phone, and Address details are required for all registrations." 
+        });
+      }
+      if (needsTshirt && !tshirtSize) {
+        return res.status(400).json({
+          message: "T-Shirt Size is required when participating in Yoga or Rally.",
         });
       }
     } else {
@@ -135,14 +150,20 @@ export const userSignup = async (req, res) => {
       }
     }
 
+    if (phone && await isPhoneRegistered(phone)) {
+      return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
+    }
+
     if (registrationType !== 'PS') {
       const existingUser = await User.findOne({
         $or: [{ phone }, { email: email.toLowerCase() }],
       });
 
       if (existingUser) {
-        const field = existingUser.email === email.toLowerCase() ? "Email" : "Phone number";
-        return res.status(400).json({ message: `${field} is already registered.` });
+        if (existingUser.phone === phone) {
+          return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
+        }
+        return res.status(400).json({ message: "Email is already registered." });
       }
 
       // Verify OTP exists for this email
@@ -159,9 +180,8 @@ export const userSignup = async (req, res) => {
       }
     } else {
       // For PS, just check phone
-      const existingUser = await User.findOne({ phone });
-      if (existingUser) {
-        return res.status(400).json({ message: "Phone number is already registered." });
+      if (await isPhoneRegistered(phone)) {
+        return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
       }
     }
 
@@ -189,7 +209,10 @@ export const userSignup = async (req, res) => {
       city: city || "",
       state: state || "",
       pincode: pincode || "",
-      tshirtSize: tshirtSize || "",
+      tshirtSize: needsTshirt ? (tshirtSize || "") : (tshirtSize || ""),
+      participatingInYoga: yoga,
+      participatingInRally: rally,
+      participatingInMVD2026: mvd,
       clubId: clubId || null,
     };
 
@@ -280,6 +303,20 @@ export const userSignup = async (req, res) => {
   } catch (error) {
     console.error("User Signup Error:", error);
     res.status(400).json({ message: error.message });
+  }
+};
+
+export const checkPhoneRegistered = async (req, res) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number is required." });
+    }
+    const registered = await isPhoneRegistered(String(phone).trim());
+    res.json({ registered, message: registered ? DUPLICATE_PHONE_MESSAGE : null });
+  } catch (error) {
+    console.error("Check Phone Registered Error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 

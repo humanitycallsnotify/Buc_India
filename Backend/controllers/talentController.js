@@ -3,6 +3,7 @@ import Otp from "../models/Otp.js";
 import { generateUniqueBucId } from "../utils/generateBucId.js";
 import { sendRegistrationConfirmation } from "../utils/mailSender.js";
 import { cloudinary } from "../middleware/cloudinaryConfig.js";
+import { DUPLICATE_PHONE_MESSAGE, isPhoneRegistered } from "../utils/checkRegisteredPhone.js";
 
 export const submitTalent = async (req, res) => {
   try {
@@ -48,6 +49,10 @@ export const submitTalent = async (req, res) => {
 
     if (!otpRecord) {
       return res.status(400).json({ message: "Invalid or expired OTP. Please verify your email first." });
+    }
+
+    if (await isPhoneRegistered(phone)) {
+      return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
     }
 
     const bucId = await generateUniqueBucId();

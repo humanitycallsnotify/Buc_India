@@ -162,6 +162,10 @@ export const profileService = {
     const response = await api.delete(`/profile/${id}`);
     return response.data;
   },
+  checkPhoneRegistered: async (phone) => {
+    const response = await api.get("/profile/phone-registered", { params: { phone } });
+    return response.data;
+  },
 };
 
 export const clubService = {

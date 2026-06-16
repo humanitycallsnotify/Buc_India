@@ -2,6 +2,7 @@ import Club from '../models/Club.js';
 import ClubMembership from '../models/ClubMembership.js';
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
+import { DUPLICATE_PHONE_MESSAGE, isPhoneRegistered } from '../utils/checkRegisteredPhone.js';
 
 // Public: list approved clubs with minimal info
 export const getPublicClubs = async (req, res) => {
@@ -82,10 +83,6 @@ export const createClubRequest = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired OTP. Please verify your email first." });
     }
 
-    if (!name) {
-      return res.status(400).json({ message: 'Club name is required' });
-    }
-
     // Parse admins list (JSON string or array)
     let parsedAdmins = [];
     if (admins) {
@@ -94,6 +91,48 @@ export const createClubRequest = async (req, res) => {
       } catch (e) {
         console.warn('Could not parse admins payload, ignoring:', e.message);
       }
+    }
+
+    const phonesToCheck = new Set();
+    if (creatorPhone) phonesToCheck.add(String(creatorPhone).trim());
+    if (founderPhone) phonesToCheck.add(String(founderPhone).trim());
+    if (Array.isArray(parsedAdmins)) {
+      parsedAdmins.forEach((admin) => {
+        if (admin?.phone) phonesToCheck.add(String(admin.phone).trim());
+      });
+    }
+    for (const phoneNumber of phonesToCheck) {
+      if (phoneNumber && await isPhoneRegistered(phoneNumber)) {
+        return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
+      }
+    }
+
+    const adminOtpRecords = [];
+    if (Array.isArray(parsedAdmins)) {
+      for (const admin of parsedAdmins) {
+        const adminEmail = admin?.email?.trim().toLowerCase();
+        if (!adminEmail) continue;
+        if (!admin?.otp) {
+          return res.status(400).json({
+            message: `OTP verification is required for leadership email: ${admin.email}`,
+          });
+        }
+        const adminOtpRecord = await Otp.findOne({
+          email: adminEmail,
+          otp: admin.otp,
+          type: "club_signup",
+        });
+        if (!adminOtpRecord) {
+          return res.status(400).json({
+            message: `Invalid or expired OTP for leadership email: ${admin.email}`,
+          });
+        }
+        adminOtpRecords.push(adminOtpRecord);
+      }
+    }
+
+    if (!name) {
+      return res.status(400).json({ message: 'Club name is required' });
     }
 
     const existing = await Club.findOne({ name: name.trim() });
@@ -163,9 +202,12 @@ export const createClubRequest = async (req, res) => {
 
     const club = await Club.create(clubData);
 
-    // Delete verified OTP record
+    // Delete verified OTP records
     try {
       await Otp.deleteOne({ _id: otpRecord._id });
+      for (const adminOtpRecord of adminOtpRecords) {
+        await Otp.deleteOne({ _id: adminOtpRecord._id });
+      }
     } catch (otpDelError) {
       console.error("Failed to delete club OTP:", otpDelError);
     }

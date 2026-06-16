@@ -6,9 +6,9 @@ import TalentRegistrationForm from "./TalentRegistrationForm";
 import ClubCollaborate from "./Clubs/ClubCollaborate";
 import TermsModal from "./TermsModal";
 import {
-  CLUB_COLLABORATION_TERMS,
-  CLUB_COLLABORATION_FINAL_ACCEPTANCE,
-} from "../constants/clubRegistrationTerms";
+  USER_TERMS,
+  USER_TERMS_FINAL_ACCEPTANCE,
+} from "../constants/userRegistrationTerms";
 import { User, Shield, Star, Heart, Calendar, ArrowRight } from "lucide-react";
 import { galleryService, eventService } from "../services/api";
 
@@ -70,7 +70,7 @@ const MainRegistration = () => {
   const handleVolunteerRegisterClick = (e) => {
     if (!volunteerTermsAccepted) {
       e.preventDefault();
-      toast.error("Please accept the BUC India Club Collaboration Terms and Conditions to proceed.");
+      toast.error("Please accept the Declaration & Legal Agreement to proceed.");
     }
   };
 
@@ -196,7 +196,7 @@ const MainRegistration = () => {
 
                 <div className="w-full max-w-2xl mb-10 bg-carbon/50 p-6 border border-white/5 rounded-small text-left">
                   <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2 flex items-center gap-2 mb-4">
-                    <Shield size={14} /> BUC India Club Collaboration Terms
+                    <Shield size={14} /> Declaration & Legal Agreement
                   </h3>
                   <div className="flex items-start gap-3">
                     <input
@@ -207,15 +207,15 @@ const MainRegistration = () => {
                       className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 rounded cursor-pointer"
                     />
                     <label htmlFor="acceptVolunteerTerms" className="font-text text-xs text-steel-dim leading-relaxed cursor-pointer select-none">
-                      I confirm that I have read and understood the{" "}
+                      I confirm that I have read and understood all{" "}
                       <button
                         type="button"
                         onClick={() => setShowVolunteerTermsModal(true)}
                         className="text-copper hover:underline hover:text-white transition-all font-semibold"
                       >
-                        BUC India Club Collaboration Terms and Conditions
+                        Terms and Conditions
                       </button>
-                      , voluntarily agree to abide by them, and accept this agreement in the spirit of unity, safety, and brotherhood. <span className="text-red-500">*</span>
+                      , voluntarily agree to abide by them, and accept full responsibility for my participation. <span className="text-red-500">*</span>
                     </label>
                   </div>
                 </div>
@@ -238,16 +238,13 @@ const MainRegistration = () => {
       <TermsModal
         isOpen={showVolunteerTermsModal}
         onClose={() => setShowVolunteerTermsModal(false)}
-        title="Club Collaboration"
-        subtitle="Declaration & Legal Agreement (Club Level)"
-        introText="By registering as a club/community partner with BUC_India, we agree to the following terms:"
-        terms={CLUB_COLLABORATION_TERMS}
-        finalAcceptanceTitle="14. Final Acceptance"
-        finalAcceptanceItems={CLUB_COLLABORATION_FINAL_ACCEPTANCE}
+        title="Ride Registration"
+        terms={USER_TERMS}
+        finalAcceptanceItems={USER_TERMS_FINAL_ACCEPTANCE}
         onAccept={() => {
           setVolunteerTermsAccepted(true);
           setShowVolunteerTermsModal(false);
-          toast.success("Club collaboration terms accepted!");
+          toast.success("Declaration accepted!");
         }}
       />
     </div>

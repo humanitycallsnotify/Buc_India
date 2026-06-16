@@ -17,6 +17,18 @@ const userSchema = new mongoose.Schema({
     enum: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     default: ''
   },
+  participatingInYoga: {
+    type: Boolean,
+    default: false,
+  },
+  participatingInRally: {
+    type: Boolean,
+    default: false,
+  },
+  participatingInMVD2026: {
+    type: Boolean,
+    default: false,
+  },
   clubId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Club',

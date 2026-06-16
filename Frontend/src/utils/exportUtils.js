@@ -44,6 +44,13 @@ const formatExportValue = (reg, columnKey, getEventName) => {
   if (columnKey === 'acceptedTerms') {
     return reg.acceptedTerms === true ? 'Yes' : 'No';
   }
+  if (
+    columnKey === 'participatingInYoga' ||
+    columnKey === 'participatingInRally' ||
+    columnKey === 'participatingInMVD2026'
+  ) {
+    return reg[columnKey] === true ? 'Yes' : 'No';
+  }
   const keyLower = columnKey.toLowerCase();
   const value = reg[columnKey];
   if (

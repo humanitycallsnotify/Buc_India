@@ -29,81 +29,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { profileService, otpService, clubService } from "../services/api";
 import TermsModal from "./TermsModal";
 import DobPicker from "./DobPicker";
+import { USER_TERMS, USER_TERMS_FINAL_ACCEPTANCE } from "../constants/userRegistrationTerms";
 
-const USER_TERMS = [
-  {
-    title: "1. Compliance with Law",
-    content: "I agree to strictly comply with all applicable laws, including Motor Vehicle Act, Traffic Rules, and directions issued by Police and Government Authorities.\nThis ride operates under lawful permissions and regulations."
-  },
-  {
-    title: "2. Voluntary Participation & Assumption of Risk",
-    content: "I understand that riding involves inherent risks including accidents, injury, disability, or death.\n\nI voluntarily participate at my own risk and:\n• Accept full responsibility for my safety\n• Assume all risks associated with riding and event participation\n• Waive any right to hold organizers liable except in proven gross negligence"
-  },
-  {
-    title: "3. Health & Fitness Declaration",
-    content: "I confirm that:\n• I am physically and mentally fit to participate\n• I do not have any condition that may endanger myself or others\n• I will bear all medical expenses arising from any injury/incident"
-  },
-  {
-    title: "4. Riding Gear & Safety Compliance",
-    content: "I agree that:\n• Helmet and riding gear are mandatory\n• I will follow ride discipline, convoy rules, and marshal instructions\n• Any violation may result in removal from the ride"
-  },
-  {
-    title: "5. Code of Conduct",
-    content: "I agree to:\n• Maintain respectful and responsible behavior\n• Not engage in rash riding, stunts, or dangerous acts\n• Not consume alcohol, drugs, or intoxicants before or during the ride\n• Follow all instructions from organizers and volunteers\n\nFailure to comply will result in immediate termination without refund or liability."
-  },
-  {
-    title: "6. Prohibited Activities",
-    content: "Strictly prohibited:\n• Stunts or racing\n• Drinking and driving\n• Reckless or negligent riding\n• Any unlawful or disruptive behavior"
-  },
-  {
-    title: "7. Injury & Medical Responsibility",
-    content: "In case of any injury, accident, illness, or death:\n• I (or my family) shall not hold Humanity Calls Trust, BUC_India, UFH Riders, organizers, volunteers, or partners responsible\n• I agree to bear all costs including hospitalization, treatment, and recovery"
-  },
-  {
-    title: "8. Behavior-Based Termination Clause",
-    content: "Organizers reserve the absolute right to:\n• Remove any participant whose behavior is unsafe, harmful, or inappropriate\n\nSuch removal will be at participant’s own cost and risk. No claims, refunds, or compensations will be entertained."
-  },
-  {
-    title: "9. Media Consent",
-    content: "I grant permission to:\n• Capture photos/videos of me during the event\n• Use them for promotional, social media, or awareness purposes\n\nI waive any rights to compensation or ownership of such media."
-  },
-  {
-    title: "10. COVID & Public Health Compliance",
-    content: "I agree to follow:\n• All Government health advisories\n• COVID-19 or other public safety protocols (if applicable)"
-  },
-  {
-    title: "11. Confidentiality (For Volunteers)",
-    content: "I agree not to disclose:\n• Internal information\n• Operational or organizational details\n\nUnauthorized sharing may lead to legal action."
-  },
-  {
-    title: "12. Volunteer Terms (If Applicable)",
-    content: "• Participation is voluntary, not employment\n• Assigned roles must be followed responsibly\n• Registration fee (if applicable) is Non-refundable"
-  },
-  {
-    title: "⚠️ 13. Conflict of Interest Clause",
-    content: "I declare that:\n• I have no personal, financial, or professional conflict that interferes with my participation\n• I will not misuse the platform for personal gain, promotions, or competing interests\n• I will disclose any potential conflict to organizers immediately\n\nFailure to disclose may result in termination and legal action."
-  },
-  {
-    title: "🚫 14. Waiver of Claims & Legal Protection",
-    content: "I expressly agree that:\n• I shall not raise any claim, lawsuit, or legal action against:\n  - Humanity Calls Trust\n  - Bikers Unity Calls (BUC_India)\n  - Unity For Humanity Riders (UFH Riders)\n  - Organizers, volunteers, sponsors, or partners\n• This includes claims related to:\n  - Injury, accident, death\n  - Property damage or loss\n  - Emotional distress or inconvenience\n\nThis waiver applies even in unforeseen circumstances, except in cases of proven intentional misconduct."
-  },
-  {
-    title: "15. Limitation of Liability",
-    content: "Under no circumstances shall the organizers be liable for:\n• Indirect or consequential damages\n• Financial losses or missed opportunities\n• Third-party actions or incidents"
-  },
-  {
-    title: "16. Indemnity Clause",
-    content: "I agree to indemnify and hold harmless the organizers and associated entities from:\n• Any claims arising due to my actions, negligence, or misconduct\n• Any legal consequences caused by violation of rules or laws"
-  },
-  {
-    title: "17. Termination Rights",
-    content: "Organizers reserve the right to:\n• Cancel or modify the event\n• Deny participation without explanation\n• Take action against misconduct"
-  },
-  {
-    title: "18. Collaboration Clause",
-    content: "This ride is conducted under:\n• Humanity Calls Trust\n• Bikers Unity Calls (BUC_India)\n• Unity For Humanity Riders (UFH Riders)\n• Supporting NGOs and partners\n\nAll activities align with Government rules and lawful operations."
-  }
-];
+const DUPLICATE_PHONE_MESSAGE = "This mobile number is already registered.";
 
 const SOCIAL_PLATFORMS = [
   { value: "facebook", label: "Facebook", placeholder: "e.g. https://facebook.com/yourprofile", field: "facebookUrl" },
@@ -153,8 +81,13 @@ const UserRegistrationForm = () => {
     collegeName: "",
     collegeIdNo: "",
     riderPhone: "",
-    riderRegistrationId: ""
+    riderRegistrationId: "",
+    participatingInYoga: false,
+    participatingInRally: false,
+    participatingInMVD2026: false,
   });
+
+  const needsTshirt = formData.participatingInYoga || formData.participatingInRally;
 
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
@@ -171,6 +104,13 @@ const UserRegistrationForm = () => {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [clubs, setClubs] = useState([]);
   const [socialProfiles, setSocialProfiles] = useState([{ platform: "", url: "" }]);
+  const [phoneError, setPhoneError] = useState("");
+
+  useEffect(() => {
+    if (!needsTshirt && formData.tshirtSize) {
+      setFormData((prev) => ({ ...prev, tshirtSize: "" }));
+    }
+  }, [needsTshirt, formData.tshirtSize]);
 
   useEffect(() => {
     let timer;
@@ -193,13 +133,38 @@ const UserRegistrationForm = () => {
   }, []);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     if (name === "phone" || name === "emergencyContactPhone" || name === "riderPhone") {
       const numericValue = value.replace(/\D/g, "").slice(0, 10);
       setFormData(prev => ({ ...prev, [name]: numericValue }));
+      if (name === "phone") setPhoneError("");
+    } else if (type === "checkbox" && (name === "participatingInYoga" || name === "participatingInRally" || name === "participatingInMVD2026")) {
+      setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const checkPhoneDuplicate = async (phone) => {
+    if (phone.length !== 10) {
+      setPhoneError("");
+      return false;
+    }
+    try {
+      const result = await profileService.checkPhoneRegistered(phone);
+      if (result.registered) {
+        setPhoneError(DUPLICATE_PHONE_MESSAGE);
+        return true;
+      }
+      setPhoneError("");
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const handlePhoneBlur = async () => {
+    await checkPhoneDuplicate(formData.phone);
   };
 
   const handleImageChange = (e, setFile, setPreview) => {
@@ -268,10 +233,20 @@ const UserRegistrationForm = () => {
 
     // 1. Core validations common to ALL registration types
     if (
-      !formData.fullName || !formData.phone || !formData.gender || !formData.tshirtSize ||
+      !formData.fullName || !formData.phone || !formData.gender ||
       !formData.address || !formData.city || !formData.state || !formData.pincode
     ) {
-      return toast.error("Please fill all required fields: Name, Phone, Gender, T-Shirt Size, and Address details.");
+      return toast.error("Please fill all required fields: Name, Phone, Gender, and Address details.");
+    }
+
+    if (needsTshirt && !formData.tshirtSize) {
+      return toast.error("T-Shirt Size is required when participating in Yoga or Rally.");
+    }
+
+    if (formData.phone.length !== 10) return toast.error("Phone number must be exactly 10 digits");
+
+    if (await checkPhoneDuplicate(formData.phone)) {
+      return toast.error(DUPLICATE_PHONE_MESSAGE);
     }
 
     if (!isPS && !isPublicUser) {
@@ -286,8 +261,6 @@ const UserRegistrationForm = () => {
       }
       if (!otpSent) return toast.error("Please verify your email with OTP first");
     }
-
-    if (formData.phone.length !== 10) return toast.error("Phone number must be exactly 10 digits");
 
     if (needsDob && !isPS && !formData.dateOfBirth) {
       return toast.error("Please fill Date of Birth.");
@@ -349,7 +322,12 @@ const UserRegistrationForm = () => {
       data.append("registrationType", formData.registrationType);
       data.append("fullName", formData.fullName);
       data.append("phone", formData.phone);
-      data.append("tshirtSize", formData.tshirtSize);
+      if (needsTshirt) {
+        data.append("tshirtSize", formData.tshirtSize);
+      }
+      data.append("participatingInYoga", formData.participatingInYoga);
+      data.append("participatingInRally", formData.participatingInRally);
+      data.append("participatingInMVD2026", formData.participatingInMVD2026);
       data.append("gender", formData.gender);
       if (!isPS) {
         data.append("email", formData.email);
@@ -417,13 +395,15 @@ const UserRegistrationForm = () => {
           dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
           bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
           emergencyContactName: "", emergencyContactPhone: "",
-          collegeName: "", collegeIdNo: "", riderPhone: "", riderRegistrationId: ""
+          collegeName: "", collegeIdNo: "", riderPhone: "", riderRegistrationId: "",
+          participatingInYoga: false, participatingInRally: false, participatingInMVD2026: false,
         });
         setProfileImage(null); setProfileImagePreview(null);
         setLicenseImage(null); setLicenseImagePreview(null);
         setSocialProfiles([{ platform: "", url: "" }]);
         setOtpSent(false);
         setTermsAccepted(false);
+        setPhoneError("");
       }, 3000);
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed. Please try again.");
@@ -592,8 +572,50 @@ const UserRegistrationForm = () => {
               <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Basic Info <span className="text-red-500">*</span></h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField label="Full Name" name="fullName" icon={User} value={formData.fullName} onChange={handleInputChange} required />
-                <InputField label="Phone Number" name="phone" icon={Phone} type="tel" value={formData.phone} onChange={handleInputChange} required />
+                <div className="space-y-1">
+                  <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Phone Number <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      onBlur={handlePhoneBlur}
+                      required
+                      className={`w-full bg-carbon border pl-12 pr-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors ${phoneError ? "border-red-500" : "border-white/10"}`}
+                    />
+                  </div>
+                  {phoneError && (
+                    <p className="font-body text-[10px] text-red-400 flex items-center gap-1 mt-1">
+                      <AlertCircle size={12} /> {phoneError}
+                    </p>
+                  )}
+                </div>
 
+                <div className="space-y-3 md:col-span-2">
+                  <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Event Participation</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {[
+                      { name: "participatingInYoga", label: "Taking part in Yoga" },
+                      { name: "participatingInRally", label: "Taking part in Rally" },
+                      { name: "participatingInMVD2026", label: "Taking part in MVD 2026 Full Day Event" },
+                    ].map(({ name, label }) => (
+                      <label key={name} className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name={name}
+                          checked={formData[name]}
+                          onChange={handleInputChange}
+                          className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 rounded"
+                        />
+                        <span className="font-text text-xs text-steel-dim leading-relaxed">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {needsTshirt && (
                 <div className="space-y-1">
                   <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">T-Shirt Size <span className="text-red-500">*</span></label>
                   <select name="tshirtSize" value={formData.tshirtSize} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm text-white outline-none focus:border-copper transition-colors appearance-none">
@@ -601,6 +623,7 @@ const UserRegistrationForm = () => {
                     {["S", "M", "L", "XL", "XXL", "XXXL"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
                   </select>
                 </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Gender <span className="text-red-500">*</span></label>
@@ -860,11 +883,7 @@ const UserRegistrationForm = () => {
         onClose={() => setShowTermsModal(false)}
         title="Ride Registration"
         terms={USER_TERMS}
-        finalAcceptanceItems={[
-          "I have read and understood all terms and conditions",
-          "I voluntarily agree to abide by them",
-          "I accept full responsibility for my participation"
-        ]}
+        finalAcceptanceItems={USER_TERMS_FINAL_ACCEPTANCE}
         onAccept={() => {
           setTermsAccepted(true);
           setShowTermsModal(false);

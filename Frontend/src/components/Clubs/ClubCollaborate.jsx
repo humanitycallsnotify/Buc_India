@@ -15,12 +15,14 @@ import {
   Mail,
   Phone
 } from "lucide-react";
-import { clubService, otpService } from "../../services/api";
+import { clubService, otpService, profileService } from "../../services/api";
 import TermsModal from "../TermsModal";
 import {
   CLUB_COLLABORATION_TERMS,
   CLUB_COLLABORATION_FINAL_ACCEPTANCE,
 } from "../../constants/clubRegistrationTerms";
+
+const DUPLICATE_PHONE_MESSAGE = "This mobile number is already registered.";
 
 const initialRequestState = {
   name: "",
@@ -33,7 +35,7 @@ const initialRequestState = {
   founderEmail: "",
   founderPhone: "",
   otp: "",
-  admins: [{ name: "", role: "admin", email: "", phone: "" }],
+  admins: [{ name: "", role: "admin", email: "", phone: "", otp: "" }],
   logo: null,
   firstRideImage: null,
   governmentIdImage: null,
@@ -52,6 +54,8 @@ const ClubCollaborate = () => {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [adminOtpMeta, setAdminOtpMeta] = useState({});
+  const [founderPhoneError, setFounderPhoneError] = useState("");
 
   useEffect(() => {
     let timer;
@@ -68,6 +72,13 @@ const ClubCollaborate = () => {
     setRequestForm((prev) => {
       const admins = [...prev.admins];
       admins[index] = { ...admins[index], [field]: value };
+      if (field === "email") {
+        admins[index].otp = "";
+        setAdminOtpMeta((meta) => ({
+          ...meta,
+          [index]: { otpSent: false, countdown: 0, isSending: false },
+        }));
+      }
       return { ...prev, admins };
     });
 
@@ -76,7 +87,7 @@ const ClubCollaborate = () => {
       ...prev,
       admins: [
         ...prev.admins,
-        { name: "", role: "admin", email: "", phone: "" },
+        { name: "", role: "admin", email: "", phone: "", otp: "" },
       ],
     }));
 
@@ -107,6 +118,67 @@ const ClubCollaborate = () => {
     }
   };
 
+  const handleSendAdminOtp = async (index) => {
+    const admin = requestForm.admins[index];
+    if (!admin?.email?.trim()) {
+      return toast.error("Please enter leadership email first");
+    }
+    setAdminOtpMeta((prev) => ({
+      ...prev,
+      [index]: { ...(prev[index] || {}), isSending: true },
+    }));
+    try {
+      await otpService.send(admin.email.trim(), "club_signup");
+      setAdminOtpMeta((prev) => ({
+        ...prev,
+        [index]: { otpSent: true, countdown: 60, isSending: false },
+      }));
+      toast.success(`OTP sent to ${admin.email}!`);
+    } catch (error) {
+      setAdminOtpMeta((prev) => ({
+        ...prev,
+        [index]: { ...(prev[index] || {}), isSending: false },
+      }));
+      toast.error(error.response?.data?.message || "Failed to send OTP.");
+    }
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setAdminOtpMeta((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        Object.keys(next).forEach((key) => {
+          if (next[key]?.countdown > 0) {
+            next[key] = { ...next[key], countdown: next[key].countdown - 1 };
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const checkPhoneDuplicate = async (phone) => {
+    if (!phone || phone.length !== 10) return false;
+    try {
+      const result = await profileService.checkPhoneRegistered(phone);
+      return result.registered;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleFounderPhoneBlur = async () => {
+    const phone = userPhone || requestForm.founderPhone;
+    if (phone?.length === 10 && await checkPhoneDuplicate(phone)) {
+      setFounderPhoneError(DUPLICATE_PHONE_MESSAGE);
+    } else {
+      setFounderPhoneError("");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -125,6 +197,25 @@ const ClubCollaborate = () => {
     }
     if (!otpSent) {
       return toast.error("Please verify your email with OTP first.");
+    }
+
+    const founderPhoneValue = userPhone || requestForm.founderPhone;
+    if (founderPhoneValue?.length === 10 && await checkPhoneDuplicate(founderPhoneValue)) {
+      setFounderPhoneError(DUPLICATE_PHONE_MESSAGE);
+      return toast.error(DUPLICATE_PHONE_MESSAGE);
+    }
+
+    for (let i = 0; i < requestForm.admins.length; i++) {
+      const admin = requestForm.admins[i];
+      if (admin.email?.trim()) {
+        const meta = adminOtpMeta[i];
+        if (!meta?.otpSent || !admin.otp) {
+          return toast.error(`Please verify OTP for leadership email: ${admin.email}`);
+        }
+      }
+      if (admin.phone?.length === 10 && await checkPhoneDuplicate(admin.phone)) {
+        return toast.error(DUPLICATE_PHONE_MESSAGE);
+      }
     }
 
     setSubmitting(true);
@@ -159,6 +250,8 @@ const ClubCollaborate = () => {
       setTermsAccepted(false);
       setOtpSent(false);
       setCountdown(0);
+      setAdminOtpMeta({});
+      setFounderPhoneError("");
       navigate("/register/june-21-event");
     } catch (error) {
       toast.error(
@@ -210,8 +303,8 @@ const ClubCollaborate = () => {
                {[
                  { label: "Club Insignia (Logo)", field: "logo", icon: <Shield size={20} /> },
                  { label: "Brotherhood Moment (Ride Photo)", field: "firstRideImage", icon: <Zap size={20} /> },
-                 { label: "Institutional ID (Reg. Doc)", field: "governmentIdImage", icon: <Calendar size={20} /> },
-                 { label: "Founder Verification (Passport)", field: "founderPassport", icon: <User size={20} /> },
+                 { label: "Please upload Club Id doc if your club has it else upload the club admin government issued ID.", field: "governmentIdImage", icon: <Calendar size={20} /> },
+                 { label: "Founder Verification (Document)", field: "founderPassport", icon: <User size={20} /> },
                ].map((item) => (
                  <label key={item.field} className="group cursor-pointer">
                     <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
@@ -367,10 +460,14 @@ const ClubCollaborate = () => {
                     className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors disabled:opacity-50"
                     value={userPhone || requestForm.founderPhone}
                     onChange={(e) => updateField("founderPhone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    onBlur={handleFounderPhoneBlur}
                     placeholder="10 digit number"
                     disabled={!!userPhone}
                   />
                 </div>
+                {founderPhoneError && (
+                  <p className="font-body text-[10px] text-red-400">{founderPhoneError}</p>
+                )}
               </div>
               {otpSent && (
                 <div className="space-y-2 md:col-span-2">
@@ -392,8 +489,11 @@ const ClubCollaborate = () => {
 
             <h3 className="font-body text-[10px] uppercase tracking-[0.3em] text-copper mb-6">Additional Leadership</h3>
             <div className="space-y-4 mb-8">
-              {requestForm.admins.map((admin, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-white/5 bg-carbon/50 relative group">
+              {requestForm.admins.map((admin, index) => {
+                const meta = adminOtpMeta[index] || {};
+                return (
+                <div key={index} className="p-4 border border-white/5 bg-carbon/50 relative group space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <input
                     type="text"
                     className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
@@ -409,20 +509,45 @@ const ClubCollaborate = () => {
                     <option value="admin">ADMIN</option>
                     <option value="co-founder">CO-FOUNDER</option>
                   </select>
-                   <input
-                    type="email"
-                    className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
-                    placeholder="EMAIL"
-                    value={admin.email}
-                    onChange={(e) => updateAdminField(index, "email", e.target.value)}
-                  />
+                  <div className="space-y-2">
+                    <input
+                      type="email"
+                      className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
+                      placeholder="EMAIL"
+                      value={admin.email}
+                      onChange={(e) => updateAdminField(index, "email", e.target.value)}
+                    />
+                    {admin.email?.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendAdminOtp(index)}
+                        disabled={meta.isSending || (meta.countdown > 0)}
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50"
+                      >
+                        {meta.isSending ? "..." : meta.countdown > 0 ? `Resend OTP in ${meta.countdown}s` : meta.otpSent ? "Resend OTP" : "Send OTP"}
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="tel"
                     className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
                     placeholder="PHONE"
                     value={admin.phone}
-                    onChange={(e) => updateAdminField(index, "phone", e.target.value)}
+                    onChange={(e) => updateAdminField(index, "phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
                   />
+                  </div>
+                  {admin.email?.trim() && meta.otpSent && (
+                    <div className="relative max-w-md">
+                      <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={14} />
+                      <input
+                        type="text"
+                        className="w-full bg-carbon border border-white/10 pl-10 pr-4 py-3 font-body text-xs outline-none focus:border-copper"
+                        placeholder="Enter 6-digit OTP"
+                        value={admin.otp || ""}
+                        onChange={(e) => updateAdminField(index, "otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      />
+                    </div>
+                  )}
                   {requestForm.admins.length > 1 && (
                     <button
                       type="button"
@@ -433,7 +558,7 @@ const ClubCollaborate = () => {
                     </button>
                   )}
                 </div>
-              ))}
+              );})}
             </div>
             <button
               type="button"

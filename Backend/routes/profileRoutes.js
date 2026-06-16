@@ -6,6 +6,7 @@ import {
   userLogin,
   updateUserProfile,
   deleteUserProfile,
+  checkPhoneRegistered,
 } from "../controllers/profileController.js";
 import { profileUpload } from "../middleware/cloudinaryConfig.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -13,6 +14,7 @@ import { protect } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.get("/all", getAllProfiles);
+router.get("/phone-registered", checkPhoneRegistered);
 router.get("/", getProfile);
 
 router.post(
