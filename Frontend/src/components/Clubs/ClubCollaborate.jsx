@@ -128,7 +128,7 @@ const ClubCollaborate = () => {
   const handleSendAdminOtp = async (index) => {
     const admin = requestForm.admins[index];
     if (!admin?.email?.trim()) {
-      return toast.error("Please enter leadership email first");
+      return toast.error("Enter an email address first");
     }
     setAdminOtpMeta((prev) => ({
       ...prev,
@@ -553,36 +553,42 @@ const ClubCollaborate = () => {
                     />
                   </div>
 
-                  <div className="space-y-3 pt-2 border-t border-white/5">
+                  <div className="space-y-3 pt-4 border-t border-white/10">
                     <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim block">
-                      Leadership Email {admin.email?.trim() ? "*" : "(Optional)"}
+                      Leadership Email {admin.email?.trim() ? "*" : ""}
                     </label>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex gap-2">
                       <div className="relative flex-grow">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={14} />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
                         <input
                           type="email"
-                          className="w-full bg-carbon border border-white/10 pl-10 pr-4 py-3 font-body text-xs outline-none focus:border-copper"
+                          className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
                           placeholder="leadership@club.com"
                           value={admin.email}
                           onChange={(e) => updateAdminField(index, "email", e.target.value)}
                         />
                       </div>
-                      {admin.email?.trim() && !meta.verified && (
+                      {!meta.verified && (
                         <button
                           type="button"
                           onClick={() => handleSendAdminOtp(index)}
-                          disabled={meta.isSending || (meta.countdown > 0)}
-                          className="px-4 py-3 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 min-w-[100px] whitespace-nowrap"
+                          disabled={meta.isSending || meta.countdown > 0}
+                          className={`px-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 min-w-[90px] ${!admin.email?.trim() ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
-                          {meta.isSending ? "..." : meta.countdown > 0 ? `${meta.countdown}s` : meta.otpSent ? "Resend OTP" : "SEND OTP"}
+                          {meta.isSending ? "..." : meta.countdown > 0 ? `${meta.countdown}s` : "SEND OTP"}
                         </button>
                       )}
                     </div>
 
-                    {meta.verified && (
+                    {admin.email?.trim() && meta.verified && (
                       <p className="font-body text-[10px] text-green-400 flex items-center gap-1.5">
                         <CheckCircle size={14} /> Email Verified
+                      </p>
+                    )}
+
+                    {admin.email?.trim() && !meta.verified && !meta.otpSent && (
+                      <p className="font-body text-[10px] text-steel-dim">
+                        Click SEND OTP to receive a verification code at this email address.
                       </p>
                     )}
 
@@ -591,10 +597,10 @@ const ClubCollaborate = () => {
                         <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim block">OTP *</label>
                         <div className="flex flex-col sm:flex-row gap-2">
                           <div className="relative flex-grow">
-                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={14} />
+                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
                             <input
                               type="text"
-                              className="w-full bg-carbon border border-white/10 pl-10 pr-4 py-3 font-body text-xs outline-none focus:border-copper"
+                              className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
                               placeholder="Enter 6-digit OTP"
                               value={admin.otp || ""}
                               onChange={(e) => updateAdminField(index, "otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -604,7 +610,7 @@ const ClubCollaborate = () => {
                             type="button"
                             onClick={() => handleVerifyAdminOtp(index)}
                             disabled={meta.isVerifying || admin.otp?.length !== 6}
-                            className="px-4 py-3 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 whitespace-nowrap"
+                            className="px-4 py-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 whitespace-nowrap"
                           >
                             {meta.isVerifying ? "..." : "Verify OTP"}
                           </button>
