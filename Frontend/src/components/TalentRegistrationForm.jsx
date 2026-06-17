@@ -13,7 +13,6 @@ import {
   OTP_VERIFY_SUCCESS,
   mapOtpVerifyError,
 } from "../constants/registrationValidationMessages";
-import { CheckCircle } from "lucide-react";
 
 const TALENT_CATEGORIES = {
   "🎤 Performing Arts": [
