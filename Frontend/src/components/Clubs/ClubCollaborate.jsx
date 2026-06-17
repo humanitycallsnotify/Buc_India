@@ -23,8 +23,10 @@ import {
   CLUB_COLLABORATION_FINAL_ACCEPTANCE,
 } from "../../constants/clubRegistrationTerms";
 import {
-  DUPLICATE_EMAIL_MESSAGE,
-  DUPLICATE_PHONE_MESSAGE,
+  WITHIN_CLUB_FORM_EMAIL_MESSAGE,
+  WITHIN_CLUB_FORM_PHONE_MESSAGE,
+  getDuplicateEmailMessage,
+  getDuplicatePhoneMessage,
   OTP_VERIFY_SUCCESS,
   mapOtpVerifyError,
 } from "../../constants/registrationValidationMessages";
@@ -126,7 +128,9 @@ const ClubCollaborate = () => {
       return toast.error("Please enter founder email first");
     }
     if (await checkEmailDuplicate(email)) {
-      setFounderEmailError(DUPLICATE_EMAIL_MESSAGE);
+      const msg = getDuplicateEmailMessage("Club");
+      setFounderEmailError(msg);
+      toast.error(msg);
       return;
     }
     setFounderEmailVerified(false);
@@ -167,8 +171,9 @@ const ClubCollaborate = () => {
       return toast.error("Enter an email address first");
     }
     if (await checkEmailDuplicate(admin.email)) {
-      setAdminEmailErrors((prev) => ({ ...prev, [index]: DUPLICATE_EMAIL_MESSAGE }));
-      toast.error(DUPLICATE_EMAIL_MESSAGE);
+      const msg = getDuplicateEmailMessage("Club");
+      setAdminEmailErrors((prev) => ({ ...prev, [index]: msg }));
+      toast.error(msg);
       return;
     }
     setAdminEmailErrors((prev) => ({ ...prev, [index]: "" }));
@@ -261,11 +266,11 @@ const ClubCollaborate = () => {
     if (!email?.trim() || !email.includes("@")) return "";
     const normalized = email.trim().toLowerCase();
     const founderEmail = (userEmail || requestForm.founderEmail)?.trim().toLowerCase();
-    if (normalized === founderEmail) return DUPLICATE_EMAIL_MESSAGE;
+    if (normalized === founderEmail) return WITHIN_CLUB_FORM_EMAIL_MESSAGE;
     for (let i = 0; i < requestForm.admins.length; i++) {
       if (i === index) continue;
       const other = requestForm.admins[i]?.email?.trim().toLowerCase();
-      if (other && other === normalized) return DUPLICATE_EMAIL_MESSAGE;
+      if (other && other === normalized) return WITHIN_CLUB_FORM_EMAIL_MESSAGE;
     }
     return "";
   };
@@ -283,8 +288,8 @@ const ClubCollaborate = () => {
       return;
     }
     if (await checkEmailDuplicate(email)) {
-      setAdminEmailErrors((prev) => ({ ...prev, [index]: DUPLICATE_EMAIL_MESSAGE }));
-      toast.error(DUPLICATE_EMAIL_MESSAGE);
+      setAdminEmailErrors((prev) => ({ ...prev, [index]: getDuplicateEmailMessage("Club") }));
+      toast.error(getDuplicateEmailMessage("Club"));
     } else {
       setAdminEmailErrors((prev) => ({ ...prev, [index]: "" }));
     }
@@ -293,10 +298,10 @@ const ClubCollaborate = () => {
   const getAdminPhoneInFormError = (phone, index) => {
     if (!phone || phone.length !== 10) return "";
     const founderPhone = (userPhone || requestForm.founderPhone)?.trim();
-    if (phone === founderPhone) return DUPLICATE_PHONE_MESSAGE;
+    if (phone === founderPhone) return WITHIN_CLUB_FORM_PHONE_MESSAGE;
     for (let i = 0; i < requestForm.admins.length; i++) {
       if (i === index) continue;
-      if (requestForm.admins[i]?.phone === phone) return DUPLICATE_PHONE_MESSAGE;
+      if (requestForm.admins[i]?.phone === phone) return WITHIN_CLUB_FORM_PHONE_MESSAGE;
     }
     return "";
   };
@@ -314,8 +319,8 @@ const ClubCollaborate = () => {
       return;
     }
     if (await checkPhoneDuplicate(phone)) {
-      setAdminPhoneErrors((prev) => ({ ...prev, [index]: DUPLICATE_PHONE_MESSAGE }));
-      toast.error(DUPLICATE_PHONE_MESSAGE);
+      setAdminPhoneErrors((prev) => ({ ...prev, [index]: getDuplicatePhoneMessage("Club") }));
+      toast.error(getDuplicatePhoneMessage("Club"));
     } else {
       setAdminPhoneErrors((prev) => ({ ...prev, [index]: "" }));
     }
@@ -336,10 +341,10 @@ const ClubCollaborate = () => {
     });
 
     if (emails.length !== new Set(emails).size) {
-      return DUPLICATE_EMAIL_MESSAGE;
+      return WITHIN_CLUB_FORM_EMAIL_MESSAGE;
     }
     if (phones.length !== new Set(phones).size) {
-      return DUPLICATE_PHONE_MESSAGE;
+      return WITHIN_CLUB_FORM_PHONE_MESSAGE;
     }
     return null;
   };
@@ -347,8 +352,9 @@ const ClubCollaborate = () => {
   const handleFounderEmailBlur = async () => {
     const email = userEmail || requestForm.founderEmail;
     if (email?.trim() && await checkEmailDuplicate(email)) {
-      setFounderEmailError(DUPLICATE_EMAIL_MESSAGE);
-      toast.error(DUPLICATE_EMAIL_MESSAGE);
+      const msg = getDuplicateEmailMessage("Club");
+      setFounderEmailError(msg);
+      toast.error(msg);
     } else {
       setFounderEmailError("");
     }
@@ -359,12 +365,13 @@ const ClubCollaborate = () => {
     if (phone?.length === 10) {
       const inFormDup = requestForm.admins.some((a) => a.phone === phone);
       if (inFormDup) {
-        setFounderPhoneError(DUPLICATE_PHONE_MESSAGE);
+        setFounderPhoneError(WITHIN_CLUB_FORM_PHONE_MESSAGE);
         return;
       }
       if (await checkPhoneDuplicate(phone)) {
-        setFounderPhoneError(DUPLICATE_PHONE_MESSAGE);
-        toast.error(DUPLICATE_PHONE_MESSAGE);
+        const msg = getDuplicatePhoneMessage("Club");
+        setFounderPhoneError(msg);
+        toast.error(msg);
       } else {
         setFounderPhoneError("");
       }
@@ -400,14 +407,16 @@ const ClubCollaborate = () => {
 
     const founderEmailValue = userEmail || requestForm.founderEmail;
     if (founderEmailValue?.trim() && await checkEmailDuplicate(founderEmailValue)) {
-      setFounderEmailError(DUPLICATE_EMAIL_MESSAGE);
-      return toast.error(DUPLICATE_EMAIL_MESSAGE);
+      const msg = getDuplicateEmailMessage("Club");
+      setFounderEmailError(msg);
+      return toast.error(msg);
     }
 
     const founderPhoneValue = userPhone || requestForm.founderPhone;
     if (founderPhoneValue?.length === 10 && await checkPhoneDuplicate(founderPhoneValue)) {
-      setFounderPhoneError(DUPLICATE_PHONE_MESSAGE);
-      return toast.error(DUPLICATE_PHONE_MESSAGE);
+      const msg = getDuplicatePhoneMessage("Club");
+      setFounderPhoneError(msg);
+      return toast.error(msg);
     }
 
     for (let i = 0; i < requestForm.admins.length; i++) {
@@ -423,8 +432,8 @@ const ClubCollaborate = () => {
           return toast.error(`Please verify OTP for leadership email: ${admin.email}`);
         }
         if (await checkEmailDuplicate(admin.email)) {
-          setAdminEmailErrors((prev) => ({ ...prev, [i]: DUPLICATE_EMAIL_MESSAGE }));
-          return toast.error(DUPLICATE_EMAIL_MESSAGE);
+          setAdminEmailErrors((prev) => ({ ...prev, [i]: getDuplicateEmailMessage("Club") }));
+          return toast.error(getDuplicateEmailMessage("Club"));
         }
       }
       if (admin.phone?.length === 10) {
@@ -433,7 +442,7 @@ const ClubCollaborate = () => {
           return toast.error(inFormPhoneError);
         }
         if (await checkPhoneDuplicate(admin.phone)) {
-          return toast.error(DUPLICATE_PHONE_MESSAGE);
+          return toast.error(getDuplicatePhoneMessage("Club"));
         }
       }
     }

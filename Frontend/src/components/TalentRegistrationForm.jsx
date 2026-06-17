@@ -8,8 +8,8 @@ import {
 import { talentService, clubService, otpService, profileService } from "../services/api";
 import DobPicker from "./DobPicker";
 import {
-  DUPLICATE_EMAIL_MESSAGE,
-  DUPLICATE_PHONE_MESSAGE,
+  getDuplicateEmailMessage,
+  getDuplicatePhoneMessage,
   OTP_VERIFY_SUCCESS,
   mapOtpVerifyError,
 } from "../constants/registrationValidationMessages";
@@ -192,8 +192,9 @@ const TalentRegistrationForm = () => {
     try {
       const result = await profileService.checkEmailRegistered(email.trim(), null, "Talent");
       if (result.registered) {
-        setEmailError(DUPLICATE_EMAIL_MESSAGE);
-        toast.error(DUPLICATE_EMAIL_MESSAGE);
+        const msg = result.message || getDuplicateEmailMessage("Talent");
+        setEmailError(msg);
+        toast.error(msg);
         return true;
       }
       setEmailError("");
@@ -215,8 +216,9 @@ const TalentRegistrationForm = () => {
     try {
       const result = await profileService.checkPhoneRegistered(phone, null, "Talent");
       if (result.registered) {
-        setPhoneError(DUPLICATE_PHONE_MESSAGE);
-        toast.error(DUPLICATE_PHONE_MESSAGE);
+        const msg = result.message || getDuplicatePhoneMessage("Talent");
+        setPhoneError(msg);
+        toast.error(msg);
         return true;
       }
       setPhoneError("");
@@ -255,7 +257,7 @@ const TalentRegistrationForm = () => {
       return;
     }
     if (await checkPhoneDuplicate(formData.phone)) {
-      return toast.error(DUPLICATE_PHONE_MESSAGE);
+      return;
     }
     if (!formData.consentInfoTrue || !formData.consentRules || !formData.consentMedia) {
       return toast.error("Please check all three consent checkboxes before submitting.");

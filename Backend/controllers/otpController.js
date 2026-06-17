@@ -1,10 +1,11 @@
 import Otp from "../models/Otp.js";
 import User from "../models/User.js";
 import { sendOTP } from "../utils/mailSender.js";
+import { isEmailRegistered, getDuplicateEmailMessage } from "../utils/checkRegisteredPhone.js";
 
 export const requestOTP = async (req, res) => {
   try {
-    const { email, type } = req.body;
+    const { email, type, registrationType } = req.body;
 
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
@@ -14,15 +15,33 @@ export const requestOTP = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP type" });
     }
 
-    // For signup, check if email exists
-    if (type === "signup") {
-      const existingUser = await User.findOne({ email: email.toLowerCase() });
-      if (existingUser) {
-        return res.status(400).json({ message: "Email already registered" });
+    if (type === "signup" && registrationType) {
+      const registered = await isEmailRegistered(email, "User", registrationType);
+      if (registered) {
+        return res.status(400).json({
+          message: getDuplicateEmailMessage("User", registrationType),
+        });
       }
     }
 
-    // For forgot_password, check if email exists
+    if (type === "talent_signup") {
+      const registered = await isEmailRegistered(email, "Talent");
+      if (registered) {
+        return res.status(400).json({
+          message: getDuplicateEmailMessage("Talent"),
+        });
+      }
+    }
+
+    if (type === "club_signup") {
+      const registered = await isEmailRegistered(email, "Club");
+      if (registered) {
+        return res.status(400).json({
+          message: getDuplicateEmailMessage("Club"),
+        });
+      }
+    }
+
     if (type === "forgot_password") {
       const existingUser = await User.findOne({ email: email.toLowerCase() });
       if (!existingUser) {

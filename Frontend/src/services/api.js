@@ -230,8 +230,12 @@ export const clubMembershipService = {
 };
 
 export const otpService = {
-  send: async (email, type) => {
-    const response = await api.post("/otp/send", { email, type });
+  send: async (email, type, registrationType = null) => {
+    const payload = { email, type };
+    if (registrationType) {
+      payload.registrationType = registrationType;
+    }
+    const response = await api.post("/otp/send", payload);
     return response.data;
   },
   verify: async (email, otp, type) => {

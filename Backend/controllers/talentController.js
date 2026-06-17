@@ -3,7 +3,7 @@ import Otp from "../models/Otp.js";
 import { generateUniqueBucId } from "../utils/generateBucId.js";
 import { sendRegistrationConfirmation } from "../utils/mailSender.js";
 import { cloudinary } from "../middleware/cloudinaryConfig.js";
-import { DUPLICATE_PHONE_MESSAGE, DUPLICATE_EMAIL_MESSAGE, isPhoneRegistered, isEmailRegistered } from "../utils/checkRegisteredPhone.js";
+import { DUPLICATE_PHONE_MESSAGE, DUPLICATE_EMAIL_MESSAGE, isPhoneRegistered, isEmailRegistered, getDuplicateEmailMessage, getDuplicatePhoneMessage } from "../utils/checkRegisteredPhone.js";
 
 export const submitTalent = async (req, res) => {
   try {
@@ -52,11 +52,11 @@ export const submitTalent = async (req, res) => {
     }
 
     if (await isEmailRegistered(email, 'Talent')) {
-      return res.status(400).json({ message: DUPLICATE_EMAIL_MESSAGE });
+      return res.status(400).json({ message: getDuplicateEmailMessage('Talent') });
     }
 
     if (await isPhoneRegistered(phone, 'Talent')) {
-      return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
+      return res.status(400).json({ message: getDuplicatePhoneMessage('Talent') });
     }
 
     const bucId = await generateUniqueBucId();
@@ -128,7 +128,7 @@ export const submitTalent = async (req, res) => {
     res.status(201).json({ message: "Talent registration submitted successfully!", talent });
   } catch (error) {
     console.error("Talent Submit Error:", error);
-    res.status(500).json({ message: error.message || "Internal Server Error" });
+    res.status(500).json({ message: "Registration failed. Please try again." });
   }
 };
 

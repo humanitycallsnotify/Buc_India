@@ -45,15 +45,12 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: false,
-    sparse: true,
-    unique: true,
     trim: true,
     lowercase: true
   },
   phone: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   password: {
     type: String,
@@ -164,6 +161,17 @@ const userSchema = new mongoose.Schema({
     default: null
   }
 }, { timestamps: true });
+
+userSchema.index(
+  { email: 1, registrationType: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      email: { $exists: true, $type: 'string', $gt: '' },
+    },
+  },
+);
+userSchema.index({ phone: 1, registrationType: 1 }, { unique: true });
 
 // Hash password before saving
 userSchema.pre('save', async function() {

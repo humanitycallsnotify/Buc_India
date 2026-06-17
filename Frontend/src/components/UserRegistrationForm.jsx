@@ -31,8 +31,8 @@ import TermsModal from "./TermsModal";
 import DobPicker from "./DobPicker";
 import { USER_TERMS, USER_TERMS_FINAL_ACCEPTANCE } from "../constants/userRegistrationTerms";
 import {
-  DUPLICATE_EMAIL_MESSAGE,
-  DUPLICATE_PHONE_MESSAGE,
+  getDuplicateEmailMessage,
+  getDuplicatePhoneMessage,
   OTP_VERIFY_SUCCESS,
   mapOtpVerifyError,
 } from "../constants/registrationValidationMessages";
@@ -175,8 +175,9 @@ const UserRegistrationForm = () => {
         "User",
       );
       if (result.registered) {
-        setEmailError(DUPLICATE_EMAIL_MESSAGE);
-        toast.error(DUPLICATE_EMAIL_MESSAGE);
+        const msg = result.message || getDuplicateEmailMessage("User", formData.registrationType);
+        setEmailError(msg);
+        toast.error(msg);
         return true;
       }
       setEmailError("");
@@ -205,8 +206,9 @@ const UserRegistrationForm = () => {
         "User",
       );
       if (result.registered) {
-        setPhoneError(DUPLICATE_PHONE_MESSAGE);
-        toast.error(DUPLICATE_PHONE_MESSAGE);
+        const msg = result.message || getDuplicatePhoneMessage("User", formData.registrationType);
+        setPhoneError(msg);
+        toast.error(msg);
         return true;
       }
       setPhoneError("");
@@ -262,7 +264,7 @@ const UserRegistrationForm = () => {
     setEmailVerified(false);
     setIsSendingOtp(true);
     try {
-      await otpService.send(formData.email, "signup");
+      await otpService.send(formData.email, "signup", formData.registrationType);
       setOtpSent(true);
       setCountdown(60);
       toast.success("OTP sent to your email!");
@@ -323,7 +325,7 @@ const UserRegistrationForm = () => {
     if (formData.phone.length !== 10) return toast.error("Phone number must be exactly 10 digits");
 
     if (await checkPhoneDuplicate(formData.phone)) {
-      return toast.error(DUPLICATE_PHONE_MESSAGE);
+      return;
     }
 
     if (!isPS && !isPublicUser) {

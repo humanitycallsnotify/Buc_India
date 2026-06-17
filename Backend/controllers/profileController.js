@@ -4,7 +4,7 @@ import Club from "../models/Club.js";
 import { cloudinary } from "../middleware/cloudinaryConfig.js";
 import { generateUniqueBucId } from "../utils/generateBucId.js";
 import { sendRegistrationConfirmation } from "../utils/mailSender.js";
-import { DUPLICATE_PHONE_MESSAGE, DUPLICATE_EMAIL_MESSAGE, isPhoneRegistered, isEmailRegistered } from "../utils/checkRegisteredPhone.js";
+import { DUPLICATE_PHONE_MESSAGE, DUPLICATE_EMAIL_MESSAGE, isPhoneRegistered, isEmailRegistered, getDuplicateEmailMessage, getDuplicatePhoneMessage } from "../utils/checkRegisteredPhone.js";
 
 export const getProfile = async (req, res) => {
   try {
@@ -151,11 +151,11 @@ export const userSignup = async (req, res) => {
     }
 
     if (phone && await isPhoneRegistered(phone, 'User', registrationType)) {
-      return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
+      return res.status(400).json({ message: getDuplicatePhoneMessage('User', registrationType) });
     }
 
     if (registrationType !== 'PS' && email && await isEmailRegistered(email, 'User', registrationType)) {
-      return res.status(400).json({ message: DUPLICATE_EMAIL_MESSAGE });
+      return res.status(400).json({ message: getDuplicateEmailMessage('User', registrationType) });
     }
 
     if (registrationType !== 'PS') {
@@ -290,7 +290,14 @@ export const userSignup = async (req, res) => {
     res.status(201).json(userResponse);
   } catch (error) {
     console.error("User Signup Error:", error);
-    res.status(400).json({ message: error.message });
+    const regType = req.body?.registrationType || "Rider";
+    if (error?.code === 11000) {
+      const duplicateMessage = String(error.message).toLowerCase().includes("phone")
+        ? getDuplicatePhoneMessage("User", regType)
+        : getDuplicateEmailMessage("User", regType);
+      return res.status(400).json({ message: duplicateMessage });
+    }
+    res.status(400).json({ message: "Registration failed. Please try again." });
   }
 };
 
@@ -305,7 +312,10 @@ export const checkEmailRegistered = async (req, res) => {
       category,
       registrationType || null,
     );
-    res.json({ registered, message: registered ? DUPLICATE_EMAIL_MESSAGE : null });
+    res.json({
+      registered,
+      message: registered ? getDuplicateEmailMessage(category, registrationType || null) : null,
+    });
   } catch (error) {
     console.error("Check Email Registered Error:", error);
     res.status(500).json({ message: "Unable to verify email at this time." });
@@ -323,7 +333,10 @@ export const checkPhoneRegistered = async (req, res) => {
       category,
       registrationType || null,
     );
-    res.json({ registered, message: registered ? DUPLICATE_PHONE_MESSAGE : null });
+    res.json({
+      registered,
+      message: registered ? getDuplicatePhoneMessage(category, registrationType || null) : null,
+    });
   } catch (error) {
     console.error("Check Phone Registered Error:", error);
     res.status(500).json({ message: "Unable to verify phone number at this time." });

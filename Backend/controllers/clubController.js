@@ -2,7 +2,7 @@ import Club from '../models/Club.js';
 import ClubMembership from '../models/ClubMembership.js';
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
-import { DUPLICATE_PHONE_MESSAGE, DUPLICATE_EMAIL_MESSAGE, isPhoneRegistered, isEmailRegistered, validateClubFormContactDuplicates } from '../utils/checkRegisteredPhone.js';
+import { DUPLICATE_PHONE_MESSAGE, DUPLICATE_EMAIL_MESSAGE, isPhoneRegistered, isEmailRegistered, validateClubFormContactDuplicates, getDuplicateEmailMessage, getDuplicatePhoneMessage } from '../utils/checkRegisteredPhone.js';
 
 // Public: list approved clubs with minimal info
 export const getPublicClubs = async (req, res) => {
@@ -114,7 +114,7 @@ export const createClubRequest = async (req, res) => {
     }
     for (const emailAddress of emailsToCheck) {
       if (emailAddress && await isEmailRegistered(emailAddress, 'Club')) {
-        return res.status(400).json({ message: DUPLICATE_EMAIL_MESSAGE });
+        return res.status(400).json({ message: getDuplicateEmailMessage('Club') });
       }
     }
 
@@ -128,7 +128,7 @@ export const createClubRequest = async (req, res) => {
     }
     for (const phoneNumber of phonesToCheck) {
       if (phoneNumber && await isPhoneRegistered(phoneNumber, 'Club')) {
-        return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
+        return res.status(400).json({ message: getDuplicatePhoneMessage('Club') });
       }
     }
 
@@ -259,7 +259,7 @@ export const createClubRequest = async (req, res) => {
     res.status(201).json(club);
   } catch (error) {
     console.error('Create club request error:', error);
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: "Registration failed. Please try again." });
   }
 };
 
