@@ -7,9 +7,13 @@ import {
 } from "lucide-react";
 import { talentService, clubService, otpService, profileService } from "../services/api";
 import DobPicker from "./DobPicker";
-
-const DUPLICATE_PHONE_MESSAGE = "This mobile number is already registered.";
-const DUPLICATE_EMAIL_MESSAGE = "This email address is already registered.";
+import {
+  DUPLICATE_EMAIL_MESSAGE,
+  DUPLICATE_PHONE_MESSAGE,
+  OTP_VERIFY_SUCCESS,
+  mapOtpVerifyError,
+} from "../constants/registrationValidationMessages";
+import { CheckCircle } from "lucide-react";
 
 const TALENT_CATEGORIES = {
   "🎤 Performing Arts": [
@@ -70,6 +74,8 @@ const TalentRegistrationForm = () => {
   const [countdown, setCountdown] = useState(0);
   const [phoneError, setPhoneError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   const [talentImage, setTalentImage] = useState(null);
   const [talentVideo, setTalentVideo] = useState(null);
@@ -115,16 +121,37 @@ const TalentRegistrationForm = () => {
       toast.error("Please enter your email address first");
       return;
     }
+    if (await checkEmailDuplicate(formData.email)) {
+      return;
+    }
+    setEmailVerified(false);
     setIsSendingOtp(true);
     try {
       await otpService.send(formData.email, "talent_signup");
       setOtpSent(true);
       setCountdown(60);
-      toast.success("OTP transmission successful! Check your email.");
+      toast.success("OTP sent to your email!");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to transmit OTP code.");
+      toast.error("Unable to send OTP. Please try again.");
     } finally {
       setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!formData.email || !formData.otp || formData.otp.length !== 6) {
+      return toast.error("Please enter the 6-digit OTP");
+    }
+    setIsVerifyingOtp(true);
+    try {
+      await otpService.verify(formData.email, formData.otp, "talent_signup");
+      setEmailVerified(true);
+      toast.success(OTP_VERIFY_SUCCESS);
+    } catch (err) {
+      setEmailVerified(false);
+      toast.error(mapOtpVerifyError(err.response?.data?.message));
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -148,6 +175,11 @@ const TalentRegistrationForm = () => {
     } else if (name === "email") {
       setFormData(prev => ({ ...prev, [name]: value }));
       setEmailError("");
+      setEmailVerified(false);
+      setOtpSent(false);
+    } else if (name === "otp") {
+      setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, "").slice(0, 6) }));
+      setEmailVerified(false);
     } else {
       setFormData(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
     }
@@ -159,9 +191,10 @@ const TalentRegistrationForm = () => {
       return false;
     }
     try {
-      const result = await profileService.checkEmailRegistered(email.trim());
+      const result = await profileService.checkEmailRegistered(email.trim(), null, "Talent");
       if (result.registered) {
         setEmailError(DUPLICATE_EMAIL_MESSAGE);
+        toast.error(DUPLICATE_EMAIL_MESSAGE);
         return true;
       }
       setEmailError("");
@@ -181,9 +214,10 @@ const TalentRegistrationForm = () => {
       return false;
     }
     try {
-      const result = await profileService.checkPhoneRegistered(phone);
+      const result = await profileService.checkPhoneRegistered(phone, null, "Talent");
       if (result.registered) {
         setPhoneError(DUPLICATE_PHONE_MESSAGE);
+        toast.error(DUPLICATE_PHONE_MESSAGE);
         return true;
       }
       setPhoneError("");
@@ -215,11 +249,11 @@ const TalentRegistrationForm = () => {
         return toast.error(`Please fill in: ${field.replace(/([A-Z])/g, " $1")}`);
       }
     }
-    if (!otpSent) {
-      return toast.error("Please verify your email address with OTP first.");
+    if (!emailVerified) {
+      return toast.error("Please verify your email with OTP before submitting.");
     }
     if (await checkEmailDuplicate(formData.email)) {
-      return toast.error(DUPLICATE_EMAIL_MESSAGE);
+      return;
     }
     if (await checkPhoneDuplicate(formData.phone)) {
       return toast.error(DUPLICATE_PHONE_MESSAGE);
@@ -245,6 +279,7 @@ const TalentRegistrationForm = () => {
       setShowSuccess(true);
       setFormData(initialFormData);
       setOtpSent(false);
+      setEmailVerified(false);
       setSelectedGroup("");
       setTalentImage(null);
       setTalentVideo(null);
@@ -443,21 +478,36 @@ const TalentRegistrationForm = () => {
                 </button>
               </div>
             </div>
-            {otpSent && (
-              <div className="md:col-span-2">
-                <InputField 
-                  label="Verification Code (6-Digit OTP)" 
-                  name="otp" 
-                  type="text" 
-                  icon={Key} 
-                  value={formData.otp} 
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
-                    setFormData(prev => ({ ...prev, otp: val }));
-                  }} 
-                  required 
-                  placeholder="Enter 6-digit OTP code"
-                />
+            {emailVerified && (
+              <p className="md:col-span-2 font-body text-[10px] text-green-400 flex items-center gap-1.5">
+                <CheckCircle size={14} /> Email Verified
+              </p>
+            )}
+            {otpSent && !emailVerified && (
+              <div className="md:col-span-2 space-y-2">
+                <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">OTP <span className="text-red-500">*</span></label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-grow">
+                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                    <input
+                      type="text"
+                      name="otp"
+                      value={formData.otp}
+                      onChange={handleChange}
+                      required
+                      placeholder="Enter 6-digit OTP"
+                      className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={isVerifyingOtp || formData.otp?.length !== 6}
+                    className="px-4 py-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {isVerifyingOtp ? "..." : "Verify OTP"}
+                  </button>
+                </div>
               </div>
             )}
             <InputField label="City / Location" name="city" icon={MapPin} value={formData.city} onChange={handleChange} required />

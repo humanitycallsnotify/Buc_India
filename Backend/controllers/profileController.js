@@ -150,11 +150,11 @@ export const userSignup = async (req, res) => {
       }
     }
 
-    if (phone && await isPhoneRegistered(phone)) {
+    if (phone && await isPhoneRegistered(phone, 'User', registrationType)) {
       return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
     }
 
-    if (registrationType !== 'PS' && email && await isEmailRegistered(email)) {
+    if (registrationType !== 'PS' && email && await isEmailRegistered(email, 'User', registrationType)) {
       return res.status(400).json({ message: DUPLICATE_EMAIL_MESSAGE });
     }
 
@@ -170,11 +170,6 @@ export const userSignup = async (req, res) => {
         return res.status(400).json({
           message: "Invalid or expired OTP. Please verify your email first.",
         });
-      }
-    } else {
-      // For PS, just check phone
-      if (await isPhoneRegistered(phone)) {
-        return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
       }
     }
 
@@ -301,29 +296,37 @@ export const userSignup = async (req, res) => {
 
 export const checkEmailRegistered = async (req, res) => {
   try {
-    const { email } = req.query;
+    const { email, registrationType, category = 'User' } = req.query;
     if (!email) {
       return res.status(400).json({ message: "Email is required." });
     }
-    const registered = await isEmailRegistered(String(email).trim());
+    const registered = await isEmailRegistered(
+      String(email).trim(),
+      category,
+      registrationType || null,
+    );
     res.json({ registered, message: registered ? DUPLICATE_EMAIL_MESSAGE : null });
   } catch (error) {
     console.error("Check Email Registered Error:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Unable to verify email at this time." });
   }
 };
 
 export const checkPhoneRegistered = async (req, res) => {
   try {
-    const { phone } = req.query;
+    const { phone, registrationType, category = 'User' } = req.query;
     if (!phone) {
       return res.status(400).json({ message: "Phone number is required." });
     }
-    const registered = await isPhoneRegistered(String(phone).trim());
+    const registered = await isPhoneRegistered(
+      String(phone).trim(),
+      category,
+      registrationType || null,
+    );
     res.json({ registered, message: registered ? DUPLICATE_PHONE_MESSAGE : null });
   } catch (error) {
     console.error("Check Phone Registered Error:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Unable to verify phone number at this time." });
   }
 };
 

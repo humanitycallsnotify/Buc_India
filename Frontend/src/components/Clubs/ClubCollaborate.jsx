@@ -22,9 +22,12 @@ import {
   CLUB_COLLABORATION_TERMS,
   CLUB_COLLABORATION_FINAL_ACCEPTANCE,
 } from "../../constants/clubRegistrationTerms";
-
-const DUPLICATE_PHONE_MESSAGE = "This mobile number is already registered.";
-const DUPLICATE_EMAIL_MESSAGE = "This email address is already registered.";
+import {
+  DUPLICATE_EMAIL_MESSAGE,
+  DUPLICATE_PHONE_MESSAGE,
+  OTP_VERIFY_SUCCESS,
+  mapOtpVerifyError,
+} from "../../constants/registrationValidationMessages";
 
 const initialRequestState = {
   name: "",
@@ -59,6 +62,10 @@ const ClubCollaborate = () => {
   const [adminOtpMeta, setAdminOtpMeta] = useState({});
   const [founderPhoneError, setFounderPhoneError] = useState("");
   const [founderEmailError, setFounderEmailError] = useState("");
+  const [founderEmailVerified, setFounderEmailVerified] = useState(false);
+  const [isVerifyingFounderOtp, setIsVerifyingFounderOtp] = useState(false);
+  const [adminPhoneErrors, setAdminPhoneErrors] = useState({});
+  const [adminEmailErrors, setAdminEmailErrors] = useState({});
 
   useEffect(() => {
     let timer;
@@ -77,6 +84,7 @@ const ClubCollaborate = () => {
       admins[index] = { ...admins[index], [field]: value };
       if (field === "email") {
         admins[index].otp = "";
+        setAdminEmailErrors((prev) => ({ ...prev, [index]: "" }));
         setAdminOtpMeta((meta) => ({
           ...meta,
           [index]: { otpSent: false, countdown: 0, isSending: false, verified: false, isVerifying: false },
@@ -87,6 +95,9 @@ const ClubCollaborate = () => {
           ...meta,
           [index]: { ...(meta[index] || {}), verified: false },
         }));
+      }
+      if (field === "phone") {
+        setAdminPhoneErrors((prev) => ({ ...prev, [index]: "" }));
       }
       return { ...prev, admins };
     });
@@ -114,6 +125,11 @@ const ClubCollaborate = () => {
     if (!email) {
       return toast.error("Please enter founder email first");
     }
+    if (await checkEmailDuplicate(email)) {
+      setFounderEmailError(DUPLICATE_EMAIL_MESSAGE);
+      return;
+    }
+    setFounderEmailVerified(false);
     setIsSendingOtp(true);
     try {
       await otpService.send(email, "club_signup");
@@ -121,9 +137,27 @@ const ClubCollaborate = () => {
       setCountdown(60);
       toast.success("OTP sent to your email!");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to send OTP.");
+      toast.error("Unable to send OTP. Please try again.");
     } finally {
       setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyFounderOtp = async () => {
+    const email = userEmail || requestForm.founderEmail;
+    if (!email || !requestForm.otp || requestForm.otp.length !== 6) {
+      return toast.error("Please enter the 6-digit OTP");
+    }
+    setIsVerifyingFounderOtp(true);
+    try {
+      await otpService.verify(email, requestForm.otp, "club_signup");
+      setFounderEmailVerified(true);
+      toast.success(OTP_VERIFY_SUCCESS);
+    } catch (error) {
+      setFounderEmailVerified(false);
+      toast.error(mapOtpVerifyError(error.response?.data?.message));
+    } finally {
+      setIsVerifyingFounderOtp(false);
     }
   };
 
@@ -132,6 +166,12 @@ const ClubCollaborate = () => {
     if (!admin?.email?.trim()) {
       return toast.error("Enter an email address first");
     }
+    if (await checkEmailDuplicate(admin.email)) {
+      setAdminEmailErrors((prev) => ({ ...prev, [index]: DUPLICATE_EMAIL_MESSAGE }));
+      toast.error(DUPLICATE_EMAIL_MESSAGE);
+      return;
+    }
+    setAdminEmailErrors((prev) => ({ ...prev, [index]: "" }));
     setAdminOtpMeta((prev) => ({
       ...prev,
       [index]: { ...(prev[index] || {}), isSending: true },
@@ -142,13 +182,13 @@ const ClubCollaborate = () => {
         ...prev,
         [index]: { otpSent: true, countdown: 60, isSending: false, verified: false, isVerifying: false },
       }));
-      toast.success(`OTP sent to ${admin.email}!`);
+      toast.success("OTP sent to your email!");
     } catch (error) {
       setAdminOtpMeta((prev) => ({
         ...prev,
         [index]: { ...(prev[index] || {}), isSending: false },
       }));
-      toast.error(error.response?.data?.message || "Failed to send OTP.");
+      toast.error("Unable to send OTP. Please try again.");
     }
   };
 
@@ -170,13 +210,13 @@ const ClubCollaborate = () => {
         ...prev,
         [index]: { ...(prev[index] || {}), isVerifying: false, verified: true },
       }));
-      toast.success(`Leadership email verified: ${admin.email}`);
+      toast.success(OTP_VERIFY_SUCCESS);
     } catch (error) {
       setAdminOtpMeta((prev) => ({
         ...prev,
         [index]: { ...(prev[index] || {}), isVerifying: false, verified: false },
       }));
-      toast.error(error.response?.data?.message || "Invalid or expired OTP.");
+      toast.error(mapOtpVerifyError(error.response?.data?.message));
     }
   };
 
@@ -200,10 +240,84 @@ const ClubCollaborate = () => {
   const checkEmailDuplicate = async (email) => {
     if (!email?.trim() || !email.includes("@")) return false;
     try {
-      const result = await profileService.checkEmailRegistered(email.trim());
+      const result = await profileService.checkEmailRegistered(email.trim(), null, "Club");
       return result.registered;
     } catch {
       return false;
+    }
+  };
+
+  const checkPhoneDuplicate = async (phone) => {
+    if (!phone || phone.length !== 10) return false;
+    try {
+      const result = await profileService.checkPhoneRegistered(phone, null, "Club");
+      return result.registered;
+    } catch {
+      return false;
+    }
+  };
+
+  const getAdminEmailInFormError = (email, index) => {
+    if (!email?.trim() || !email.includes("@")) return "";
+    const normalized = email.trim().toLowerCase();
+    const founderEmail = (userEmail || requestForm.founderEmail)?.trim().toLowerCase();
+    if (normalized === founderEmail) return DUPLICATE_EMAIL_MESSAGE;
+    for (let i = 0; i < requestForm.admins.length; i++) {
+      if (i === index) continue;
+      const other = requestForm.admins[i]?.email?.trim().toLowerCase();
+      if (other && other === normalized) return DUPLICATE_EMAIL_MESSAGE;
+    }
+    return "";
+  };
+
+  const handleAdminEmailBlur = async (index) => {
+    const email = requestForm.admins[index]?.email;
+    if (!email?.trim() || !email.includes("@")) {
+      setAdminEmailErrors((prev) => ({ ...prev, [index]: "" }));
+      return;
+    }
+    const inFormError = getAdminEmailInFormError(email, index);
+    if (inFormError) {
+      setAdminEmailErrors((prev) => ({ ...prev, [index]: inFormError }));
+      toast.error(inFormError);
+      return;
+    }
+    if (await checkEmailDuplicate(email)) {
+      setAdminEmailErrors((prev) => ({ ...prev, [index]: DUPLICATE_EMAIL_MESSAGE }));
+      toast.error(DUPLICATE_EMAIL_MESSAGE);
+    } else {
+      setAdminEmailErrors((prev) => ({ ...prev, [index]: "" }));
+    }
+  };
+
+  const getAdminPhoneInFormError = (phone, index) => {
+    if (!phone || phone.length !== 10) return "";
+    const founderPhone = (userPhone || requestForm.founderPhone)?.trim();
+    if (phone === founderPhone) return DUPLICATE_PHONE_MESSAGE;
+    for (let i = 0; i < requestForm.admins.length; i++) {
+      if (i === index) continue;
+      if (requestForm.admins[i]?.phone === phone) return DUPLICATE_PHONE_MESSAGE;
+    }
+    return "";
+  };
+
+  const handleAdminPhoneBlur = async (index) => {
+    const phone = requestForm.admins[index]?.phone;
+    if (!phone || phone.length !== 10) {
+      setAdminPhoneErrors((prev) => ({ ...prev, [index]: "" }));
+      return;
+    }
+    const inFormError = getAdminPhoneInFormError(phone, index);
+    if (inFormError) {
+      setAdminPhoneErrors((prev) => ({ ...prev, [index]: inFormError }));
+      toast.error(inFormError);
+      return;
+    }
+    if (await checkPhoneDuplicate(phone)) {
+      setAdminPhoneErrors((prev) => ({ ...prev, [index]: DUPLICATE_PHONE_MESSAGE }));
+      toast.error(DUPLICATE_PHONE_MESSAGE);
+    } else {
+      setAdminPhoneErrors((prev) => ({ ...prev, [index]: "" }));
     }
   };
 
@@ -230,20 +344,11 @@ const ClubCollaborate = () => {
     return null;
   };
 
-  const checkPhoneDuplicate = async (phone) => {
-    if (!phone || phone.length !== 10) return false;
-    try {
-      const result = await profileService.checkPhoneRegistered(phone);
-      return result.registered;
-    } catch {
-      return false;
-    }
-  };
-
   const handleFounderEmailBlur = async () => {
     const email = userEmail || requestForm.founderEmail;
     if (email?.trim() && await checkEmailDuplicate(email)) {
       setFounderEmailError(DUPLICATE_EMAIL_MESSAGE);
+      toast.error(DUPLICATE_EMAIL_MESSAGE);
     } else {
       setFounderEmailError("");
     }
@@ -251,8 +356,18 @@ const ClubCollaborate = () => {
 
   const handleFounderPhoneBlur = async () => {
     const phone = userPhone || requestForm.founderPhone;
-    if (phone?.length === 10 && await checkPhoneDuplicate(phone)) {
-      setFounderPhoneError(DUPLICATE_PHONE_MESSAGE);
+    if (phone?.length === 10) {
+      const inFormDup = requestForm.admins.some((a) => a.phone === phone);
+      if (inFormDup) {
+        setFounderPhoneError(DUPLICATE_PHONE_MESSAGE);
+        return;
+      }
+      if (await checkPhoneDuplicate(phone)) {
+        setFounderPhoneError(DUPLICATE_PHONE_MESSAGE);
+        toast.error(DUPLICATE_PHONE_MESSAGE);
+      } else {
+        setFounderPhoneError("");
+      }
     } else {
       setFounderPhoneError("");
     }
@@ -274,8 +389,8 @@ const ClubCollaborate = () => {
     if (!requestForm.otp) {
       return toast.error("Please enter the OTP sent to your email.");
     }
-    if (!otpSent) {
-      return toast.error("Please verify your email with OTP first.");
+    if (!founderEmailVerified) {
+      return toast.error("Please verify your email with OTP before submitting.");
     }
 
     const withinFormError = validateClubFormDuplicates();
@@ -299,15 +414,27 @@ const ClubCollaborate = () => {
       const admin = requestForm.admins[i];
       if (admin.email?.trim()) {
         const meta = adminOtpMeta[i];
+        const inFormEmailError = getAdminEmailInFormError(admin.email, i);
+        if (inFormEmailError) {
+          setAdminEmailErrors((prev) => ({ ...prev, [i]: inFormEmailError }));
+          return toast.error(inFormEmailError);
+        }
         if (!meta?.verified) {
           return toast.error(`Please verify OTP for leadership email: ${admin.email}`);
         }
         if (await checkEmailDuplicate(admin.email)) {
+          setAdminEmailErrors((prev) => ({ ...prev, [i]: DUPLICATE_EMAIL_MESSAGE }));
           return toast.error(DUPLICATE_EMAIL_MESSAGE);
         }
       }
-      if (admin.phone?.length === 10 && await checkPhoneDuplicate(admin.phone)) {
-        return toast.error(DUPLICATE_PHONE_MESSAGE);
+      if (admin.phone?.length === 10) {
+        const inFormPhoneError = getAdminPhoneInFormError(admin.phone, i);
+        if (inFormPhoneError) {
+          return toast.error(inFormPhoneError);
+        }
+        if (await checkPhoneDuplicate(admin.phone)) {
+          return toast.error(DUPLICATE_PHONE_MESSAGE);
+        }
       }
     }
 
@@ -346,6 +473,8 @@ const ClubCollaborate = () => {
       setAdminOtpMeta({});
       setFounderPhoneError("");
       setFounderEmailError("");
+      setFounderEmailVerified(false);
+      setAdminPhoneErrors({});
       navigate("/register/june-21-event");
     } catch (error) {
       toast.error(
@@ -520,6 +649,8 @@ const ClubCollaborate = () => {
                       onChange={(e) => {
                         updateField("founderEmail", e.target.value);
                         setFounderEmailError("");
+                        setFounderEmailVerified(false);
+                        setOtpSent(false);
                       }}
                       onBlur={handleFounderEmailBlur}
                       placeholder="founder@club.com"
@@ -570,19 +701,39 @@ const ClubCollaborate = () => {
                   <p className="font-body text-[10px] text-red-400">{founderPhoneError}</p>
                 )}
               </div>
-              {otpSent && (
+              {founderEmailVerified && (
+                <div className="md:col-span-2">
+                  <p className="font-body text-[10px] text-green-400 flex items-center gap-1.5">
+                    <CheckCircle size={14} /> Email Verified
+                  </p>
+                </div>
+              )}
+              {otpSent && !founderEmailVerified && (
                 <div className="space-y-2 md:col-span-2">
                   <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">OTP *</label>
-                  <div className="relative">
-                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
-                    <input
-                      type="text"
-                      className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
-                      value={requestForm.otp}
-                      onChange={(e) => updateField("otp", e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      placeholder="Enter 6-digit OTP"
-                      required
-                    />
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-grow">
+                      <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                      <input
+                        type="text"
+                        className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
+                        value={requestForm.otp}
+                        onChange={(e) => {
+                          updateField("otp", e.target.value.replace(/\D/g, "").slice(0, 6));
+                          setFounderEmailVerified(false);
+                        }}
+                        placeholder="Enter 6-digit OTP"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleVerifyFounderOtp}
+                      disabled={isVerifyingFounderOtp || requestForm.otp?.length !== 6}
+                      className="px-4 py-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {isVerifyingFounderOtp ? "..." : "Verify OTP"}
+                    </button>
                   </div>
                 </div>
               )}
@@ -612,11 +763,15 @@ const ClubCollaborate = () => {
                     </select>
                     <input
                       type="tel"
-                      className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper"
+                      className={`w-full bg-carbon border px-4 py-3 font-body text-xs outline-none focus:border-copper ${adminPhoneErrors[index] ? "border-red-500" : "border-white/10"}`}
                       placeholder="PHONE"
                       value={admin.phone}
                       onChange={(e) => updateAdminField(index, "phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                      onBlur={() => handleAdminPhoneBlur(index)}
                     />
+                    {adminPhoneErrors[index] && (
+                      <p className="font-body text-[10px] text-red-400 md:col-span-3">{adminPhoneErrors[index]}</p>
+                    )}
                   </div>
 
                   <div className="space-y-3 pt-4 border-t border-white/10">
@@ -628,10 +783,11 @@ const ClubCollaborate = () => {
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
                         <input
                           type="email"
-                          className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors"
+                          className={`w-full bg-carbon border pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors ${adminEmailErrors[index] ? "border-red-500" : "border-white/10"}`}
                           placeholder="leadership@club.com"
                           value={admin.email}
                           onChange={(e) => updateAdminField(index, "email", e.target.value)}
+                          onBlur={() => handleAdminEmailBlur(index)}
                         />
                       </div>
                       {!meta.verified && (
@@ -645,6 +801,9 @@ const ClubCollaborate = () => {
                         </button>
                       )}
                     </div>
+                    {adminEmailErrors[index] && (
+                      <p className="font-body text-[10px] text-red-400">{adminEmailErrors[index]}</p>
+                    )}
 
                     {admin.email?.trim() && meta.verified && (
                       <p className="font-body text-[10px] text-green-400 flex items-center gap-1.5">

@@ -2,55 +2,75 @@ import User from '../models/User.js';
 import Talent from '../models/Talent.js';
 import Club from '../models/Club.js';
 
-export const DUPLICATE_PHONE_MESSAGE = 'This mobile number is already registered.';
-export const DUPLICATE_EMAIL_MESSAGE = 'This email address is already registered.';
+export const DUPLICATE_PHONE_MESSAGE =
+  'This mobile number is already registered with BUC India. Please use a different mobile number.';
+export const DUPLICATE_EMAIL_MESSAGE =
+  'This email address is already registered with BUC India. Please use a different email address.';
 
-export const isPhoneRegistered = async (phone) => {
+const clubEmailQuery = (normalized) => ({
+  $or: [
+    { 'createdBy.email': normalized },
+    { 'founder.email': normalized },
+    { 'admins.email': normalized },
+  ],
+});
+
+const clubPhoneQuery = (normalized) => ({
+  $or: [
+    { 'createdBy.phone': normalized },
+    { 'founder.phone': normalized },
+    { 'admins.phone': normalized },
+  ],
+});
+
+export const isPhoneRegistered = async (phone, category = 'User', registrationType = null) => {
   if (!phone || !/^\d{10}$/.test(String(phone).trim())) {
     return false;
   }
 
   const normalized = String(phone).trim();
 
-  const user = await User.findOne({ phone: normalized }).select('_id').lean();
-  if (user) return true;
+  if (category === 'Talent') {
+    const talent = await Talent.findOne({ phone: normalized }).select('_id').lean();
+    return !!talent;
+  }
 
-  const talent = await Talent.findOne({ phone: normalized }).select('_id').lean();
-  if (talent) return true;
+  if (category === 'Club') {
+    const club = await Club.findOne(clubPhoneQuery(normalized)).select('_id').lean();
+    return !!club;
+  }
 
-  const club = await Club.findOne({
-    $or: [
-      { 'createdBy.phone': normalized },
-      { 'founder.phone': normalized },
-      { 'admins.phone': normalized },
-    ],
-  }).select('_id').lean();
+  if (!registrationType) {
+    return false;
+  }
 
-  return !!club;
+  const user = await User.findOne({ phone: normalized, registrationType }).select('_id').lean();
+  return !!user;
 };
 
-export const isEmailRegistered = async (email) => {
+export const isEmailRegistered = async (email, category = 'User', registrationType = null) => {
   if (!email || !String(email).includes('@')) {
     return false;
   }
 
   const normalized = String(email).trim().toLowerCase();
 
-  const user = await User.findOne({ email: normalized }).select('_id').lean();
-  if (user) return true;
+  if (category === 'Talent') {
+    const talent = await Talent.findOne({ email: normalized }).select('_id').lean();
+    return !!talent;
+  }
 
-  const talent = await Talent.findOne({ email: normalized }).select('_id').lean();
-  if (talent) return true;
+  if (category === 'Club') {
+    const club = await Club.findOne(clubEmailQuery(normalized)).select('_id').lean();
+    return !!club;
+  }
 
-  const club = await Club.findOne({
-    $or: [
-      { 'createdBy.email': normalized },
-      { 'founder.email': normalized },
-      { 'admins.email': normalized },
-    ],
-  }).select('_id').lean();
+  if (!registrationType) {
+    return false;
+  }
 
-  return !!club;
+  const user = await User.findOne({ email: normalized, registrationType }).select('_id').lean();
+  return !!user;
 };
 
 export const validateClubFormContactDuplicates = ({

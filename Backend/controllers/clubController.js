@@ -113,7 +113,7 @@ export const createClubRequest = async (req, res) => {
       });
     }
     for (const emailAddress of emailsToCheck) {
-      if (emailAddress && await isEmailRegistered(emailAddress)) {
+      if (emailAddress && await isEmailRegistered(emailAddress, 'Club')) {
         return res.status(400).json({ message: DUPLICATE_EMAIL_MESSAGE });
       }
     }
@@ -127,7 +127,7 @@ export const createClubRequest = async (req, res) => {
       });
     }
     for (const phoneNumber of phonesToCheck) {
-      if (phoneNumber && await isPhoneRegistered(phoneNumber)) {
+      if (phoneNumber && await isPhoneRegistered(phoneNumber, 'Club')) {
         return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
       }
     }

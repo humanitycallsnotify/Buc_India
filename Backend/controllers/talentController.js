@@ -51,11 +51,11 @@ export const submitTalent = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired OTP. Please verify your email first." });
     }
 
-    if (await isEmailRegistered(email)) {
+    if (await isEmailRegistered(email, 'Talent')) {
       return res.status(400).json({ message: DUPLICATE_EMAIL_MESSAGE });
     }
 
-    if (await isPhoneRegistered(phone)) {
+    if (await isPhoneRegistered(phone, 'Talent')) {
       return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
     }
 

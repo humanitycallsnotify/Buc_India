@@ -30,9 +30,12 @@ import { profileService, otpService, clubService } from "../services/api";
 import TermsModal from "./TermsModal";
 import DobPicker from "./DobPicker";
 import { USER_TERMS, USER_TERMS_FINAL_ACCEPTANCE } from "../constants/userRegistrationTerms";
-
-const DUPLICATE_PHONE_MESSAGE = "This mobile number is already registered.";
-const DUPLICATE_EMAIL_MESSAGE = "This email address is already registered.";
+import {
+  DUPLICATE_EMAIL_MESSAGE,
+  DUPLICATE_PHONE_MESSAGE,
+  OTP_VERIFY_SUCCESS,
+  mapOtpVerifyError,
+} from "../constants/registrationValidationMessages";
 
 const SOCIAL_PLATFORMS = [
   { value: "facebook", label: "Facebook", placeholder: "e.g. https://facebook.com/yourprofile", field: "facebookUrl" },
@@ -107,6 +110,8 @@ const UserRegistrationForm = () => {
   const [socialProfiles, setSocialProfiles] = useState([{ platform: "", url: "" }]);
   const [phoneError, setPhoneError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   useEffect(() => {
     if (!needsTshirt && formData.tshirtSize) {
@@ -143,6 +148,11 @@ const UserRegistrationForm = () => {
     } else if (name === "email") {
       setFormData(prev => ({ ...prev, [name]: value }));
       setEmailError("");
+      setEmailVerified(false);
+      setOtpSent(false);
+    } else if (name === "otp") {
+      setFormData(prev => ({ ...prev, [name]: value }));
+      setEmailVerified(false);
     } else if (type === "checkbox" && (name === "participatingInYoga" || name === "participatingInRally" || name === "participatingInMVD2026")) {
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
@@ -155,10 +165,18 @@ const UserRegistrationForm = () => {
       setEmailError("");
       return false;
     }
+    if (!formData.registrationType) {
+      return false;
+    }
     try {
-      const result = await profileService.checkEmailRegistered(email.trim());
+      const result = await profileService.checkEmailRegistered(
+        email.trim(),
+        formData.registrationType,
+        "User",
+      );
       if (result.registered) {
         setEmailError(DUPLICATE_EMAIL_MESSAGE);
+        toast.error(DUPLICATE_EMAIL_MESSAGE);
         return true;
       }
       setEmailError("");
@@ -177,10 +195,18 @@ const UserRegistrationForm = () => {
       setPhoneError("");
       return false;
     }
+    if (!formData.registrationType) {
+      return false;
+    }
     try {
-      const result = await profileService.checkPhoneRegistered(phone);
+      const result = await profileService.checkPhoneRegistered(
+        phone,
+        formData.registrationType,
+        "User",
+      );
       if (result.registered) {
         setPhoneError(DUPLICATE_PHONE_MESSAGE);
+        toast.error(DUPLICATE_PHONE_MESSAGE);
         return true;
       }
       setPhoneError("");
@@ -227,6 +253,13 @@ const UserRegistrationForm = () => {
 
   const handleSendOtp = async () => {
     if (!formData.email) return toast.error("Please enter your email first");
+    if (!formData.registrationType) {
+      return toast.error("Please select a registration category first.");
+    }
+    if (await checkEmailDuplicate(formData.email)) {
+      return;
+    }
+    setEmailVerified(false);
     setIsSendingOtp(true);
     try {
       await otpService.send(formData.email, "signup");
@@ -234,9 +267,26 @@ const UserRegistrationForm = () => {
       setCountdown(60);
       toast.success("OTP sent to your email!");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to send OTP.");
+      toast.error("Unable to send OTP. Please try again.");
     } finally {
       setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!formData.email || !formData.otp || formData.otp.length !== 6) {
+      return toast.error("Please enter the 6-digit OTP");
+    }
+    setIsVerifyingOtp(true);
+    try {
+      await otpService.verify(formData.email, formData.otp, "signup");
+      setEmailVerified(true);
+      toast.success(OTP_VERIFY_SUCCESS);
+    } catch (err) {
+      setEmailVerified(false);
+      toast.error(mapOtpVerifyError(err.response?.data?.message));
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -287,9 +337,11 @@ const UserRegistrationForm = () => {
         return toast.error("Please fill Email, Password, and OTP.");
       }
       if (await checkEmailDuplicate(formData.email)) {
-        return toast.error(DUPLICATE_EMAIL_MESSAGE);
+        return;
       }
-      if (!otpSent) return toast.error("Please verify your email with OTP first");
+      if (!emailVerified) {
+        return toast.error("Please verify your email with OTP before submitting.");
+      }
     }
 
     if (needsDob && !isPS && !formData.dateOfBirth) {
@@ -432,6 +484,7 @@ const UserRegistrationForm = () => {
         setLicenseImage(null); setLicenseImagePreview(null);
         setSocialProfiles([{ platform: "", url: "" }]);
         setOtpSent(false);
+        setEmailVerified(false);
         setTermsAccepted(false);
         setPhoneError("");
         setEmailError("");
@@ -531,6 +584,10 @@ const UserRegistrationForm = () => {
                   type="button"
                   onClick={() => setFormData((prev) => {
                     if (prev.registrationType === type.id) return prev;
+                    setEmailVerified(false);
+                    setOtpSent(false);
+                    setEmailError("");
+                    setPhoneError("");
                     return {
                       ...prev,
                       registrationType: type.id,
@@ -704,7 +761,38 @@ const UserRegistrationForm = () => {
                         </p>
                       )}
                     </div>
-                    {otpSent && <InputField label="OTP" name="otp" icon={Key} value={formData.otp} onChange={handleInputChange} required />}
+                    {emailVerified && (
+                      <p className="font-body text-[10px] text-green-400 flex items-center gap-1.5">
+                        <CheckCircle size={14} /> Email Verified
+                      </p>
+                    )}
+                    {otpSent && !emailVerified && (
+                      <div className="space-y-2">
+                        <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">OTP <span className="text-red-500">*</span></label>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="relative flex-grow">
+                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                            <input
+                              type="text"
+                              name="otp"
+                              value={formData.otp}
+                              onChange={handleInputChange}
+                              required
+                              className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors"
+                              placeholder="Enter 6-digit OTP"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleVerifyOtp}
+                            disabled={isVerifyingOtp || formData.otp?.length !== 6}
+                            className="px-4 py-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {isVerifyingOtp ? "..." : "Verify OTP"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div className="space-y-1">
                       <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Password <span className="text-red-500">*</span></label>
                       <div className="relative">

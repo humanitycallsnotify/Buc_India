@@ -162,12 +162,16 @@ export const profileService = {
     const response = await api.delete(`/profile/${id}`);
     return response.data;
   },
-  checkPhoneRegistered: async (phone) => {
-    const response = await api.get("/profile/phone-registered", { params: { phone } });
+  checkPhoneRegistered: async (phone, registrationType, category = "User") => {
+    const response = await api.get("/profile/phone-registered", {
+      params: { phone, registrationType, category },
+    });
     return response.data;
   },
-  checkEmailRegistered: async (email) => {
-    const response = await api.get("/profile/email-registered", { params: { email } });
+  checkEmailRegistered: async (email, registrationType, category = "User") => {
+    const response = await api.get("/profile/email-registered", {
+      params: { email, registrationType, category },
+    });
     return response.data;
   },
 };
