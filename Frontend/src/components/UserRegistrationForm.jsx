@@ -32,6 +32,7 @@ import DobPicker from "./DobPicker";
 import { USER_TERMS, USER_TERMS_FINAL_ACCEPTANCE } from "../constants/userRegistrationTerms";
 
 const DUPLICATE_PHONE_MESSAGE = "This mobile number is already registered.";
+const DUPLICATE_EMAIL_MESSAGE = "This email address is already registered.";
 
 const SOCIAL_PLATFORMS = [
   { value: "facebook", label: "Facebook", placeholder: "e.g. https://facebook.com/yourprofile", field: "facebookUrl" },
@@ -105,6 +106,7 @@ const UserRegistrationForm = () => {
   const [clubs, setClubs] = useState([]);
   const [socialProfiles, setSocialProfiles] = useState([{ platform: "", url: "" }]);
   const [phoneError, setPhoneError] = useState("");
+  const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
     if (!needsTshirt && formData.tshirtSize) {
@@ -138,11 +140,36 @@ const UserRegistrationForm = () => {
       const numericValue = value.replace(/\D/g, "").slice(0, 10);
       setFormData(prev => ({ ...prev, [name]: numericValue }));
       if (name === "phone") setPhoneError("");
+    } else if (name === "email") {
+      setFormData(prev => ({ ...prev, [name]: value }));
+      setEmailError("");
     } else if (type === "checkbox" && (name === "participatingInYoga" || name === "participatingInRally" || name === "participatingInMVD2026")) {
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const checkEmailDuplicate = async (email) => {
+    if (!email?.trim() || !email.includes("@")) {
+      setEmailError("");
+      return false;
+    }
+    try {
+      const result = await profileService.checkEmailRegistered(email.trim());
+      if (result.registered) {
+        setEmailError(DUPLICATE_EMAIL_MESSAGE);
+        return true;
+      }
+      setEmailError("");
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleEmailBlur = async () => {
+    await checkEmailDuplicate(formData.email);
   };
 
   const checkPhoneDuplicate = async (phone) => {
@@ -258,6 +285,9 @@ const UserRegistrationForm = () => {
     if (!isPS) {
       if (!formData.email || !formData.password || !formData.otp) {
         return toast.error("Please fill Email, Password, and OTP.");
+      }
+      if (await checkEmailDuplicate(formData.email)) {
+        return toast.error(DUPLICATE_EMAIL_MESSAGE);
       }
       if (!otpSent) return toast.error("Please verify your email with OTP first");
     }
@@ -404,6 +434,7 @@ const UserRegistrationForm = () => {
         setOtpSent(false);
         setTermsAccepted(false);
         setPhoneError("");
+        setEmailError("");
       }, 3000);
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed. Please try again.");
@@ -498,7 +529,17 @@ const UserRegistrationForm = () => {
                 <button
                   key={type.id}
                   type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, registrationType: type.id }))}
+                  onClick={() => setFormData((prev) => {
+                    if (prev.registrationType === type.id) return prev;
+                    return {
+                      ...prev,
+                      registrationType: type.id,
+                      participatingInYoga: false,
+                      participatingInRally: false,
+                      participatingInMVD2026: false,
+                      tshirtSize: "",
+                    };
+                  })}
                   className={`flex flex-col items-center justify-center p-3 sm:p-6 border text-center transition-all duration-300 relative overflow-hidden group ${
                     isSelected
                       ? "bg-copper/10 border-copper text-white shadow-[0_0_15px_rgba(202,138,4,0.15)]"
@@ -642,12 +683,26 @@ const UserRegistrationForm = () => {
                       <div className="flex gap-2">
                         <div className="relative flex-grow">
                           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
-                          <input type="email" name="email" value={formData.email} onChange={handleInputChange} required disabled={otpSent && countdown > 0} className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors disabled:opacity-50" />
+                          <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            onBlur={handleEmailBlur}
+                            required
+                            disabled={otpSent && countdown > 0}
+                            className={`w-full bg-carbon border pl-12 pr-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors disabled:opacity-50 ${emailError ? "border-red-500" : "border-white/10"}`}
+                          />
                         </div>
                         <button type="button" onClick={handleSendOtp} disabled={isSendingOtp || countdown > 0} className="px-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 min-w-[90px]">
                           {isSendingOtp ? "..." : countdown > 0 ? `${countdown}s` : "SEND OTP"}
                         </button>
                       </div>
+                      {emailError && (
+                        <p className="font-body text-[10px] text-red-400 flex items-center gap-1 mt-1">
+                          <AlertCircle size={12} /> {emailError}
+                        </p>
+                      )}
                     </div>
                     {otpSent && <InputField label="OTP" name="otp" icon={Key} value={formData.otp} onChange={handleInputChange} required />}
                     <div className="space-y-1">

@@ -4,7 +4,7 @@ import Club from "../models/Club.js";
 import { cloudinary } from "../middleware/cloudinaryConfig.js";
 import { generateUniqueBucId } from "../utils/generateBucId.js";
 import { sendRegistrationConfirmation } from "../utils/mailSender.js";
-import { DUPLICATE_PHONE_MESSAGE, isPhoneRegistered } from "../utils/checkRegisteredPhone.js";
+import { DUPLICATE_PHONE_MESSAGE, DUPLICATE_EMAIL_MESSAGE, isPhoneRegistered, isEmailRegistered } from "../utils/checkRegisteredPhone.js";
 
 export const getProfile = async (req, res) => {
   try {
@@ -154,18 +154,11 @@ export const userSignup = async (req, res) => {
       return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
     }
 
+    if (registrationType !== 'PS' && email && await isEmailRegistered(email)) {
+      return res.status(400).json({ message: DUPLICATE_EMAIL_MESSAGE });
+    }
+
     if (registrationType !== 'PS') {
-      const existingUser = await User.findOne({
-        $or: [{ phone }, { email: email.toLowerCase() }],
-      });
-
-      if (existingUser) {
-        if (existingUser.phone === phone) {
-          return res.status(400).json({ message: DUPLICATE_PHONE_MESSAGE });
-        }
-        return res.status(400).json({ message: "Email is already registered." });
-      }
-
       // Verify OTP exists for this email
       const otpRecord = await Otp.findOne({
         email: email.toLowerCase(),
@@ -303,6 +296,20 @@ export const userSignup = async (req, res) => {
   } catch (error) {
     console.error("User Signup Error:", error);
     res.status(400).json({ message: error.message });
+  }
+};
+
+export const checkEmailRegistered = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
+    }
+    const registered = await isEmailRegistered(String(email).trim());
+    res.json({ registered, message: registered ? DUPLICATE_EMAIL_MESSAGE : null });
+  } catch (error) {
+    console.error("Check Email Registered Error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 

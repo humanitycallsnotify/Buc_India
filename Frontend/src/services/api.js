@@ -166,6 +166,10 @@ export const profileService = {
     const response = await api.get("/profile/phone-registered", { params: { phone } });
     return response.data;
   },
+  checkEmailRegistered: async (email) => {
+    const response = await api.get("/profile/email-registered", { params: { email } });
+    return response.data;
+  },
 };
 
 export const clubService = {

@@ -9,6 +9,7 @@ import { talentService, clubService, otpService, profileService } from "../servi
 import DobPicker from "./DobPicker";
 
 const DUPLICATE_PHONE_MESSAGE = "This mobile number is already registered.";
+const DUPLICATE_EMAIL_MESSAGE = "This email address is already registered.";
 
 const TALENT_CATEGORIES = {
   "🎤 Performing Arts": [
@@ -68,6 +69,7 @@ const TalentRegistrationForm = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [phoneError, setPhoneError] = useState("");
+  const [emailError, setEmailError] = useState("");
 
   const [talentImage, setTalentImage] = useState(null);
   const [talentVideo, setTalentVideo] = useState(null);
@@ -143,9 +145,34 @@ const TalentRegistrationForm = () => {
     if (name === "phone") {
       setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, "").slice(0, 10) }));
       setPhoneError("");
+    } else if (name === "email") {
+      setFormData(prev => ({ ...prev, [name]: value }));
+      setEmailError("");
     } else {
       setFormData(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
     }
+  };
+
+  const checkEmailDuplicate = async (email) => {
+    if (!email?.trim() || !email.includes("@")) {
+      setEmailError("");
+      return false;
+    }
+    try {
+      const result = await profileService.checkEmailRegistered(email.trim());
+      if (result.registered) {
+        setEmailError(DUPLICATE_EMAIL_MESSAGE);
+        return true;
+      }
+      setEmailError("");
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleEmailBlur = async () => {
+    await checkEmailDuplicate(formData.email);
   };
 
   const checkPhoneDuplicate = async (phone) => {
@@ -190,6 +217,9 @@ const TalentRegistrationForm = () => {
     }
     if (!otpSent) {
       return toast.error("Please verify your email address with OTP first.");
+    }
+    if (await checkEmailDuplicate(formData.email)) {
+      return toast.error(DUPLICATE_EMAIL_MESSAGE);
     }
     if (await checkPhoneDuplicate(formData.phone)) {
       return toast.error(DUPLICATE_PHONE_MESSAGE);
@@ -386,8 +416,21 @@ const TalentRegistrationForm = () => {
               {phoneError && <p className="font-body text-[10px] text-red-400 mt-1">{phoneError}</p>}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end md:col-span-2">
-              <div className="md:col-span-2">
-                <InputField label="Email ID" name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} required />
+              <div className="md:col-span-2 space-y-1">
+                <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Email ID <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    onBlur={handleEmailBlur}
+                    required
+                    className={`w-full bg-carbon border pl-12 pr-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors ${emailError ? "border-red-500" : "border-white/10"}`}
+                  />
+                </div>
+                {emailError && <p className="font-body text-[10px] text-red-400 mt-1">{emailError}</p>}
               </div>
               <div className="pb-0.5">
                 <button

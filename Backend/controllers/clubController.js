@@ -2,7 +2,7 @@ import Club from '../models/Club.js';
 import ClubMembership from '../models/ClubMembership.js';
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
-import { DUPLICATE_PHONE_MESSAGE, isPhoneRegistered } from '../utils/checkRegisteredPhone.js';
+import { DUPLICATE_PHONE_MESSAGE, DUPLICATE_EMAIL_MESSAGE, isPhoneRegistered, isEmailRegistered, validateClubFormContactDuplicates } from '../utils/checkRegisteredPhone.js';
 
 // Public: list approved clubs with minimal info
 export const getPublicClubs = async (req, res) => {
@@ -90,6 +90,31 @@ export const createClubRequest = async (req, res) => {
         parsedAdmins = typeof admins === 'string' ? JSON.parse(admins) : admins;
       } catch (e) {
         console.warn('Could not parse admins payload, ignoring:', e.message);
+      }
+    }
+
+    const withinFormDuplicate = validateClubFormContactDuplicates({
+      creatorEmail,
+      founderEmail,
+      creatorPhone,
+      founderPhone,
+      admins: parsedAdmins,
+    });
+    if (withinFormDuplicate) {
+      return res.status(400).json({ message: withinFormDuplicate });
+    }
+
+    const emailsToCheck = new Set();
+    const founderSideEmail = (creatorEmail || founderEmail)?.trim().toLowerCase();
+    if (founderSideEmail) emailsToCheck.add(founderSideEmail);
+    if (Array.isArray(parsedAdmins)) {
+      parsedAdmins.forEach((admin) => {
+        if (admin?.email?.trim()) emailsToCheck.add(admin.email.trim().toLowerCase());
+      });
+    }
+    for (const emailAddress of emailsToCheck) {
+      if (emailAddress && await isEmailRegistered(emailAddress)) {
+        return res.status(400).json({ message: DUPLICATE_EMAIL_MESSAGE });
       }
     }
 

@@ -24,6 +24,7 @@ import {
 } from "../../constants/clubRegistrationTerms";
 
 const DUPLICATE_PHONE_MESSAGE = "This mobile number is already registered.";
+const DUPLICATE_EMAIL_MESSAGE = "This email address is already registered.";
 
 const initialRequestState = {
   name: "",
@@ -57,6 +58,7 @@ const ClubCollaborate = () => {
   const [countdown, setCountdown] = useState(0);
   const [adminOtpMeta, setAdminOtpMeta] = useState({});
   const [founderPhoneError, setFounderPhoneError] = useState("");
+  const [founderEmailError, setFounderEmailError] = useState("");
 
   useEffect(() => {
     let timer;
@@ -195,6 +197,39 @@ const ClubCollaborate = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const checkEmailDuplicate = async (email) => {
+    if (!email?.trim() || !email.includes("@")) return false;
+    try {
+      const result = await profileService.checkEmailRegistered(email.trim());
+      return result.registered;
+    } catch {
+      return false;
+    }
+  };
+
+  const validateClubFormDuplicates = () => {
+    const founderEmail = (userEmail || requestForm.founderEmail)?.trim().toLowerCase();
+    const founderPhone = (userPhone || requestForm.founderPhone)?.trim();
+    const emails = [];
+    const phones = [];
+
+    if (founderEmail) emails.push(founderEmail);
+    if (founderPhone?.length === 10) phones.push(founderPhone);
+
+    requestForm.admins.forEach((admin) => {
+      if (admin.email?.trim()) emails.push(admin.email.trim().toLowerCase());
+      if (admin.phone?.length === 10) phones.push(admin.phone.trim());
+    });
+
+    if (emails.length !== new Set(emails).size) {
+      return DUPLICATE_EMAIL_MESSAGE;
+    }
+    if (phones.length !== new Set(phones).size) {
+      return DUPLICATE_PHONE_MESSAGE;
+    }
+    return null;
+  };
+
   const checkPhoneDuplicate = async (phone) => {
     if (!phone || phone.length !== 10) return false;
     try {
@@ -202,6 +237,15 @@ const ClubCollaborate = () => {
       return result.registered;
     } catch {
       return false;
+    }
+  };
+
+  const handleFounderEmailBlur = async () => {
+    const email = userEmail || requestForm.founderEmail;
+    if (email?.trim() && await checkEmailDuplicate(email)) {
+      setFounderEmailError(DUPLICATE_EMAIL_MESSAGE);
+    } else {
+      setFounderEmailError("");
     }
   };
 
@@ -234,6 +278,17 @@ const ClubCollaborate = () => {
       return toast.error("Please verify your email with OTP first.");
     }
 
+    const withinFormError = validateClubFormDuplicates();
+    if (withinFormError) {
+      return toast.error(withinFormError);
+    }
+
+    const founderEmailValue = userEmail || requestForm.founderEmail;
+    if (founderEmailValue?.trim() && await checkEmailDuplicate(founderEmailValue)) {
+      setFounderEmailError(DUPLICATE_EMAIL_MESSAGE);
+      return toast.error(DUPLICATE_EMAIL_MESSAGE);
+    }
+
     const founderPhoneValue = userPhone || requestForm.founderPhone;
     if (founderPhoneValue?.length === 10 && await checkPhoneDuplicate(founderPhoneValue)) {
       setFounderPhoneError(DUPLICATE_PHONE_MESSAGE);
@@ -246,6 +301,9 @@ const ClubCollaborate = () => {
         const meta = adminOtpMeta[i];
         if (!meta?.verified) {
           return toast.error(`Please verify OTP for leadership email: ${admin.email}`);
+        }
+        if (await checkEmailDuplicate(admin.email)) {
+          return toast.error(DUPLICATE_EMAIL_MESSAGE);
         }
       }
       if (admin.phone?.length === 10 && await checkPhoneDuplicate(admin.phone)) {
@@ -287,6 +345,7 @@ const ClubCollaborate = () => {
       setCountdown(0);
       setAdminOtpMeta({});
       setFounderPhoneError("");
+      setFounderEmailError("");
       navigate("/register/june-21-event");
     } catch (error) {
       toast.error(
@@ -456,9 +515,13 @@ const ClubCollaborate = () => {
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
                     <input
                       type="email"
-                      className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors disabled:opacity-50"
+                      className={`w-full bg-carbon border pl-12 pr-4 py-4 font-body text-sm outline-none focus:border-copper transition-colors disabled:opacity-50 ${founderEmailError ? "border-red-500" : "border-white/10"}`}
                       value={userEmail || requestForm.founderEmail}
-                      onChange={(e) => updateField("founderEmail", e.target.value)}
+                      onChange={(e) => {
+                        updateField("founderEmail", e.target.value);
+                        setFounderEmailError("");
+                      }}
+                      onBlur={handleFounderEmailBlur}
                       placeholder="founder@club.com"
                       required
                       disabled={!!userEmail || (otpSent && countdown > 0)}
@@ -475,6 +538,9 @@ const ClubCollaborate = () => {
                     </button>
                   )}
                 </div>
+                {founderEmailError && (
+                  <p className="font-body text-[10px] text-red-400">{founderEmailError}</p>
+                )}
                 {userEmail && (
                   <button
                     type="button"
