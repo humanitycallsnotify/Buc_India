@@ -5,7 +5,9 @@ import {
   registrationService, 
   clubService, 
   clubMembershipService, 
-  certificateService 
+  certificateService,
+  getApiErrorMessage,
+  logSettledResult,
 } from "../../services/api";
 import { 
   Users, 
@@ -52,12 +54,11 @@ const DashboardHome = () => {
       const errors = [];
       const [events, registrations, clubs, memberships, certificates] = results.map(
         (result, index) => {
+          logSettledResult(labels[index], result);
           if (result.status === "fulfilled") {
-            console.log(`[DashboardHome] Loaded ${labels[index]}:`, result.value.length);
             return result.value;
           }
-          console.error(`[DashboardHome] Failed to load ${labels[index]}:`, result.reason);
-          errors.push(labels[index]);
+          errors.push(`${labels[index]}: ${getApiErrorMessage(result.reason)}`);
           return [];
         },
       );

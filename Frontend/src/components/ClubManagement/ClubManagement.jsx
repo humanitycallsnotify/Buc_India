@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { clubService, clubMembershipService } from "../../services/api";
+import { clubService, clubMembershipService, getApiErrorMessage, logSettledResult } from "../../services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, 
@@ -41,22 +41,24 @@ const ClubManagement = () => {
       ]);
 
       const [clubResult, membershipResult] = results;
+      logSettledResult("clubs", clubResult);
+      logSettledResult("club-memberships", membershipResult);
+
       const clubList = clubResult.status === "fulfilled" ? clubResult.value : [];
       const membershipList = membershipResult.status === "fulfilled" ? membershipResult.value : [];
 
-      if (clubResult.status === "rejected") {
-        console.error("[ClubManagement] Failed to load clubs:", clubResult.reason);
-      }
-      if (membershipResult.status === "rejected") {
-        console.error("[ClubManagement] Failed to load memberships:", membershipResult.reason);
-      }
-
-      console.log("[ClubManagement] Loaded clubs:", clubList.length, "memberships:", membershipList.length);
       setClubs(clubList);
       setMemberships(membershipList);
 
-      if (clubResult.status === "rejected" || membershipResult.status === "rejected") {
-        setLoadError("Some club data could not be loaded. Check admin authentication and try refreshing.");
+      const errors = [];
+      if (clubResult.status === "rejected") {
+        errors.push(`clubs: ${getApiErrorMessage(clubResult.reason)}`);
+      }
+      if (membershipResult.status === "rejected") {
+        errors.push(`memberships: ${getApiErrorMessage(membershipResult.reason)}`);
+      }
+      if (errors.length) {
+        setLoadError(`Some club data could not be loaded — ${errors.join("; ")}`);
       }
     } catch (error) {
       console.error("[ClubManagement] Critical failure during telemetry retrieval:", error);

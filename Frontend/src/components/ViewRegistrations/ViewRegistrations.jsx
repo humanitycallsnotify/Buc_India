@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { Download, Trash2, X, AlertTriangle, RefreshCw } from "lucide-react";
-import { eventService, registrationService } from "../../services/api";
+import { eventService, registrationService, getApiErrorMessage, logSettledResult } from "../../services/api";
 import {
   exportToExcel,
   exportToPDF,
@@ -35,34 +35,65 @@ const ViewRegistrations = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const [loadWarnings, setLoadWarnings] = useState([]);
 
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       setLoadError(null);
-      const allEvents = await eventService.getAll();
-      console.log("[ViewRegistrations] Loaded events:", allEvents.length);
-      setEvents(allEvents);
+      setLoadWarnings([]);
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
-      const activeEvents = allEvents
-        .filter((event) => {
-          if (!event.isActive) return false;
-          const eventDate = new Date(event.eventDate);
-          return eventDate >= today;
-        })
-        .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
 
       let eventToFetch = selectedEvent;
-      if (selectedEvent === "current") {
-        eventToFetch = activeEvents[0]?._id || "all";
+      let activeEvents = [];
+
+      const eventsResult = await Promise.resolve().then(() => eventService.getAll()).then(
+        (value) => ({ status: "fulfilled", value }),
+        (reason) => ({ status: "rejected", reason }),
+      );
+      logSettledResult("events", eventsResult);
+
+      if (eventsResult.status === "fulfilled") {
+        const allEvents = eventsResult.value;
+        setEvents(allEvents);
+        activeEvents = allEvents
+          .filter((event) => {
+            if (!event.isActive) return false;
+            const eventDate = new Date(event.eventDate);
+            return eventDate >= today;
+          })
+          .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+
+        if (selectedEvent === "current") {
+          eventToFetch = activeEvents[0]?._id || "all";
+        }
+      } else {
+        setEvents([]);
+        setLoadError(`Events: ${getApiErrorMessage(eventsResult.reason)}`);
+        setRegistrations([]);
+        return;
       }
 
-      const allRegistrations = await registrationService.getAll(eventToFetch === "all" ? undefined : eventToFetch);
-      console.log("[ViewRegistrations] Loaded registrations:", allRegistrations.length);
-      setRegistrations(allRegistrations);
+      const registrationsResult = await Promise.resolve()
+        .then(() =>
+          registrationService.getAll(eventToFetch === "all" ? undefined : eventToFetch),
+        )
+        .then(
+          (value) => ({ status: "fulfilled", value }),
+          (reason) => ({ status: "rejected", reason }),
+        );
+      logSettledResult("registrations", registrationsResult);
+
+      if (registrationsResult.status === "fulfilled") {
+        setRegistrations(registrationsResult.value);
+      } else {
+        setRegistrations([]);
+        setLoadWarnings([
+          `Registrations: ${getApiErrorMessage(registrationsResult.reason)}`,
+        ]);
+      }
     } catch (error) {
       console.error("[ViewRegistrations] Error loading data:", error);
       const message =
@@ -661,6 +692,21 @@ const ViewRegistrations = () => {
 
   return (
     <div className="view-registrations">
+      {loadWarnings.length > 0 && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: "12px 16px",
+            borderRadius: 8,
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            background: "rgba(245, 158, 11, 0.1)",
+            color: "#fcd34d",
+            fontSize: 13,
+          }}
+        >
+          {loadWarnings.join(" | ")}
+        </div>
+      )}
       {loadError && (
         <div
           style={{

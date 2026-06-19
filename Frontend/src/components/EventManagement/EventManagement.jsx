@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { eventService, registrationService } from "../../services/api";
+import { eventService, registrationService, getApiErrorMessage, logSettledResult } from "../../services/api";
 import TimePicker from "../EventPicker/TimePicker";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,20 +41,49 @@ const EventManagement = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [loadErrors, setLoadErrors] = useState([]);
 
   useEffect(() => { loadEvents(); }, []);
   useEffect(() => { filterEventsFn(); }, [events, filterName, filterDate, activeTab]);
 
   const loadEvents = async () => {
     setLoading(true);
+    setLoadErrors([]);
     try {
-      const [eventsData, registrationsData] = await Promise.all([
-        eventService.getAll(), registrationService.getAll()
+      const [eventsResult, registrationsResult] = await Promise.allSettled([
+        eventService.getAll(),
+        registrationService.getAll(),
       ]);
-      setEvents(eventsData || []);
-      setRegistrations(registrationsData || []);
+
+      logSettledResult("events", eventsResult);
+      logSettledResult("registrations", registrationsResult);
+
+      const errors = [];
+      const eventsData =
+        eventsResult.status === "fulfilled" ? eventsResult.value : [];
+      const registrationsData =
+        registrationsResult.status === "fulfilled" ? registrationsResult.value : [];
+
+      if (eventsResult.status === "rejected") {
+        errors.push(`events: ${getApiErrorMessage(eventsResult.reason)}`);
+      }
+      if (registrationsResult.status === "rejected") {
+        errors.push(`registrations: ${getApiErrorMessage(registrationsResult.reason)}`);
+      }
+
+      setEvents(eventsData);
+      setRegistrations(registrationsData);
+      setLoadErrors(errors);
+
+      if (errors.length === 2) {
+        toast.error("Failed to load operational data");
+      } else if (errors.length === 1) {
+        toast.warn(`Partial load — ${errors[0]}`);
+      }
     } catch (error) {
+      console.error("[EventManagement] Unexpected load failure:", error);
       toast.error("Failed to load operational data");
+      setLoadErrors([getApiErrorMessage(error)]);
     } finally {
       setLoading(false);
     }
@@ -178,6 +207,12 @@ const EventManagement = () => {
           <Plus size={20} /> Deploy New
         </button>
       </div>
+
+      {loadErrors.length > 0 && (
+        <div className="p-4 border border-amber-500/30 bg-amber-500/10 text-amber-200 font-body text-[10px] uppercase tracking-widest">
+          Partial load issue: {loadErrors.join(" | ")}
+        </div>
+      )}
 
       {/* Deployment Form */}
       <AnimatePresence>

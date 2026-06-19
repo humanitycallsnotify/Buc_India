@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Download, RefreshCw, Filter, X, Camera, FileText, Upload, Shield, GraduationCap, Bike, Users, User, Mail, Phone, Trash2, Calendar } from "lucide-react";
-import { profileService, clubService } from "../../services/api";
+import { profileService, clubService, getApiErrorMessage } from "../../services/api";
 import { exportToExcel, exportToPDF } from "../../utils/exportUtils";
 import EditUserModal from "./EditUserModal";
 
@@ -62,7 +62,12 @@ const ViewUsers = () => {
       setUsers(processedUsers);
       setFilteredUsers(processedUsers);
     } catch (error) {
-      console.error("[ViewUsers] Error loading users:", error);
+      console.error("[ViewUsers] Error loading users:", {
+        message: getApiErrorMessage(error),
+        status: error.response?.status,
+        body: error.response?.data,
+        hasToken: !!sessionStorage.getItem("buc_admin_token"),
+      });
       const message =
         error.response?.data?.message ||
         error.message ||
