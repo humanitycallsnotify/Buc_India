@@ -67,7 +67,17 @@ export const userSignup = async (req, res) => {
       clubId,
       riderPhone,
       riderRegistrationId,
+      participatingInMVD2026,
     } = req.body;
+
+    const parseBool = (val) => val === true || val === 'true';
+    const mvd = parseBool(participatingInMVD2026);
+
+    if (parseBool(req.body.participatingInYoga) || parseBool(req.body.participatingInRally)) {
+      return res.status(400).json({
+        message: "Yoga and Rally participation are no longer available for new registrations.",
+      });
+    }
 
     const isRider = registrationType === 'Rider' || registrationType === 'Student Rider';
     const isStudent = registrationType === 'Student' || registrationType === 'Student Rider';
@@ -77,7 +87,7 @@ export const userSignup = async (req, res) => {
 
     // Check if it's a detailed registration (e.g. from the registration forms in registration branch)
     // We determine this by checking if address fields are provided.
-    const isDetailed = !!address || !!city || !!state || !!pincode;
+    const isDetailed = !!address || !!city || !!state || !!pincode || mvd;
 
     // 1. Mandatory overall validation (Common to ALL registration types)
     if (isDetailed) {
@@ -182,6 +192,9 @@ export const userSignup = async (req, res) => {
       city: city || "",
       state: state || "",
       pincode: pincode || "",
+      participatingInYoga: false,
+      participatingInRally: false,
+      participatingInMVD2026: mvd,
       clubId: clubId || null,
     };
 
@@ -373,7 +386,6 @@ export const updateUserProfile = async (req, res) => {
     delete userData.email; // Don't allow email update here
     delete userData.participatingInYoga;
     delete userData.participatingInRally;
-    delete userData.participatingInMVD2026;
 
     if (userData.clubId === "" || userData.clubId === "null" || userData.clubId === "undefined") {
       userData.clubId = null;

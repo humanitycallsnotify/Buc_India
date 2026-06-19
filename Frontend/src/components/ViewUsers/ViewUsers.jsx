@@ -101,6 +101,9 @@ const ViewUsers = () => {
     { key: "registrationType", label: "Registration Type", width: "140px" },
     { key: "fullName", label: "Full Name", width: "150px" },
     { key: "phone", label: "Phone Number", width: "120px" },
+    { key: "participatingInMVD2026", label: "MVD 2026", width: "90px" },
+    { key: "participatingInYoga", label: "Yoga (Legacy)", width: "90px" },
+    { key: "participatingInRally", label: "Rally (Legacy)", width: "90px" },
     { key: "email", label: "Email Address", width: "180px" },
     { key: "collegeName", label: "College Name", width: "150px" },
     { key: "collegeIdNo", label: "Student ID Number", width: "140px" },
@@ -194,6 +197,13 @@ const ViewUsers = () => {
       if (value === null || value === undefined || value === "") return "-";
       return String(value);
     }
+    if (
+      column.key === "participatingInMVD2026" ||
+      column.key === "participatingInYoga" ||
+      column.key === "participatingInRally"
+    ) {
+      return value === true ? "Yes" : "No";
+    }
     if (column.key === "profileImage" || column.key === "licenseImage") {
       if (!value) return "-";
       return (
@@ -224,9 +234,6 @@ const ViewUsers = () => {
       "profileImagePublicId",
       "__v",
       "updatedAt",
-      "participatingInYoga",
-      "participatingInRally",
-      "participatingInMVD2026",
     ];
     const firstReg = filteredUsers[0];
     const keys = Object.keys(firstReg).filter((key) => !excludeFields.includes(key));
