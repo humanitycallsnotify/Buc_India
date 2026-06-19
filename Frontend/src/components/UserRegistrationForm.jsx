@@ -85,9 +85,6 @@ const UserRegistrationForm = () => {
     collegeIdNo: "",
     riderPhone: "",
     riderRegistrationId: "",
-    participatingInYoga: false,
-    participatingInRally: false,
-    participatingInMVD2026: false,
   });
 
   const [profileImage, setProfileImage] = useState(null);
@@ -144,8 +141,6 @@ const UserRegistrationForm = () => {
     } else if (name === "otp") {
       setFormData(prev => ({ ...prev, [name]: value }));
       setEmailVerified(false);
-    } else if (type === "checkbox" && (name === "participatingInYoga" || name === "participatingInRally" || name === "participatingInMVD2026")) {
-      setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -393,9 +388,6 @@ const UserRegistrationForm = () => {
       data.append("registrationType", formData.registrationType);
       data.append("fullName", formData.fullName);
       data.append("phone", formData.phone);
-      data.append("participatingInYoga", formData.participatingInYoga ? "true" : "false");
-      data.append("participatingInRally", formData.participatingInRally ? "true" : "false");
-      data.append("participatingInMVD2026", formData.participatingInMVD2026 ? "true" : "false");
       data.append("gender", formData.gender);
       if (!isPS) {
         data.append("email", formData.email);
@@ -464,7 +456,6 @@ const UserRegistrationForm = () => {
           bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
           emergencyContactName: "", emergencyContactPhone: "",
           collegeName: "", collegeIdNo: "", riderPhone: "", riderRegistrationId: "",
-          participatingInYoga: false, participatingInRally: false, participatingInMVD2026: false,
         });
         setProfileImage(null); setProfileImagePreview(null);
         setLicenseImage(null); setLicenseImagePreview(null);
@@ -577,9 +568,6 @@ const UserRegistrationForm = () => {
                     return {
                       ...prev,
                       registrationType: type.id,
-                      participatingInYoga: false,
-                      participatingInRally: false,
-                      participatingInMVD2026: false,
                     };
                   })}
                   className={`flex flex-col items-center justify-center p-3 sm:p-6 border text-center transition-all duration-300 relative overflow-hidden group ${
@@ -674,28 +662,6 @@ const UserRegistrationForm = () => {
                       <AlertCircle size={12} /> {phoneError}
                     </p>
                   )}
-                </div>
-
-                <div className="space-y-3 md:col-span-2">
-                  <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Event Participation</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {[
-                      { name: "participatingInYoga", label: "Taking part in Yoga" },
-                      { name: "participatingInRally", label: "Taking part in Rally" },
-                      { name: "participatingInMVD2026", label: "Taking part in MVD 2026 Full Day Event" },
-                    ].map(({ name, label }) => (
-                      <label key={name} className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          name={name}
-                          checked={formData[name]}
-                          onChange={handleInputChange}
-                          className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 rounded"
-                        />
-                        <span className="font-text text-xs text-steel-dim leading-relaxed">{label}</span>
-                      </label>
-                    ))}
-                  </div>
                 </div>
 
                 <div className="space-y-1">

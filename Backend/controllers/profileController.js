@@ -67,15 +67,7 @@ export const userSignup = async (req, res) => {
       clubId,
       riderPhone,
       riderRegistrationId,
-      participatingInYoga,
-      participatingInRally,
-      participatingInMVD2026,
     } = req.body;
-
-    const parseBool = (val) => val === true || val === 'true';
-    const yoga = parseBool(participatingInYoga);
-    const rally = parseBool(participatingInRally);
-    const mvd = parseBool(participatingInMVD2026);
 
     const isRider = registrationType === 'Rider' || registrationType === 'Student Rider';
     const isStudent = registrationType === 'Student' || registrationType === 'Student Rider';
@@ -84,8 +76,8 @@ export const userSignup = async (req, res) => {
     const isPillion = registrationType === 'Pillion';
 
     // Check if it's a detailed registration (e.g. from the registration forms in registration branch)
-    // We determine this by checking if address or participation fields are provided.
-    const isDetailed = !!address || !!city || !!state || !!pincode || yoga || rally || mvd;
+    // We determine this by checking if address fields are provided.
+    const isDetailed = !!address || !!city || !!state || !!pincode;
 
     // 1. Mandatory overall validation (Common to ALL registration types)
     if (isDetailed) {
@@ -190,9 +182,6 @@ export const userSignup = async (req, res) => {
       city: city || "",
       state: state || "",
       pincode: pincode || "",
-      participatingInYoga: yoga,
-      participatingInRally: rally,
-      participatingInMVD2026: mvd,
       clubId: clubId || null,
     };
 
@@ -382,6 +371,9 @@ export const updateUserProfile = async (req, res) => {
     const userData = { ...req.body };
     delete userData.password; // Don't allow password update here
     delete userData.email; // Don't allow email update here
+    delete userData.participatingInYoga;
+    delete userData.participatingInRally;
+    delete userData.participatingInMVD2026;
 
     if (userData.clubId === "" || userData.clubId === "null" || userData.clubId === "undefined") {
       userData.clubId = null;
