@@ -64,7 +64,6 @@ export const userSignup = async (req, res) => {
       emergencyContactName,
       emergencyContactPhone,
       otp,
-      tshirtSize,
       clubId,
       riderPhone,
       riderRegistrationId,
@@ -77,7 +76,6 @@ export const userSignup = async (req, res) => {
     const yoga = parseBool(participatingInYoga);
     const rally = parseBool(participatingInRally);
     const mvd = parseBool(participatingInMVD2026);
-    const needsTshirt = yoga || rally;
 
     const isRider = registrationType === 'Rider' || registrationType === 'Student Rider';
     const isStudent = registrationType === 'Student' || registrationType === 'Student Rider';
@@ -86,19 +84,14 @@ export const userSignup = async (req, res) => {
     const isPillion = registrationType === 'Pillion';
 
     // Check if it's a detailed registration (e.g. from the registration forms in registration branch)
-    // We determine this by checking if address or participation/tshirt fields are provided.
-    const isDetailed = !!address || !!city || !!state || !!pincode || !!tshirtSize || yoga || rally || mvd;
+    // We determine this by checking if address or participation fields are provided.
+    const isDetailed = !!address || !!city || !!state || !!pincode || yoga || rally || mvd;
 
     // 1. Mandatory overall validation (Common to ALL registration types)
     if (isDetailed) {
       if (!phone || !fullName || !address || !city || !state || !pincode) {
         return res.status(400).json({ 
           message: "Full Name, Phone, and Address details are required for all registrations." 
-        });
-      }
-      if (needsTshirt && !tshirtSize) {
-        return res.status(400).json({
-          message: "T-Shirt Size is required when participating in Yoga or Rally.",
         });
       }
     } else {
@@ -197,7 +190,6 @@ export const userSignup = async (req, res) => {
       city: city || "",
       state: state || "",
       pincode: pincode || "",
-      tshirtSize: needsTshirt ? (tshirtSize || "") : (tshirtSize || ""),
       participatingInYoga: yoga,
       participatingInRally: rally,
       participatingInMVD2026: mvd,
@@ -273,7 +265,6 @@ export const userSignup = async (req, res) => {
       try {
         await sendRegistrationConfirmation(userData.email, {
           fullName: userData.fullName,
-          tshirtSize: userData.tshirtSize,
           bucId: userData.bucId,
           clubName: clubName
         });

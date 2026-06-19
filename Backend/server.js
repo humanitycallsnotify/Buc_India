@@ -3,6 +3,8 @@ import express from "express";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import multer from "multer";
+import { MAX_IMAGE_UPLOAD_BYTES, MAX_GALLERY_VIDEO_BYTES } from "./middleware/cloudinaryConfig.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import Admin from "./models/Admin.js";
@@ -155,6 +157,24 @@ if (process.env.NODE_ENV === "production") {
 
 // Error handler
 app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    const maxMb =
+      err.code === "LIMIT_FILE_SIZE"
+        ? err.field === "media" || err.field === "talentVideo"
+          ? Math.round(MAX_GALLERY_VIDEO_BYTES / (1024 * 1024))
+          : Math.round(MAX_IMAGE_UPLOAD_BYTES / (1024 * 1024))
+        : null;
+    const message =
+      err.code === "LIMIT_FILE_SIZE" && maxMb
+        ? `File too large. Maximum upload size is ${maxMb} MB.`
+        : err.message;
+    return res.status(400).json({ message });
+  }
+
+  if (err?.message?.includes("Only JPG, PNG, and WEBP")) {
+    return res.status(400).json({ message: err.message });
+  }
+
   console.error("Unhandled Error:", err);
   res.status(500).json({
     message: err.message || "Internal Server Error",

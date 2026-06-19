@@ -87,11 +87,6 @@ export const updateEvent = async (req, res) => {
     }
 
     if (req.file) {
-      // Delete old image if new one is uploaded
-      const oldEvent = await Event.findById(id);
-      if (oldEvent && oldEvent.bannerPublicId) {
-        await cloudinary.uploader.destroy(oldEvent.bannerPublicId);
-      }
       updateData.banner = req.file.path;
       updateData.bannerPublicId = req.file.filename;
     }

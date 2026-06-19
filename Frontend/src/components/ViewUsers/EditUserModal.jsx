@@ -52,7 +52,6 @@ const EditUserModal = ({ isOpen, onClose, user, clubs, onSuccess }) => {
         twitterUrl: user.twitterUrl || "",
         youtubeUrl: user.youtubeUrl || "",
         websiteUrl: user.websiteUrl || "",
-        tshirtSize: user.tshirtSize || "",
       });
       setEditProfileImagePreview(user.profileImage || null);
       setEditLicenseImagePreview(user.licenseImage || null);
@@ -197,13 +196,6 @@ const EditUserModal = ({ isOpen, onClose, user, clubs, onSuccess }) => {
                 <div className="space-y-1">
                   <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Phone Number</label>
                   <input type="text" value={editFormData.phone || ""} onChange={(e) => setEditFormData({...editFormData, phone: e.target.value.replace(/\D/g, "").slice(0, 10)})} className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper transition-colors text-white" required />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">T-Shirt Size</label>
-                  <select value={editFormData.tshirtSize || ""} onChange={(e) => setEditFormData({...editFormData, tshirtSize: e.target.value})} className="w-full bg-carbon border border-white/10 px-4 py-3 font-body text-xs outline-none focus:border-copper transition-colors text-white appearance-none animate-none" style={{ background: "#111" }} required>
-                    <option value="">Select Size</option>
-                    {["S", "M", "L", "XL", "XXL", "XXXL"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
-                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim">Gender</label>

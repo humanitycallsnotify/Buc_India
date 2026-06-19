@@ -49,7 +49,7 @@ const ALL_SUBCATEGORIES = Object.entries(TALENT_CATEGORIES).flatMap(([group, ite
 );
 
 const initialFormData = {
-  fullName: "", age: "", dateOfBirth: "", gender: "", phone: "", email: "", city: "", tshirtSize: "",
+  fullName: "", age: "", dateOfBirth: "", gender: "", phone: "", email: "", city: "",
   talentCategory: "", subTalentDescription: "",
   experienceLevel: "", yearsOfExperience: "",
   portfolioLink: "",
@@ -241,7 +241,7 @@ const TalentRegistrationForm = () => {
     e.preventDefault();
 
     const required = [
-      "fullName", "age", "dateOfBirth", "gender", "phone", "email", "city", "tshirtSize",
+      "fullName", "age", "dateOfBirth", "gender", "phone", "email", "city",
       "talentCategory", "subTalentDescription", "experienceLevel", "yearsOfExperience",
       "shortDescription", "whyParticipate", "availableDates", "otp",
     ];
@@ -512,13 +512,6 @@ const TalentRegistrationForm = () => {
               </div>
             )}
             <InputField label="City / Location" name="city" icon={MapPin} value={formData.city} onChange={handleChange} required />
-            <div className="space-y-1">
-              <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">T-Shirt Size <span className="text-red-500">*</span></label>
-              <select name="tshirtSize" value={formData.tshirtSize} onChange={handleChange} required className="w-full bg-carbon border border-white/10 px-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors appearance-none">
-                <option value="">Select Size</option>
-                {["S", "M", "L", "XL", "XXL", "XXXL"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
-              </select>
-            </div>
           </div>
         </Section>
 

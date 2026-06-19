@@ -154,7 +154,6 @@ const ViewRegistrations = () => {
     ridingExperience: "Riding Experience",
     interestReason: "Interest / Reason",
     acceptedTerms: "Terms Accepted",
-    tShirtSize: "T-shirt Size",
     hasLinkedPillion: "Linked Pillion",
     linkedPillion: "Linked Pillion Details",
     riderReference: "Mapped Rider",
@@ -214,7 +213,6 @@ const ViewRegistrations = () => {
       "emergencyContactPhone",
       "ridingExperience",
       "interestReason",
-      "tShirtSize",
       "hasLinkedPillion",
       "linkedPillion",
       "riderReference",
@@ -496,7 +494,7 @@ const ViewRegistrations = () => {
     if (column.key === "linkedPillion") {
       const linked = reg.linkedPillion;
       if (!linked || !linked.name) return "-";
-      return `${linked.name} | ${linked.mobile || "-"} | ${linked.tShirtSize || "-"}`;
+      return `${linked.name} | ${linked.mobile || "-"}`;
     }
 
     if (column.key === "riderReference") {

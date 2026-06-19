@@ -69,7 +69,6 @@ const UserRegistrationForm = () => {
     phone: "",
     password: "",
     otp: "",
-    tshirtSize: "",
     dateOfBirth: "",
     bloodGroup: "",
     address: "",
@@ -91,8 +90,6 @@ const UserRegistrationForm = () => {
     participatingInMVD2026: false,
   });
 
-  const needsTshirt = formData.participatingInYoga || formData.participatingInRally;
-
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
   const [licenseImage, setLicenseImage] = useState(null);
@@ -112,12 +109,6 @@ const UserRegistrationForm = () => {
   const [emailError, setEmailError] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-
-  useEffect(() => {
-    if (!needsTshirt && formData.tshirtSize) {
-      setFormData((prev) => ({ ...prev, tshirtSize: "" }));
-    }
-  }, [needsTshirt, formData.tshirtSize]);
 
   useEffect(() => {
     let timer;
@@ -318,10 +309,6 @@ const UserRegistrationForm = () => {
       return toast.error("Please fill all required fields: Name, Phone, Gender, and Address details.");
     }
 
-    if (needsTshirt && !formData.tshirtSize) {
-      return toast.error("T-Shirt Size is required when participating in Yoga or Rally.");
-    }
-
     if (formData.phone.length !== 10) return toast.error("Phone number must be exactly 10 digits");
 
     if (await checkPhoneDuplicate(formData.phone)) {
@@ -406,12 +393,9 @@ const UserRegistrationForm = () => {
       data.append("registrationType", formData.registrationType);
       data.append("fullName", formData.fullName);
       data.append("phone", formData.phone);
-      if (needsTshirt) {
-        data.append("tshirtSize", formData.tshirtSize);
-      }
-      data.append("participatingInYoga", formData.participatingInYoga);
-      data.append("participatingInRally", formData.participatingInRally);
-      data.append("participatingInMVD2026", formData.participatingInMVD2026);
+      data.append("participatingInYoga", formData.participatingInYoga ? "true" : "false");
+      data.append("participatingInRally", formData.participatingInRally ? "true" : "false");
+      data.append("participatingInMVD2026", formData.participatingInMVD2026 ? "true" : "false");
       data.append("gender", formData.gender);
       if (!isPS) {
         data.append("email", formData.email);
@@ -475,7 +459,7 @@ const UserRegistrationForm = () => {
         setShowSuccess(false);
         setFormData({
           registrationType: "",
-          fullName: "", gender: "", email: "", phone: "", password: "", otp: "", tshirtSize: "",
+          fullName: "", gender: "", email: "", phone: "", password: "", otp: "",
           dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
           bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
           emergencyContactName: "", emergencyContactPhone: "",
@@ -534,7 +518,7 @@ const UserRegistrationForm = () => {
           <User size={24} className="text-copper" /> User Registration
         </h2>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-12">
+      <form onSubmit={handleSubmit} noValidate className="space-y-12">
 
         {/* Registration Type Selection */}
         <div className="space-y-6">
@@ -596,7 +580,6 @@ const UserRegistrationForm = () => {
                       participatingInYoga: false,
                       participatingInRally: false,
                       participatingInMVD2026: false,
-                      tshirtSize: "",
                     };
                   })}
                   className={`flex flex-col items-center justify-center p-3 sm:p-6 border text-center transition-all duration-300 relative overflow-hidden group ${
@@ -714,16 +697,6 @@ const UserRegistrationForm = () => {
                     ))}
                   </div>
                 </div>
-
-                {needsTshirt && (
-                <div className="space-y-1">
-                  <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">T-Shirt Size <span className="text-red-500">*</span></label>
-                  <select name="tshirtSize" value={formData.tshirtSize} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 px-6 py-4 font-body text-sm text-white outline-none focus:border-copper transition-colors appearance-none">
-                    <option value="">Select Size</option>
-                    {["S", "M", "L", "XL", "XXL", "XXXL"].map(bg => <option key={bg} value={bg}>{bg}</option>)}
-                  </select>
-                </div>
-                )}
 
                 <div className="space-y-1">
                   <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Gender <span className="text-red-500">*</span></label>

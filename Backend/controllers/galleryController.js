@@ -83,27 +83,11 @@ export const updateGalleryItem = async (req, res) => {
       const isVideo = req.file.mimetype.startsWith('video/');
 
       if (isVideo) {
-        // Delete old video if any
-        if (item.videoPublicId) {
-          try {
-            await cloudinary.uploader.destroy(item.videoPublicId);
-          } catch (err) {
-            console.error('Error deleting old video:', err);
-          }
-        }
         item.videoUrl = req.file.path;
         item.videoPublicId = req.file.filename;
         item.imageUrl = '';
         item.imagePublicId = '';
       } else {
-        // Delete old image if any
-        if (item.imagePublicId) {
-          try {
-            await cloudinary.uploader.destroy(item.imagePublicId);
-          } catch (err) {
-            console.error('Error deleting old image:', err);
-          }
-        }
         item.imageUrl = req.file.path;
         item.imagePublicId = req.file.filename;
         item.videoUrl = '';

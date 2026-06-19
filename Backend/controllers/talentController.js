@@ -17,7 +17,6 @@ export const submitTalent = async (req, res) => {
       openToPerformLive, openToCompetition,
       pastAchievements, socialMediaLinks,
       consentInfoTrue, consentRules, consentMedia,
-      tshirtSize,
       otp,
     } = req.body;
 
@@ -25,7 +24,7 @@ export const submitTalent = async (req, res) => {
     if (
       !fullName || !age || !dateOfBirth || !gender || !phone || !email || !city ||
       !talentCategory || !subTalentDescription || !experienceLevel || !yearsOfExperience ||
-      !shortDescription || !whyParticipate || !availableDates || !tshirtSize || !otp
+      !shortDescription || !whyParticipate || !availableDates || !otp
     ) {
       return res.status(400).json({ message: "Please fill all required fields, including Date of Birth and OTP." });
     }
@@ -74,7 +73,6 @@ export const submitTalent = async (req, res) => {
       email,
       city,
       talentCategory,
-      tshirtSize,
       subTalentDescription,
       experienceLevel,
       yearsOfExperience: Number(yearsOfExperience),
@@ -117,7 +115,6 @@ export const submitTalent = async (req, res) => {
     try {
       await sendRegistrationConfirmation(talent.email, {
         fullName: talent.fullName,
-        tshirtSize: talent.tshirtSize,
         bucId: talent.bucId,
         clubName: "" // Talents don't register under a club directly in this form
       });

@@ -20,7 +20,7 @@ const talentSchema = new mongoose.Schema(
     talentCategory: { type: String, required: true, trim: true },
     tshirtSize: {
       type: String,
-      enum: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+      enum: ['', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
       default: ''
     },
     subTalentDescription: { type: String, required: true, trim: true },

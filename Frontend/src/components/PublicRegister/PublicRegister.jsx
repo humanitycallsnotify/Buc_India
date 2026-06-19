@@ -39,7 +39,6 @@ const INITIAL_FORM = {
   dateOfBirth: "",
   bloodGroup: "",
   anyMedicalCondition: "",
-  tShirtSize: "",
   requestRidingGears: false,
   requestedGears: {
     helmet: false,
@@ -52,7 +51,6 @@ const INITIAL_FORM = {
   hasLinkedPillion: false,
   linkedPillionName: "",
   linkedPillionMobile: "",
-  linkedPillionTShirtSize: "",
   riderPhone: "",
   riderRegistrationId: "",
   acceptedTerms: false,
@@ -239,17 +237,10 @@ const PublicRegister = () => {
         } else if (formData.linkedPillionMobile.length !== 10) {
           errors.linkedPillionMobile = "Pillion mobile must be exactly 10 digits";
         }
-        if (!formData.linkedPillionTShirtSize || formData.linkedPillionTShirtSize === "") {
-          errors.linkedPillionTShirtSize = "Pillion T-shirt size is mandatory";
-        }
       }
     }
 
     if (formData.registrationType === "pillion") {
-      if (!formData.tShirtSize || formData.tShirtSize === "") {
-        errors.tShirtSize = "T-shirt size is mandatory";
-      }
-      if (!formData.riderPhone && !formData.riderRegistrationId) {
         errors.riderPhone = "Please provide Rider Phone or Rider Registration ID";
       }
       if (formData.riderPhone && formData.riderPhone.length !== 10) {
@@ -574,27 +565,6 @@ const PublicRegister = () => {
                     <span className="field-error">{fieldErrors.bloodGroup}</span>
                   )}
                 </div>
-
-                <div className="form-group">
-                  <label>T-Shirt Size {formData.registrationType === "pillion" ? "*" : "(Optional)"}</label>
-                  <select
-                    name="tShirtSize"
-                    value={formData.tShirtSize}
-                    onChange={handleInputChange}
-                    className={fieldErrors.tShirtSize ? "input-error" : ""}
-                  >
-                    <option value="">Select Size</option>
-                    <option value="XS">XS</option>
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
-                    <option value="XXL">XXL</option>
-                  </select>
-                  {fieldErrors.tShirtSize && (
-                    <span className="field-error">{fieldErrors.tShirtSize}</span>
-                  )}
-                </div>
               </div>
             </div>
 
@@ -876,29 +846,6 @@ const PublicRegister = () => {
                           </div>
                           {fieldErrors.linkedPillionMobile && (
                             <span className="field-error">{fieldErrors.linkedPillionMobile}</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="form-row">
-                        <div className="form-group">
-                          <label>Pillion T-Shirt Size *</label>
-                          <select
-                            name="linkedPillionTShirtSize"
-                            value={formData.linkedPillionTShirtSize}
-                            onChange={handleInputChange}
-                            className={fieldErrors.linkedPillionTShirtSize ? "input-error" : ""}
-                          >
-                            <option value="">Select Size</option>
-                            <option value="XS">XS</option>
-                            <option value="S">S</option>
-                            <option value="M">M</option>
-                            <option value="L">L</option>
-                            <option value="XL">XL</option>
-                            <option value="XXL">XXL</option>
-                          </select>
-                          {fieldErrors.linkedPillionTShirtSize && (
-                            <span className="field-error">{fieldErrors.linkedPillionTShirtSize}</span>
                           )}
                         </div>
                       </div>

@@ -132,7 +132,6 @@ export const validateRegistrationForm = (formData, registrationType) => {
 
     case "pillion":
       requireField(formData, "city", errors, "City is required");
-      requireField(formData, "tShirtSize", errors, "T-shirt size is required");
       if (!formData.riderPhone && !formData.riderRegistrationId) {
         errors.riderPhone = "Provide Rider phone or Rider registration ID";
       }
@@ -167,12 +166,6 @@ export const validateRegistrationForm = (formData, registrationType) => {
       "linkedPillionMobile",
       errors,
       "Pillion mobile number is required",
-    );
-    requireField(
-      formData,
-      "linkedPillionTShirtSize",
-      errors,
-      "Pillion T-shirt size is required",
     );
     if (
       formData.linkedPillionMobile &&

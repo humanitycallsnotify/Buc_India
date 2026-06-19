@@ -84,9 +84,29 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+const MAX_COVER_BYTES = 10 * 1024 * 1024;
+
+const validateCoverFile = (file) => {
+  if (!file.type.startsWith("image/")) {
+    return "Please select a JPG, PNG, or WEBP image.";
+  }
+  if (file.size > MAX_COVER_BYTES) {
+    return "Cover image must be 10 MB or smaller.";
+  }
+  return null;
+};
+
   const handleMediaChange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+    if (isCoverOnly || formData.category === "cover") {
+      const validationError = validateCoverFile(file);
+      if (validationError) {
+        toast.error(validationError);
+        e.target.value = "";
+        return;
+      }
+    }
     setMediaFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {

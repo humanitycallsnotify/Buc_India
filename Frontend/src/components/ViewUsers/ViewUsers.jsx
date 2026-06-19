@@ -105,7 +105,6 @@ const ViewUsers = () => {
     { key: "participatingInRally", label: "Rally", width: "80px" },
     { key: "participatingInMVD2026", label: "MVD 2026", width: "90px" },
     { key: "email", label: "Email Address", width: "180px" },
-    { key: "tshirtSize", label: "T-Shirt Size", width: "110px" },
     { key: "collegeName", label: "College Name", width: "150px" },
     { key: "collegeIdNo", label: "Student ID Number", width: "140px" },
     { key: "dateOfBirth", label: "Date of Birth", width: "110px" },

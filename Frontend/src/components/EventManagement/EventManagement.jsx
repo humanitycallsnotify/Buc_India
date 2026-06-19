@@ -99,9 +99,27 @@ const EventManagement = () => {
     setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
+const MAX_BANNER_BYTES = 10 * 1024 * 1024;
+
+const validateBannerFile = (file) => {
+  if (!file.type.startsWith("image/")) {
+    return "Please select a JPG, PNG, or WEBP image.";
+  }
+  if (file.size > MAX_BANNER_BYTES) {
+    return "Banner image must be 10 MB or smaller.";
+  }
+  return null;
+};
+
   const handleImageChange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+    const validationError = validateBannerFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      e.target.value = "";
+      return;
+    }
     setBannerFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setBannerPreview(reader.result);
@@ -225,7 +243,7 @@ const EventManagement = () => {
                     <label className="w-full border-2 border-dashed border-white/10 p-8 flex flex-col items-center gap-4 cursor-pointer hover:bg-white/5 transition-all group">
                        <ImageIcon size={32} className="text-steel-dim group-hover:text-copper" />
                        <span className="font-body text-[10px] uppercase tracking-widest font-bold">Select Intelligence Interface</span>
-                       <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                       <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleImageChange} />
                     </label>
                     {bannerPreview && (
                       <div className="relative group rounded-sm overflow-hidden border border-white/10">

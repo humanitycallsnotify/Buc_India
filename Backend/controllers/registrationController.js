@@ -57,7 +57,6 @@ export const createRegistration = async (req, res) => {
       hasLinkedPillion,
       linkedPillionName,
       linkedPillionMobile,
-      linkedPillionTShirtSize,
       dateOfBirth,
       bloodGroup,
       address,
@@ -70,7 +69,6 @@ export const createRegistration = async (req, res) => {
       bikeRegistrationNumber,
       licenseNumber,
       anyMedicalCondition,
-      tShirtSize,
       requestRidingGears,
       requestedGears,
     } = req.body;
@@ -177,9 +175,8 @@ export const createRegistration = async (req, res) => {
       year: year || "",
       ridingExperience: ridingExperience || "",
       interestReason: interestReason || "",
-      tShirtSize: tShirtSize || "",
       hasLinkedPillion: false,
-      linkedPillion: { name: "", mobile: "", tShirtSize: "" },
+      linkedPillion: { name: "", mobile: "" },
       riderReference: {
         riderRegistrationId: "",
         riderPhone: "",
@@ -204,7 +201,6 @@ export const createRegistration = async (req, res) => {
       registrationData.bikeRegistrationNumber = bikeRegistrationNumber;
       registrationData.licenseNumber = licenseNumber;
       registrationData.anyMedicalCondition = anyMedicalCondition;
-      registrationData.tShirtSize = tShirtSize;
 
       if (req.files && req.files.licenseImage) {
         registrationData.licenseImage = req.files.licenseImage[0].path;
@@ -257,7 +253,6 @@ export const createRegistration = async (req, res) => {
       registrationData.bikeRegistrationNumber = bikeRegistrationNumber || "";
       registrationData.licenseNumber = licenseNumber || "";
       registrationData.anyMedicalCondition = anyMedicalCondition || "";
-      registrationData.tShirtSize = tShirtSize || "";
       registrationData.facebookUrl = facebookUrl || "";
       registrationData.instagramUrl = instagramUrl || "";
       registrationData.twitterUrl = twitterUrl || "";
@@ -275,7 +270,6 @@ export const createRegistration = async (req, res) => {
           registrationData.linkedPillion = {
             name: linkedPillionName || "",
             mobile: linkedPillionMobile || "",
-            tShirtSize: linkedPillionTShirtSize || "",
           };
         }
       }
