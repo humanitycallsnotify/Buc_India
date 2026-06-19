@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Registration from "../models/Registration.js";
 import User from "../models/User.js";
+import Event from "../models/Event.js";
 import ClubMembership from "../models/ClubMembership.js";
 import Certificate from "../models/Certificate.js";
 import { cloudinary } from "../middleware/cloudinaryConfig.js";
@@ -10,6 +11,53 @@ import {
   getResolvedClubName,
   getRegistrationTypeLabel,
 } from "../utils/registrationValidation.js";
+
+const isCommunityEventId = (eventId) => eventId === "community";
+
+const enrichRegistrationsWithEvents = async (registrations) => {
+  const eventIds = [
+    ...new Set(
+      registrations
+        .map((reg) => reg.eventId)
+        .filter(
+          (id) =>
+            id &&
+            !isCommunityEventId(id) &&
+            mongoose.Types.ObjectId.isValid(String(id)),
+        )
+        .map((id) => String(id)),
+    ),
+  ];
+
+  const eventDocs = eventIds.length
+    ? await Event.find({ _id: { $in: eventIds } })
+        .select("title eventDate location certificateEnabled")
+        .lean()
+    : [];
+
+  const eventById = new Map(eventDocs.map((event) => [String(event._id), event]));
+
+  return registrations.map((reg) => {
+    const obj = reg.toObject();
+
+    if (isCommunityEventId(obj.eventId)) {
+      obj.eventName = "Community Membership";
+    } else {
+      const event = eventById.get(String(obj.eventId));
+      if (event) {
+        obj.eventId = event;
+        obj.eventName = event.title;
+      }
+    }
+
+    obj.resolvedClubName =
+      obj.clubName === "Others" && obj.clubNameCustom
+        ? obj.clubNameCustom
+        : obj.clubName || obj.clubNameCustom || "";
+
+    return obj;
+  });
+};
 
 const buildDuplicateQuery = (eventId, body) => {
   const orConditions = [
@@ -425,9 +473,7 @@ export const getRegistrations = async (req, res) => {
       filter.registrationType = registrationType;
     }
 
-    let registrations = await Registration.find(filter)
-      .populate("eventId", "title eventDate")
-      .sort({ registeredAt: -1 });
+    let registrations = await Registration.find(filter).sort({ registeredAt: -1 });
 
     if (clubName && clubName.trim()) {
       const clubSearch = clubName.trim().toLowerCase();
@@ -441,18 +487,11 @@ export const getRegistrations = async (req, res) => {
     }
 
     registrations = registrations.filter((reg) => {
-      if (reg.eventId === "community") return true;
+      if (isCommunityEventId(reg.eventId)) return true;
       return reg.eventId !== null && reg.eventId !== undefined;
     });
 
-    const enriched = registrations.map((reg) => {
-      const obj = reg.toObject();
-      obj.resolvedClubName =
-        obj.clubName === "Others" && obj.clubNameCustom
-          ? obj.clubNameCustom
-          : obj.clubName || obj.clubNameCustom || "";
-      return obj;
-    });
+    const enriched = await enrichRegistrationsWithEvents(registrations);
 
     console.log(`[getRegistrations] Returning ${enriched.length} registration(s)`);
     res.json(enriched);

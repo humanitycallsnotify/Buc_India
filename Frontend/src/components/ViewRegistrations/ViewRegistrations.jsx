@@ -12,6 +12,8 @@ import {
   getRegistrationTypeLabel,
   resolveClubName,
   REGISTRATION_TYPES,
+  COMMUNITY_EVENT_ID,
+  COMMUNITY_EVENT_LABEL,
 } from "../../constants/registrationConstants";
 import { generateCertificate } from "../../utils/certificateUtils";
 import "./ViewRegistrations.css";
@@ -36,6 +38,7 @@ const ViewRegistrations = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [loadWarnings, setLoadWarnings] = useState([]);
+  const [qrData, setQrData] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -113,10 +116,10 @@ const ViewRegistrations = () => {
 
   const getEventName = useCallback((eventInput) => {
     if (typeof eventInput === 'object' && eventInput !== null) {
-      return eventInput.title;
+      return eventInput.title || eventInput.eventName;
     }
-    if (eventInput === "community") {
-      return "Community Registration";
+    if (eventInput === COMMUNITY_EVENT_ID) {
+      return COMMUNITY_EVENT_LABEL;
     }
     const event = events.find((e) => e._id === eventInput);
     return event ? event.title : "Unknown Event";
@@ -127,7 +130,7 @@ const ViewRegistrations = () => {
       if (typeof eventInput === "object" && eventInput !== null) {
         return eventInput;
       }
-      if (eventInput === "community") {
+      if (eventInput === COMMUNITY_EVENT_ID) {
         return null;
       }
       return events.find((e) => e._id === eventInput) || null;
@@ -414,6 +417,10 @@ const ViewRegistrations = () => {
       return "All Events";
     }
 
+    if (selectedEvent === COMMUNITY_EVENT_ID) {
+      return COMMUNITY_EVENT_LABEL;
+    }
+
     if (selectedEvent === "current") {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -593,7 +600,11 @@ const ViewRegistrations = () => {
           </button>
           <button
             type="button"
-            onClick={() => setQrData({ url: certificateUrl, name: riderName })}
+            onClick={() => {
+              if (certificateUrl) {
+                setQrData({ url: certificateUrl, name: riderName || "Participant" });
+              }
+            }}
             className="view-license-button"
             title="Show QR code"
           >
@@ -740,6 +751,7 @@ const ViewRegistrations = () => {
           >
             <option value="current">Current Event</option>
             <option value="all">All Events</option>
+            <option value={COMMUNITY_EVENT_ID}>{COMMUNITY_EVENT_LABEL}</option>
             {events.map((event) => (
               <option key={event._id} value={event._id}>
                 {event.title}
@@ -1077,7 +1089,7 @@ const ViewRegistrations = () => {
         </div>
       )}
 
-      {qrData && (
+      {qrData?.url && (
         <div className="delete-modal-overlay" onClick={() => setQrData(null)}>
           <div
             className="delete-modal-content"

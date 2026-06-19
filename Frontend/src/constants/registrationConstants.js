@@ -17,6 +17,12 @@ export const PREDEFINED_CLUBS = [
 
 export const CLUB_OTHERS = "Others";
 
+export const COMMUNITY_EVENT_ID = "community";
+export const COMMUNITY_EVENT_LABEL = "Community Membership";
+
+export const isCommunityEventId = (eventId) =>
+  eventId === COMMUNITY_EVENT_ID || eventId === "Community Membership";
+
 export const getRegistrationTypeLabel = (value) =>
   REGISTRATION_TYPES.find((t) => t.value === value)?.label || value || "-";
 

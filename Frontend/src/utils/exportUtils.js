@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { getRegistrationTypeLabel, resolveClubName } from '../constants/registrationConstants';
+import { getRegistrationTypeLabel, resolveClubName, COMMUNITY_EVENT_ID, COMMUNITY_EVENT_LABEL } from '../constants/registrationConstants';
 
 export const STANDARD_EXPORT_FIELDS = [
   { key: 'fullName', label: 'Name' },
@@ -15,6 +15,8 @@ export const STANDARD_EXPORT_FIELDS = [
 
 const formatExportValue = (reg, columnKey, getEventName) => {
   if (columnKey === 'eventName') {
+    if (reg.eventName) return reg.eventName;
+    if (reg.eventId === COMMUNITY_EVENT_ID) return COMMUNITY_EVENT_LABEL;
     return getEventName ? getEventName(reg.eventId) : 'Unknown Event';
   }
   if (columnKey === 'registrationType') {
