@@ -1,91 +1,90 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { motion, useMotionValue, useSpring, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 
-const CursorContext = createContext(null);
+export const GlobalCursor = () => {
+  const [isHovering, setIsHovering] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
-export const useCursor = () => {
-    const context = useContext(CursorContext);
-    if (!context) throw new Error("useCursor must be used within a CursorProvider");
-    return context;
+  const cursorX = useMotionValue(-100);
+  const cursorY = useMotionValue(-100);
+
+  const springConfig = { damping: 25, stiffness: 120, mass: 0.5 };
+  const cursorXSpring = useSpring(cursorX, springConfig);
+  const cursorYSpring = useSpring(cursorY, springConfig);
+
+  useEffect(() => {
+    // Hide default cursor
+    document.body.style.cursor = "none";
+    
+    const moveCursor = (e) => {
+      if (!isVisible) setIsVisible(true);
+      cursorX.set(e.clientX);
+      cursorY.set(e.clientY);
+    };
+
+    const handleMouseOver = (e) => {
+      const target = e.target;
+      const interactive = target?.closest?.(
+        "button, a, input, textarea, select, [role='button'], .interactive-item"
+      );
+      setIsHovering(!!interactive);
+    };
+
+    const handleMouseLeave = () => {
+      setIsVisible(false);
+    };
+
+    const handleMouseEnter = () => {
+      setIsVisible(true);
+    };
+
+    window.addEventListener("mousemove", moveCursor);
+    window.addEventListener("mouseover", handleMouseOver);
+    document.addEventListener("mouseleave", handleMouseLeave);
+    document.addEventListener("mouseenter", handleMouseEnter);
+
+    return () => {
+      document.body.style.cursor = "auto";
+      window.removeEventListener("mousemove", moveCursor);
+      window.removeEventListener("mouseover", handleMouseOver);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener("mouseenter", handleMouseEnter);
+    };
+  }, [cursorX, cursorY, isVisible]);
+
+  if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+    return null; // Disable on touch devices
+  }
+
+  return (
+    <>
+      <motion.div
+        className="fixed top-0 left-0 w-2 h-2 bg-copper rounded-full pointer-events-none z-[10000]"
+        style={{
+          x: cursorX,
+          y: cursorY,
+          translateX: "-50%",
+          translateY: "-50%",
+          opacity: isVisible ? 1 : 0
+        }}
+      />
+      <motion.div
+        className="fixed top-0 left-0 w-8 h-8 border border-copper/50 rounded-full pointer-events-none z-[9999]"
+        style={{
+          x: cursorXSpring,
+          y: cursorYSpring,
+          translateX: "-50%",
+          translateY: "-50%",
+          opacity: isVisible ? 1 : 0
+        }}
+        animate={{
+          scale: isHovering ? 1.8 : 1,
+          backgroundColor: isHovering ? "rgba(193, 154, 107, 0.15)" : "transparent",
+        }}
+        transition={{ type: "tween", ease: "backOut", duration: 0.3 }}
+      />
+    </>
+  );
 };
 
-export const CursorProvider = ({ children }) => {
-    const [cursorType, setCursorType] = useState("default");
-    const [isHovering, setIsHovering] = useState(false);
-
-    return (
-        <CursorContext.Provider value={{ cursorType, setCursorType, isHovering, setIsHovering }}>
-            {children}
-        </CursorContext.Provider>
-    );
-};
-
-export const Cursor = () => {
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
-
-    const springConfig = { damping: 25, stiffness: 300 };
-    const springX = useSpring(mouseX, springConfig);
-    const springY = useSpring(mouseY, springConfig);
-
-    useEffect(() => {
-        const handleMouseMove = (e) => {
-            mouseX.set(e.clientX);
-            mouseY.set(e.clientY);
-        };
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, [mouseX, mouseY]);
-
-    return (
-        <motion.div
-            style={{
-                position: "fixed",
-                left: 0,
-                top: 0,
-                x: springX,
-                y: springY,
-                pointerEvents: "none",
-                zIndex: 9999,
-            }}
-        >
-            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-        </motion.div>
-    );
-};
-
-export const CursorFollow = () => {
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
-
-    const springConfig = { damping: 40, stiffness: 150 };
-    const springX = useSpring(mouseX, springConfig);
-    const springY = useSpring(mouseY, springConfig);
-
-    useEffect(() => {
-        const handleMouseMove = (e) => {
-            mouseX.set(e.clientX);
-            mouseY.set(e.clientY);
-        };
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, [mouseX, mouseY]);
-
-    return (
-        <motion.div
-            style={{
-                position: "fixed",
-                left: 0,
-                top: 0,
-                x: springX,
-                y: springY,
-                translateX: "-50%",
-                translateY: "-50%",
-                pointerEvents: "none",
-                zIndex: 9998,
-            }}
-        >
-            <div className="w-8 h-8 border border-blue-500/30 rounded-full" />
-        </motion.div>
-    );
-};
+export default GlobalCursor;

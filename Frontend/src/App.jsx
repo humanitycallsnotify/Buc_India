@@ -13,6 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 import SmoothScroll from "./components/animations/SmoothScroll.jsx";
 import Preloader from "./components/animations/Preloader.jsx";
+import GlobalCursor from "./components/animations/Cursor.jsx";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 import PublicRoute from "./components/PublicRoute.jsx";
@@ -91,6 +92,7 @@ function App() {
           className="origin-center"
         >
           <ScrollToTop />
+          <GlobalCursor />
           <div className="min-h-screen bg-carbon">
             <ToastContainer
               position="top-center"

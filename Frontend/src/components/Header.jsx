@@ -55,8 +55,46 @@ const Header = () => {
         />
       </div>
 
-      {/* CLOSE / menu trigger — fixed top-right only */}
-      <div className="fixed top-5 right-5 sm:top-10 sm:right-10 z-[1001] flex items-center gap-3 sm:gap-4">
+      {/* Desktop Navigation */}
+      <header className="hidden lg:flex fixed top-0 left-0 w-full z-[1000] items-center justify-between px-10 py-8 bg-gradient-to-b from-carbon/95 via-carbon/80 to-transparent">
+        <div className="w-[160px]" /> {/* Spacer for absolute logo */}
+        
+        <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-10">
+          {navigation.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => handleNavigate(item.path)}
+              className={`relative font-heading text-xl tracking-widest uppercase transition-colors hover:text-copper ${
+                location.pathname === item.path ? "text-copper" : "text-white"
+              }`}
+            >
+              {item.name}
+              {location.pathname === item.path && (
+                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-copper" />
+              )}
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-8">
+          <button
+            onClick={() => handleNavigate("/login")}
+            className="group relative font-body text-xs tracking-[0.3em] uppercase text-white/70 hover:text-white transition-colors"
+          >
+            LOGIN
+            <span className="absolute -bottom-1 left-0 w-0 h-px bg-copper group-hover:w-full transition-all duration-300" />
+          </button>
+          <button
+            onClick={() => handleNavigate("/register")}
+            className="px-6 py-2.5 border border-copper/40 text-copper font-heading text-sm tracking-widest uppercase hover:bg-copper hover:text-carbon transition-all duration-300"
+          >
+            REGISTER
+          </button>
+        </div>
+      </header>
+
+      {/* CLOSE / menu trigger — fixed top-right only, hidden on large screens */}
+      <div className="fixed top-5 right-5 sm:top-10 sm:right-10 z-[1001] flex items-center gap-3 sm:gap-4 lg:hidden">
         <AnimatePresence>
           {isHovered && (
             <motion.span
@@ -137,7 +175,7 @@ const Header = () => {
             animate={{ y: 0 }}
             exit={{ y: "-100%" }}
             transition={{ duration: 0.8, ease: [0.7, 0, 0.3, 1] }}
-            className="fixed inset-0 z-[1000] flex flex-col min-h-0 max-w-[100vw] overflow-hidden bg-carbon"
+            className="fixed inset-0 z-[1000] flex flex-col min-h-0 max-w-[100vw] overflow-hidden bg-carbon lg:hidden"
           >
             {/* Background — clipped, no horizontal bleed */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">

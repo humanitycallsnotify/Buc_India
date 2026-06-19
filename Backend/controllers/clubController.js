@@ -43,8 +43,8 @@ export const getPublicClubs = async (req, res) => {
     const clubs = await Club.find({ status: 'approved' }).sort({ createdAt: -1 });
 
     const clubIds = clubs.map((c) => c._id);
-    const counts = await ClubMembership.aggregate([
-      { $match: { clubId: { $in: clubIds }, status: 'active' } },
+    const counts = await User.aggregate([
+      { $match: { clubId: { $in: clubIds } } },
       { $group: { _id: '$clubId', count: { $sum: 1 } } },
     ]);
 
@@ -97,14 +97,19 @@ export const getPublicClubDetail = async (req, res) => {
       return res.status(404).json({ message: 'Club not found' });
     }
 
-    const memberships = await ClubMembership.find({
+    const users = await User.find({
       clubId: club._id,
-      status: 'active',
     })
-      .populate('userId', 'fullName city state profileImage registrationType')
+      .select('fullName city state profileImage registrationType')
       .sort({ createdAt: 1 });
 
-    const members = memberships.map(mapSafeMember).filter(Boolean);
+    const members = users.map((user) => ({
+      fullName: user.fullName || '',
+      role: 'member',
+      city: user.city || '',
+      state: user.state || '',
+      profileImage: user.profileImage || '',
+    })).filter(Boolean);
     const leaders = buildClubLeadership(club);
 
     const owner =
