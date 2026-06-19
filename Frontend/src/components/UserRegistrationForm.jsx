@@ -60,6 +60,9 @@ const mapSocialProfilesToFields = (profiles) => {
   return fields;
 };
 
+const TSHIRT_UNAVAILABLE_MESSAGE =
+  "T-Shirts are no longer available for this event. Your presence and participation matter most to us. Please go ahead and register for the event without a T-shirt.";
+
 const UserRegistrationForm = () => {
   const [formData, setFormData] = useState({
     registrationType: "",
@@ -85,8 +88,12 @@ const UserRegistrationForm = () => {
     collegeIdNo: "",
     riderPhone: "",
     riderRegistrationId: "",
+    participatingInYoga: false,
+    participatingInRally: false,
     participatingInMVD2026: false,
   });
+
+  const showTshirtNotice = formData.participatingInYoga || formData.participatingInRally;
 
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
@@ -142,7 +149,10 @@ const UserRegistrationForm = () => {
     } else if (name === "otp") {
       setFormData(prev => ({ ...prev, [name]: value }));
       setEmailVerified(false);
-    } else if (type === "checkbox" && name === "participatingInMVD2026") {
+    } else if (
+      type === "checkbox" &&
+      (name === "participatingInYoga" || name === "participatingInRally" || name === "participatingInMVD2026")
+    ) {
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -391,6 +401,8 @@ const UserRegistrationForm = () => {
       data.append("registrationType", formData.registrationType);
       data.append("fullName", formData.fullName);
       data.append("phone", formData.phone);
+      data.append("participatingInYoga", formData.participatingInYoga ? "true" : "false");
+      data.append("participatingInRally", formData.participatingInRally ? "true" : "false");
       data.append("participatingInMVD2026", formData.participatingInMVD2026 ? "true" : "false");
       data.append("gender", formData.gender);
       if (!isPS) {
@@ -460,7 +472,7 @@ const UserRegistrationForm = () => {
           bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
           emergencyContactName: "", emergencyContactPhone: "",
           collegeName: "", collegeIdNo: "", riderPhone: "", riderRegistrationId: "",
-          participatingInMVD2026: false,
+          participatingInYoga: false, participatingInRally: false, participatingInMVD2026: false,
         });
         setProfileImage(null); setProfileImagePreview(null);
         setLicenseImage(null); setLicenseImagePreview(null);
@@ -573,6 +585,8 @@ const UserRegistrationForm = () => {
                     return {
                       ...prev,
                       registrationType: type.id,
+                      participatingInYoga: false,
+                      participatingInRally: false,
                       participatingInMVD2026: false,
                     };
                   })}
@@ -674,33 +688,27 @@ const UserRegistrationForm = () => {
                   <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Event Participation</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
-                      { name: "participatingInYoga", label: "Taking part in Yoga", closed: true },
-                      { name: "participatingInRally", label: "Taking part in Rally", closed: true },
-                      { name: "participatingInMVD2026", label: "Taking part in MVD 2026 Full Day Event", closed: false },
-                    ].map(({ name, label, closed }) => (
-                      <label
-                        key={name}
-                        className={`flex items-start gap-3 ${closed ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-                      >
+                      { name: "participatingInYoga", label: "Taking part in Yoga" },
+                      { name: "participatingInRally", label: "Taking part in Rally" },
+                      { name: "participatingInMVD2026", label: "Taking part in MVD 2026 Full Day Event" },
+                    ].map(({ name, label }) => (
+                      <label key={name} className="flex items-start gap-3 cursor-pointer">
                         <input
                           type="checkbox"
                           name={name}
-                          checked={closed ? false : formData.participatingInMVD2026}
-                          disabled={closed}
-                          onChange={closed ? undefined : handleInputChange}
-                          className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 rounded disabled:cursor-not-allowed"
+                          checked={formData[name]}
+                          onChange={handleInputChange}
+                          className="mt-1 w-4 h-4 accent-copper bg-carbon border border-white/10 rounded"
                         />
-                        <span className="font-text text-xs text-steel-dim leading-relaxed">
-                          {label}
-                          {closed && (
-                            <span className="block mt-1 text-[10px] uppercase tracking-widest text-red-400/90 font-semibold">
-                              Registrations Closed
-                            </span>
-                          )}
-                        </span>
+                        <span className="font-text text-xs text-steel-dim leading-relaxed">{label}</span>
                       </label>
                     ))}
                   </div>
+                  {showTshirtNotice && (
+                    <p className="mt-2 p-4 bg-copper/5 border border-copper/20 font-text text-xs text-steel-dim leading-relaxed rounded-sm">
+                      {TSHIRT_UNAVAILABLE_MESSAGE}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
