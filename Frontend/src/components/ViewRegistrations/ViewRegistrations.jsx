@@ -34,15 +34,16 @@ const ViewRegistrations = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const [qrData, setQrData] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       const allEvents = await eventService.getAll();
+      console.log("[ViewRegistrations] Loaded events:", allEvents.length);
       setEvents(allEvents);
 
-      // Find current active event to set initial selectedEvent if it's "current"
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -60,10 +61,16 @@ const ViewRegistrations = () => {
       }
 
       const allRegistrations = await registrationService.getAll(eventToFetch === "all" ? undefined : eventToFetch);
+      console.log("[ViewRegistrations] Loaded registrations:", allRegistrations.length);
       setRegistrations(allRegistrations);
     } catch (error) {
-      console.error("Error loading data:", error);
-      alert("Failed to load data from server");
+      console.error("[ViewRegistrations] Error loading data:", error);
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to load data from server";
+      setLoadError(message);
+      setRegistrations([]);
     } finally {
       setIsLoading(false);
     }
@@ -654,6 +661,21 @@ const ViewRegistrations = () => {
 
   return (
     <div className="view-registrations">
+      {loadError && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: "12px 16px",
+            borderRadius: 8,
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            background: "rgba(239, 68, 68, 0.1)",
+            color: "#fca5a5",
+            fontSize: 13,
+          }}
+        >
+          Failed to load registrations: {loadError}
+        </div>
+      )}
       <div className="page-header">
         <div>
           <h1 className="page-title">View Registrations</h1>

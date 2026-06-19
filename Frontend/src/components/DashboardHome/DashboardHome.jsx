@@ -28,6 +28,7 @@ const DashboardHome = () => {
   const [activeEvent, setActiveEvent] = useState(null);
   const [registeredCount, setRegisteredCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadErrors, setLoadErrors] = useState([]);
   const [clubStats, setClubStats] = useState({
     totalClubs: 0, pendingClubs: 0, totalMembers: 0,
     totalExits: 0, totalEvents: 0, totalCertificates: 0,
@@ -37,15 +38,33 @@ const DashboardHome = () => {
 
   const loadData = async () => {
     setLoading(true);
+    setLoadErrors([]);
     try {
-      const [events, registrations, clubs, memberships, certificates] = await Promise.all([
-        eventService.getAll(), registrationService.getAll(),
-        clubService.getAllAdmin(), clubMembershipService.getAllAdmin(),
-        certificateService.getAll()
+      const results = await Promise.allSettled([
+        eventService.getAll(),
+        registrationService.getAll(),
+        clubService.getAllAdmin(),
+        clubMembershipService.getAllAdmin(),
+        certificateService.getAll(),
       ]);
 
+      const labels = ["events", "registrations", "clubs", "memberships", "certificates"];
+      const errors = [];
+      const [events, registrations, clubs, memberships, certificates] = results.map(
+        (result, index) => {
+          if (result.status === "fulfilled") {
+            console.log(`[DashboardHome] Loaded ${labels[index]}:`, result.value.length);
+            return result.value;
+          }
+          console.error(`[DashboardHome] Failed to load ${labels[index]}:`, result.reason);
+          errors.push(labels[index]);
+          return [];
+        },
+      );
+      setLoadErrors(errors);
+
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const upcomingActiveEvents = (events || [])
+      const upcomingActiveEvents = events
         .filter((event) => {
           if (!event.isActive) return false;
           const eventDate = new Date(event.eventDate); eventDate.setHours(0, 0, 0, 0);
@@ -79,7 +98,8 @@ const DashboardHome = () => {
         totalCertificates: certificates.length,
       });
     } catch (error) {
-      console.error("Failed to load dashboard data:", error);
+      console.error("[DashboardHome] Failed to load dashboard data:", error);
+      setLoadErrors(["dashboard"]);
     } finally {
       setLoading(false);
     }
@@ -130,6 +150,15 @@ const DashboardHome = () => {
         <span className="text-copper font-body text-[10px] tracking-ultra uppercase mb-2 block font-bold">Commander Overlay</span>
         <h2 className="font-heading text-4xl uppercase leading-none text-white">Dashboard <span className="text-transparent outline-title">Overview</span></h2>
       </div>
+
+      {loadErrors.length > 0 && (
+        <div className="p-4 border border-red-500/30 bg-red-500/10 flex items-start gap-3">
+          <AlertCircle className="text-red-400 shrink-0" size={18} />
+          <p className="font-body text-[10px] uppercase tracking-widest text-red-300">
+            Some dashboard data could not be loaded ({loadErrors.join(", ")}). Check the browser console and verify admin authentication.
+          </p>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

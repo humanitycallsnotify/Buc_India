@@ -8,6 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Limits retained only for non-banner uploads (registration media, profiles, clubs, talent)
 export const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 export const MAX_GALLERY_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB
 
@@ -34,15 +35,30 @@ const galleryFileFilter = (_req, file, cb) => {
   cb(new Error('Only JPG, PNG, WEBP images or common video formats are allowed.'), false);
 };
 
-const createImageUpload = (storage) =>
+const createImageUpload = (storage, maxBytes = MAX_IMAGE_UPLOAD_BYTES) =>
   multer({
     storage,
-    limits: { fileSize: MAX_IMAGE_UPLOAD_BYTES },
+    limits: { fileSize: maxBytes },
     fileFilter: imageFileFilter,
   });
 
-// Storage for event banners and license images (was 1000×600)
-const eventStorage = new CloudinaryStorage({
+const createUnrestrictedImageUpload = (storage) =>
+  multer({
+    storage,
+    fileFilter: imageFileFilter,
+  });
+
+// Event banners — no size or dimension restrictions
+const eventBannerStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'buc_india_events',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+  }
+});
+
+// Registration license/profile images (unchanged limits for registration flow)
+const registrationMediaStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'buc_india_events',
@@ -61,13 +77,12 @@ const profileStorage = new CloudinaryStorage({
   }
 });
 
-// Storage for gallery images and registration portal cover (was 1400×900)
+// Gallery images, registration portal cover — no size or dimension restrictions
 const galleryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'buc_india_gallery',
     allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-    transformation: [{ width: 3840, height: 2160, crop: 'limit' }]
   }
 });
 
@@ -96,11 +111,11 @@ const talentStorage = new CloudinaryStorage({
   }
 });
 
-export const upload = createImageUpload(eventStorage);
+export const eventUpload = createUnrestrictedImageUpload(eventBannerStorage);
+export const upload = createImageUpload(registrationMediaStorage);
 export const profileUpload = createImageUpload(profileStorage);
 export const galleryUpload = multer({
   storage: galleryStorage,
-  limits: { fileSize: MAX_GALLERY_VIDEO_BYTES },
   fileFilter: galleryFileFilter,
 });
 export const clubUpload = createImageUpload(clubStorage);

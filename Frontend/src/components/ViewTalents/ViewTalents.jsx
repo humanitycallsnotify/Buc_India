@@ -16,16 +16,25 @@ const ViewTalents = () => {
   const [availableFields, setAvailableFields] = useState([]);
   const [selectedFields, setSelectedFields] = useState([]);
   const [talentToDelete, setTalentToDelete] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       const data = await talentService.getAll();
+      console.log("[ViewTalents] Loaded talents:", data.length);
       setTalents(data);
       setFiltered(data);
     } catch (error) {
-      console.error("Error loading talents:", error);
-      alert("Failed to load talent registrations.");
+      console.error("[ViewTalents] Error loading talents:", error);
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to load talent registrations.";
+      setLoadError(message);
+      setTalents([]);
+      setFiltered([]);
     } finally {
       setIsLoading(false);
     }
@@ -176,6 +185,21 @@ const ViewTalents = () => {
 
   return (
     <div className="view-registrations">
+      {loadError && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: "12px 16px",
+            borderRadius: 8,
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            background: "rgba(239, 68, 68, 0.1)",
+            color: "#fca5a5",
+            fontSize: 13,
+          }}
+        >
+          Failed to load talents: {loadError}
+        </div>
+      )}
       <div className="page-header">
         <div>
           <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -37,6 +37,7 @@ export const getPublicClubs = async (req, res) => {
 export const getAllClubs = async (req, res) => {
   try {
     const clubs = await Club.find().sort({ createdAt: 1 });
+    console.log(`[getAllClubs] Returning ${clubs.length} club(s)`);
     res.json(clubs);
   } catch (error) {
     console.error('Get all clubs error:', error);

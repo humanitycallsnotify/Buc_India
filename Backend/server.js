@@ -150,7 +150,7 @@ if (process.env.NODE_ENV === "production") {
   const frontendDistPath = path.join(__dirname, "../Frontend/dist");
   app.use(express.static(frontendDistPath));
 
-  app.get(/(.*)/, (req, res) => {
+  app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.resolve(frontendDistPath, "index.html"));
   });
 }
@@ -158,20 +158,22 @@ if (process.env.NODE_ENV === "production") {
 // Error handler
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
-    const maxMb =
-      err.code === "LIMIT_FILE_SIZE"
-        ? err.field === "media" || err.field === "talentVideo"
+    if (err.code === "LIMIT_FILE_SIZE") {
+      const maxMb =
+        err.field === "media" || err.field === "talentVideo"
           ? Math.round(MAX_GALLERY_VIDEO_BYTES / (1024 * 1024))
-          : Math.round(MAX_IMAGE_UPLOAD_BYTES / (1024 * 1024))
-        : null;
-    const message =
-      err.code === "LIMIT_FILE_SIZE" && maxMb
-        ? `File too large. Maximum upload size is ${maxMb} MB.`
-        : err.message;
-    return res.status(400).json({ message });
+          : Math.round(MAX_IMAGE_UPLOAD_BYTES / (1024 * 1024));
+      return res.status(400).json({
+        message: `File too large. Maximum upload size is ${maxMb} MB.`,
+      });
+    }
+    return res.status(400).json({ message: err.message });
   }
 
-  if (err?.message?.includes("Only JPG, PNG, and WEBP")) {
+  if (
+    err?.message?.includes("Only JPG, PNG, and WEBP") ||
+    err?.message?.includes("Only JPG, PNG, WEBP images or common video")
+  ) {
     return res.status(400).json({ message: err.message });
   }
 

@@ -454,6 +454,7 @@ export const getRegistrations = async (req, res) => {
       return obj;
     });
 
+    console.log(`[getRegistrations] Returning ${enriched.length} registration(s)`);
     res.json(enriched);
   } catch (error) {
     res.status(500).json({ message: error.message });

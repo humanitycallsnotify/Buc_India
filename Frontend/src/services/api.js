@@ -11,6 +11,14 @@ const api = axios.create({
   withCredentials: true,
 });
 
+export const ensureArrayResponse = (data, label = "API response") => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.users)) return data.users;
+  if (Array.isArray(data?.data)) return data.data;
+  console.error(`[API] Expected array for ${label}, received:`, data);
+  return [];
+};
+
 // Add interceptor to include token in headers if available
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem("buc_admin_token");
@@ -19,6 +27,19 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const { config, response } = error;
+    console.error(
+      `[API Error] ${config?.method?.toUpperCase() || "REQUEST"} ${config?.url || ""}`,
+      response?.status,
+      response?.data || error.message,
+    );
+    return Promise.reject(error);
+  },
+);
 
 export const authService = {
   login: async (username, password) => {
@@ -43,7 +64,7 @@ export const authService = {
 export const eventService = {
   getAll: async () => {
     const response = await api.get("/events");
-    return response.data;
+    return ensureArrayResponse(response.data, "events");
   },
   create: async (formData) => {
     const response = await api.post("/events", formData, {
@@ -109,7 +130,7 @@ export const registrationService = {
       params.eventId = eventId;
     }
     const response = await api.get("/registrations", { params });
-    return response.data;
+    return ensureArrayResponse(response.data, "registrations");
   },
   getByUser: async (email, phone) => {
     const response = await api.get("/registrations/user", {
@@ -133,7 +154,7 @@ export const profileService = {
   },
   getAllAdmin: async () => {
     const response = await api.get("/profile/all");
-    return response.data;
+    return ensureArrayResponse(response.data, "profile/all");
   },
   signup: async (formData) => {
     const response = await api.post("/profile/signup", formData, {
@@ -189,7 +210,7 @@ export const clubService = {
   },
   getAllAdmin: async () => {
     const response = await api.get("/clubs");
-    return response.data;
+    return ensureArrayResponse(response.data, "clubs");
   },
   updateStatus: async (id, status) => {
     const response = await api.patch(`/clubs/${id}/status`, { status });
@@ -225,7 +246,7 @@ export const clubMembershipService = {
   },
   getAllAdmin: async () => {
     const response = await api.get("/club-memberships");
-    return response.data;
+    return ensureArrayResponse(response.data, "club-memberships");
   },
 };
 
@@ -258,7 +279,7 @@ export const userAuthService = {
 export const certificateService = {
   getAll: async () => {
     const response = await api.get("/certificates");
-    return response.data;
+    return ensureArrayResponse(response.data, "certificates");
   },
   getStats: async () => {
     const response = await api.get("/certificates/stats");
@@ -273,7 +294,7 @@ export const talentService = {
   },
   getAll: async () => {
     const response = await api.get("/talent");
-    return response.data;
+    return ensureArrayResponse(response.data, "talent");
   },
   delete: async (id) => {
     const response = await api.delete(`/talent/${id}`);

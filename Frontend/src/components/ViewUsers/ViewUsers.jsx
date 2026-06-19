@@ -21,6 +21,7 @@ const ViewUsers = () => {
   const [clubs, setClubs] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
     const fetchClubs = async () => {
@@ -42,22 +43,33 @@ const ViewUsers = () => {
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       const allUsers = await profileService.getAllAdmin();
-      const processedUsers = allUsers.map(u => {
-        // Ensure clubName is always defined on every user object so the column header is generated dynamically
-        u.clubName = "-";
-        if (u.clubId && typeof u.clubId === 'object' && u.clubId.name) {
-          u.clubName = u.clubId.name;
-        } else if (u.clubId && typeof u.clubId === 'string') {
-          u.clubName = u.clubId;
-        }
-        return u;
+      console.log("[ViewUsers] Loaded users:", allUsers.length);
+
+      const processedUsers = allUsers.map((user) => {
+        const clubName =
+          user.clubName ||
+          (user.clubId && typeof user.clubId === "object" && user.clubId.name
+            ? user.clubId.name
+            : user.clubId && typeof user.clubId === "string"
+              ? user.clubId
+              : "-");
+
+        return { ...user, clubName };
       });
+
       setUsers(processedUsers);
       setFilteredUsers(processedUsers);
     } catch (error) {
-      console.error("Error loading users:", error);
-      alert("Failed to load users from server");
+      console.error("[ViewUsers] Error loading users:", error);
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to load users from server";
+      setLoadError(message);
+      setUsers([]);
+      setFilteredUsers([]);
     } finally {
       setIsLoading(false);
     }
@@ -406,6 +418,22 @@ const ViewUsers = () => {
           </button>
         ))}
       </div>
+
+      {loadError && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: "12px 16px",
+            borderRadius: 8,
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            background: "rgba(239, 68, 68, 0.1)",
+            color: "#fca5a5",
+            fontSize: 13,
+          }}
+        >
+          Failed to load users: {loadError}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="loading-container">

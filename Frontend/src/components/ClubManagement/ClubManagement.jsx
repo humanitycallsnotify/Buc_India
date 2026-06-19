@@ -20,6 +20,7 @@ const ClubManagement = () => {
   const [clubs, setClubs] = useState([]);
   const [memberships, setMemberships] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
   const [expandedClub, setExpandedClub] = useState(null);
   const [activeTab, setActiveTab] = useState("pending");
@@ -32,15 +33,36 @@ const ClubManagement = () => {
 
   const loadData = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      const [clubList, membershipList] = await Promise.all([
+      const results = await Promise.allSettled([
         clubService.getAllAdmin(),
         clubMembershipService.getAllAdmin(),
       ]);
-      setClubs(clubList || []);
-      setMemberships(membershipList || []);
+
+      const [clubResult, membershipResult] = results;
+      const clubList = clubResult.status === "fulfilled" ? clubResult.value : [];
+      const membershipList = membershipResult.status === "fulfilled" ? membershipResult.value : [];
+
+      if (clubResult.status === "rejected") {
+        console.error("[ClubManagement] Failed to load clubs:", clubResult.reason);
+      }
+      if (membershipResult.status === "rejected") {
+        console.error("[ClubManagement] Failed to load memberships:", membershipResult.reason);
+      }
+
+      console.log("[ClubManagement] Loaded clubs:", clubList.length, "memberships:", membershipList.length);
+      setClubs(clubList);
+      setMemberships(membershipList);
+
+      if (clubResult.status === "rejected" || membershipResult.status === "rejected") {
+        setLoadError("Some club data could not be loaded. Check admin authentication and try refreshing.");
+      }
     } catch (error) {
-      console.error("Critical failure during telemetry retrieval:", error);
+      console.error("[ClubManagement] Critical failure during telemetry retrieval:", error);
+      setLoadError(error.response?.data?.message || error.message || "Failed to load club data");
+      setClubs([]);
+      setMemberships([]);
     } finally {
       setLoading(false);
     }
@@ -113,6 +135,12 @@ const ClubManagement = () => {
           Review collaboration requests, authenticate credentials, and monitor coalition resonance through exit telemetry.
         </p>
       </div>
+
+      {loadError && (
+        <div className="p-4 border border-red-500/30 bg-red-500/10 text-red-300 font-body text-[10px] uppercase tracking-widest">
+          {loadError}
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <div className="flex border-b border-white/10">

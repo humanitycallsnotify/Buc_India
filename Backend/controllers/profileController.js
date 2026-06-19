@@ -33,8 +33,25 @@ export const getProfile = async (req, res) => {
 
 export const getAllProfiles = async (req, res) => {
   try {
-    const users = await User.find().populate('clubId', 'name').sort({ createdAt: 1 });
-    res.json(users);
+    const users = await User.find()
+      .select("-password")
+      .populate("clubId", "name")
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const sanitized = users.map((user) => {
+      const clubName =
+        user.clubId && typeof user.clubId === "object" && user.clubId.name
+          ? user.clubId.name
+          : typeof user.clubId === "string"
+            ? user.clubId
+            : "-";
+
+      return { ...user, clubName };
+    });
+
+    console.log(`[getAllProfiles] Returning ${sanitized.length} user(s)`);
+    res.json(sanitized);
   } catch (error) {
     console.error("Get All Profiles Error:", error);
     res.status(500).json({ message: error.message });
