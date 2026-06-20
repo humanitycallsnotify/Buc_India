@@ -150,7 +150,7 @@ const SafetyInfluencerManagement = () => {
             Safety Content
           </span>
           <h2 className="font-heading text-4xl uppercase leading-none text-white">
-            Safety <span className="text-transparent outline-title">Influencers</span>
+            Safety <span className="text-copper">Influencers</span>
           </h2>
           <p className="font-text text-steel-dim text-sm mt-4 max-w-2xl">
             Manage influencer profiles shown in the home page Safety section.
@@ -305,3 +305,4 @@ const SafetyInfluencerManagement = () => {
 };
 
 export default SafetyInfluencerManagement;
+

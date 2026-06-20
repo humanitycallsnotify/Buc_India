@@ -24,7 +24,6 @@ const HomePage = lazy(() => import("./components/HomePage.jsx"));
 const Events = lazy(() => import("./components/PublicHome/PublicHome.jsx"));
 const Gallery = lazy(() => import("./components/Gallery.jsx"));
 const Members = lazy(() => import("./components/Members.jsx"));
-const Users = lazy(() => import("./components/Users.jsx"));
 const Forum = lazy(() => import("./components/Forum.jsx"));
 const MembershipApplication = lazy(() => import("./components/MembershipApplication.jsx"));
 const Safety = lazy(() => import("./components/Safety.jsx"));
@@ -140,7 +139,6 @@ function App() {
                   <Route path="/events" element={<Events />} />
                   <Route path="/gallery" element={<Gallery />} />
                   <Route path="/members" element={<Members />} />
-                  <Route path="/users" element={<Users />} />
                   <Route path="/forum" element={<Forum />} />
                   <Route path="/safety" element={<Safety />} />
                   <Route path="/safety-influencers" element={<SafetyInfluencers />} />

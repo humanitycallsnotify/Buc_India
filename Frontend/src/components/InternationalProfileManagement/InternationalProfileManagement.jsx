@@ -150,7 +150,7 @@ const InternationalProfileManagement = () => {
             Global Content
           </span>
           <h2 className="font-heading text-4xl uppercase leading-none text-white">
-            International <span className="text-transparent outline-title">Profiles</span>
+            International <span className="text-copper">Profiles</span>
           </h2>
           <p className="font-text text-steel-dim text-sm mt-4 max-w-2xl">
             Manage profiles displayed on the public International page.
@@ -305,3 +305,4 @@ const InternationalProfileManagement = () => {
 };
 
 export default InternationalProfileManagement;
+

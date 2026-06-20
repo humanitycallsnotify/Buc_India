@@ -23,6 +23,7 @@ import memberRoutes from "./routes/memberRoutes.js";
 import membershipApplicationRoutes from "./routes/membershipApplicationRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import forumRoutes from "./routes/forumRoutes.js";
+import partnerRoutes from "./routes/partnerRoutes.js";
 
 const app = express();
 
@@ -149,6 +150,7 @@ app.use("/api/members", memberRoutes);
 app.use("/api/membership-applications", membershipApplicationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/forum", forumRoutes);
+app.use("/api/partners", partnerRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

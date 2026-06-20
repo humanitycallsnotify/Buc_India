@@ -103,7 +103,7 @@ const PublicHome = () => {
         <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
           <div>
             <span className="text-copper font-body tracking-ultra text-xs md:text-sm uppercase mb-2 block font-bold">The Calendar</span>
-            <h2 className="font-heading text-6xl md:text-8xl uppercase leading-none">The <span className="text-transparent outline-title">Gatherings</span></h2>
+            <h2 className="font-heading text-6xl md:text-8xl uppercase leading-none">The <span className="text-copper">Gatherings</span></h2>
           </div>
           
           <div className="flex bg-carbon-light border border-white/10 p-1">
@@ -205,3 +205,4 @@ const PublicHome = () => {
 };
 
 export default PublicHome;
+

@@ -178,7 +178,7 @@ const Forum = () => {
             </span>
             <h1 className="font-heading text-6xl md:text-7xl uppercase leading-none">
               The{" "}
-              <span className="text-transparent outline-title">Forum</span>
+              <span className="text-copper">Forum</span>
             </h1>
           </div>
           <button
@@ -465,3 +465,4 @@ const Forum = () => {
 };
 
 export default Forum;
+

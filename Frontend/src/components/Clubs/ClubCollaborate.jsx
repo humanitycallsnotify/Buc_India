@@ -514,7 +514,7 @@ const ClubCollaborate = () => {
              </div>
              <div>
                 <span className="text-copper font-body text-xs tracking-widest uppercase mb-1 block">Partnership</span>
-                <h1 className="font-heading text-5xl md:text-7xl uppercase">Collaborate <span className="text-transparent outline-title">With BUC</span></h1>
+                <h1 className="font-heading text-5xl md:text-7xl uppercase">Collaborate <span className="text-copper">With BUC</span></h1>
              </div>
           </div>
           
@@ -936,3 +936,4 @@ const ClubCollaborate = () => {
 };
 
 export default ClubCollaborate;
+

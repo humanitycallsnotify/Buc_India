@@ -23,6 +23,7 @@ import {
   Globe,
   Shield,
   MessageSquare,
+  Handshake,
 } from "lucide-react";
 import DashboardHome from "../DashboardHome/DashboardHome";
 import EventManagement from "../EventManagement/EventManagement";
@@ -35,6 +36,7 @@ import InternationalProfileManagement from "../InternationalProfileManagement/In
 import SafetyInfluencerManagement from "../SafetyInfluencerManagement/SafetyInfluencerManagement.jsx";
 import MembershipApplicationManagement from "../MembershipApplicationManagement/MembershipApplicationManagement.jsx";
 import ForumManagement from "../ForumManagement/ForumManagement.jsx";
+import PartnerManagement from "../PartnerManagement/PartnerManagement.jsx";
 import { authService, profileService } from "../../services/api";
 
 const logo = "/logo.jpg";
@@ -86,6 +88,7 @@ const AdminDashboard = () => {
     { path: "/admin/clubs", name: "Clubs", icon: <Bike size={20} /> },
     { path: "/admin/international-profiles", name: "International Profiles", icon: <Globe size={20} /> },
     { path: "/admin/safety-influencers", name: "Safety Influencers", icon: <Shield size={20} /> },
+    { path: "/admin/partners", name: "Partners", icon: <Handshake size={20} /> },
     { path: "/admin/forum", name: "Forum", icon: <MessageSquare size={20} /> },
   ];
 
@@ -258,6 +261,7 @@ const AdminDashboard = () => {
             <Route path="clubs" element={<ClubManagement />} />
             <Route path="international-profiles" element={<InternationalProfileManagement />} />
             <Route path="safety-influencers" element={<SafetyInfluencerManagement />} />
+            <Route path="partners" element={<PartnerManagement />} />
             <Route path="forum" element={<ForumManagement />} />
           </Routes>
         </main>

@@ -40,7 +40,7 @@ const Clubs = () => {
             </span>
             <h2 className="font-heading text-6xl md:text-8xl uppercase leading-none">
               Global{" "}
-              <span className="text-transparent outline-title">Chapters</span>
+              <span className="text-copper">Chapters</span>
             </h2>
             <p className="font-text text-steel-dim mt-4 max-w-xl">
               View club rosters and leadership. Membership is managed by club
@@ -143,3 +143,4 @@ const Clubs = () => {
 };
 
 export default Clubs;
+

@@ -72,7 +72,7 @@ const SiteContentManagement = () => {
           Multi-Site Content
         </span>
         <h2 className="font-heading text-4xl uppercase leading-none text-white">
-          Humanity Calls <span className="text-transparent outline-title">Carousel</span>
+          Humanity Calls <span className="text-copper">Carousel</span>
         </h2>
         <p className="text-steel-dim mt-3 text-sm">
           Manage hero carousel images used on Humanity Calls home page.
@@ -140,3 +140,4 @@ const SiteContentManagement = () => {
 };
 
 export default SiteContentManagement;
+

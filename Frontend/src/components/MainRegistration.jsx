@@ -117,9 +117,9 @@ const MainRegistration = () => {
           <div className="text-center mb-16">
             <h1 className="font-heading text-5xl md:text-7xl uppercase mb-4">
               {isMembership ? (
-                <>Membership <span className="text-transparent outline-title">Application</span></>
+                <>Membership <span className="text-copper">Application</span></>
               ) : (
-                <>Registration <span className="text-transparent outline-title">Portal</span></>
+                <>Registration <span className="text-copper">Portal</span></>
               )}
             </h1>
             {event ? (
@@ -267,3 +267,4 @@ const MainRegistration = () => {
 };
 
 export default MainRegistration;
+

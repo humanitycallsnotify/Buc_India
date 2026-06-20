@@ -224,9 +224,9 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
           </span>
           <h2 className="font-heading text-4xl uppercase leading-none text-white">
             {isCoverOnly ? (
-              <>Cover <span className="text-transparent outline-title">Photo</span></>
+              <>Cover <span className="text-copper">Photo</span></>
             ) : (
-              <>Visual <span className="text-transparent outline-title">Intelligence</span></>
+              <>Visual <span className="text-copper">Intelligence</span></>
             )}
           </h2>
         </div>
@@ -552,4 +552,5 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
 };
 
 export default GalleryManagement;
+
 

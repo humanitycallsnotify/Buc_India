@@ -77,7 +77,7 @@ const Safety = () => {
     },
     { 
       label: "COMMUNITY EMERGENCY LINE", 
-      number: "88677 18080", 
+      number: "88677 13031", 
       desc: "Community member assistance and roadside help" 
     },
     { 
@@ -168,7 +168,7 @@ const Safety = () => {
             <div className="p-12 md:p-16 text-center border-y border-white/5 bg-carbon/40 backdrop-blur-sm relative">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1px] h-32 bg-gradient-to-b from-copper to-transparent"></div>
               
-              <h3 className="font-heading text-4xl md:text-5xl text-white uppercase mb-10 tracking-widest outline-title">Our Safety Pledge</h3>
+              <h3 className="font-heading text-4xl md:text-5xl text-copper uppercase mb-10 tracking-widest ">Our Safety Pledge</h3>
               
               <div className="min-h-[150px] md:min-h-[100px]">
                 <p className="font-text text-xl md:text-2xl text-steel-dim leading-relaxed max-w-4xl mx-auto">
@@ -281,3 +281,4 @@ const Safety = () => {
 };
 
 export default Safety;
+

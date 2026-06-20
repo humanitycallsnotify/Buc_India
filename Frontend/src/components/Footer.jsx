@@ -177,9 +177,20 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="mt-14 sm:mt-20 pt-8 border-t border-white/5 flex flex-col items-center gap-8 sm:gap-10">
-          <p className="text-[10px] text-steel-dim uppercase tracking-[0.2em] opacity-40">
-            © {new Date().getFullYear()} BUC INDIA. FORGED IN BROTHERHOOD.
-          </p>
+          <div className="flex flex-col items-center gap-6">
+            <a 
+              href="https://www.cortexit.in" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 group cursor-pointer"
+            >
+              <span className="text-xs sm:text-sm text-steel-dim tracking-[0.1em] opacity-80 group-hover:text-white transition-colors duration-300">Designed and Developed by</span>
+              <img src="/cortex-logo.png" alt="Cortex IT Projects" className="h-8 sm:h-12 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300" />
+            </a>
+            <p className="text-xs text-steel-dim uppercase tracking-[0.2em] opacity-60 text-center mt-4">
+              © {new Date().getFullYear()} BUC INDIA. FORGED IN BROTHERHOOD.
+            </p>
+          </div>
           
           <div className="flex flex-wrap gap-x-8 gap-y-4 items-center justify-center">
              {["Privacy Policy", "Terms of Service", "Conduct Code"].map((legal) => (

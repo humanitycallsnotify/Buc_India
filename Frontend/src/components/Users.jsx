@@ -57,7 +57,7 @@ const Users = () => {
           </span>
           <h1 className="font-heading text-6xl md:text-8xl uppercase leading-none mb-4">
             BUC{" "}
-            <span className="text-transparent outline-title">Community</span>
+            <span className="text-copper">Community</span>
           </h1>
           <p className="font-text text-steel-dim max-w-2xl">
             Owners, club leadership, and registered riders across the BUC India

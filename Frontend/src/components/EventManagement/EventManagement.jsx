@@ -169,7 +169,7 @@ const EventManagement = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <span className="text-copper font-body text-[10px] tracking-ultra uppercase mb-2 block font-bold">Logistics Division</span>
-          <h2 className="font-heading text-4xl uppercase leading-none text-white">Expedition <span className="text-transparent outline-title">Management</span></h2>
+          <h2 className="font-heading text-4xl uppercase leading-none text-white">Expedition <span className="text-copper">Management</span></h2>
         </div>
         <button 
           onClick={() => { resetForm(); setShowForm(true); }}
@@ -471,3 +471,4 @@ const EventManagement = () => {
 };
 
 export default EventManagement;
+

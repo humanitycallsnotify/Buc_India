@@ -69,6 +69,17 @@ export const galleryUpload = multer({ storage: galleryStorage });
 export const clubUpload = multer({ storage: clubStorage });
 export const talentUpload = multer({ storage: talentStorage });
 
+// Storage for partner images
+const partnerStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'buc_india_partners',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+    transformation: [{ width: 800, height: 800, crop: 'limit' }]
+  }
+});
+export const partnerUpload = multer({ storage: partnerStorage });
+
 const contentStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {

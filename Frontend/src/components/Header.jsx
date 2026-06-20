@@ -7,7 +7,6 @@ const navigation = [
   { name: "EVENTS", path: "/events", label: "EXPERIENCE" },
   { name: "GALLERY", path: "/gallery", label: "VISUALS" },
   { name: "MEMBERS", path: "/members", label: "BROTHERHOOD" },
-  { name: "USERS", path: "/users", label: "COMMUNITY" },
   { name: "FORUM", path: "/forum", label: "DISCUSSIONS" },
   { name: "CLUBS", path: "/clubs", label: "NETWORK" },
 ];

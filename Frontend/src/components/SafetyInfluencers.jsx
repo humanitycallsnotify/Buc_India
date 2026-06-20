@@ -32,7 +32,7 @@ const SafetyInfluencers = () => {
           </span>
           <h1 className="font-heading text-6xl md:text-8xl uppercase leading-none">
             Our{" "}
-            <span className="text-transparent outline-title">
+            <span className="text-copper">
               Safety Influencers
             </span>
           </h1>
@@ -112,3 +112,4 @@ const SafetyInfluencers = () => {
 };
 
 export default SafetyInfluencers;
+

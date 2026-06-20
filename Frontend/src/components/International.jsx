@@ -28,7 +28,7 @@ const International = () => {
         <div className="mb-24">
           <span className="text-copper font-body tracking-[0.5em] text-xs uppercase mb-4 block font-bold">Global Presence</span>
           <h1 className="font-heading text-6xl md:text-9xl uppercase leading-none mb-8">
-            Beyond <span className="text-transparent outline-title">Borders</span>
+            Beyond <span className="text-copper">Borders</span>
           </h1>
           <p className="font-text text-steel-dim text-lg md:text-xl max-w-2xl">
             BUC India is expanding its horizon. Join the elite global network of riders who push limits and redefine brotherhood across continents.
@@ -64,7 +64,7 @@ const International = () => {
           <div className="mb-12">
             <span className="text-copper font-body tracking-[0.5em] text-xs uppercase mb-4 block font-bold">Global Leaders</span>
             <h2 className="font-heading text-5xl md:text-7xl uppercase leading-none">
-              International <span className="text-transparent outline-title">Profiles</span>
+              International <span className="text-copper">Profiles</span>
             </h2>
           </div>
 
@@ -148,3 +148,4 @@ const International = () => {
 };
 
 export default International;
+

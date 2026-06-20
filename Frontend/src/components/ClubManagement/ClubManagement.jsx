@@ -108,7 +108,7 @@ const ClubManagement = () => {
       {/* Page Header */}
       <div>
         <span className="text-copper font-body text-[10px] tracking-ultra uppercase mb-2 block font-bold">Consub-Division Alpha</span>
-        <h2 className="font-heading text-4xl uppercase leading-none text-white">Partner <span className="text-transparent outline-title">Clubs</span></h2>
+        <h2 className="font-heading text-4xl uppercase leading-none text-white">Partner <span className="text-copper">Clubs</span></h2>
         <p className="font-text text-steel-dim text-sm mt-4 max-w-2xl italic">
           Review collaboration requests, authenticate credentials, and monitor coalition resonance through exit telemetry.
         </p>
@@ -542,3 +542,4 @@ const ClubManagement = () => {
 };
 
 export default ClubManagement;
+

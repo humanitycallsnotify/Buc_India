@@ -6,11 +6,12 @@ export const getPublicMembers = async (req, res) => {
       .populate("clubId", "name")
       .sort({ createdAt: -1 })
       .select(
-        "fullName city state bikeModel profileImage registrationType clubId",
+        "fullName city state bikeModel profileImage registrationType clubId bucId",
       );
 
     const members = users.map((user) => ({
       fullName: user.fullName || "",
+      bucId: user.bucId || "PENDING",
       city: user.city || "",
       state: user.state || "",
       bikeModel: user.bikeModel || "",

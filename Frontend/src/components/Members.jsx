@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { membersService } from "../services/api";
+import { User } from "lucide-react";
 
 const mapMemberForDisplay = (member, index) => {
   const location = [member.city, member.state].filter(Boolean).join(", ");
@@ -12,6 +13,7 @@ const mapMemberForDisplay = (member, index) => {
     id: `${member.fullName}-${location}-${index}`,
     name: member.fullName,
     role,
+    bucId: member.bucId || "PENDING",
     location: location || "—",
     bike: member.bikeModel || "—",
     avatar: member.profileImage,
@@ -124,45 +126,27 @@ const Members = () => {
         className="group p-8 border border-white/5 bg-carbon-light hover:border-copper/30 transition-all duration-500"
       >
         <div className="flex items-center gap-6 mb-8">
-          <div className="w-20 h-20 rounded-full border border-copper/30 overflow-hidden">
-            <img
-              src={member.avatar || "/logo.jpg"}
-              alt={member.name}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover"
-            />
+          <div className="w-20 h-20 rounded-full border border-copper/30 overflow-hidden bg-carbon/50 flex items-center justify-center">
+            {member.avatar ? (
+              <img
+                src={member.avatar}
+                alt={member.name}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-8 h-8 text-copper/40" />
+            )}
           </div>
           <div>
             <h3 className="font-heading text-2xl uppercase">{member.name}</h3>
             <span className="text-copper font-body text-[10px] tracking-widest uppercase">
-              {member.role}
+              {member.bucId}
             </span>
           </div>
         </div>
 
-        <div className="space-y-4 mb-8">
-          <div className="flex justify-between border-b border-white/5 pb-2">
-            <span className="text-steel-dim font-body text-[10px] uppercase tracking-widest">
-              Location
-            </span>
-            <span className="font-body text-xs uppercase text-white">
-              {member.location}
-            </span>
-          </div>
-          <div className="flex justify-between border-b border-white/5 pb-2">
-            <span className="text-steel-dim font-body text-[10px] uppercase tracking-widest">
-              Machine
-            </span>
-            <span className="font-body text-xs uppercase text-white">
-              {member.bike}
-            </span>
-          </div>
-        </div>
-
-        <button className="w-full py-4 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-white hover:text-carbon transition-all duration-500">
-          View Profile
-        </button>
       </div>
     ));
   };
@@ -177,7 +161,7 @@ const Members = () => {
             </span>
             <h2 className="font-heading text-6xl md:text-8xl uppercase leading-none">
               Our{" "}
-              <span className="text-transparent outline-title">Brotherhood</span>
+              <span className="text-copper">Believers</span>
             </h2>
           </div>
 
@@ -233,7 +217,7 @@ const Members = () => {
           <div className="mt-32 p-16 border border-copper/20 bg-gradient-to-br from-copper/5 to-transparent text-center">
             <h3 className="font-heading text-4xl md:text-6xl uppercase mb-6 leading-none">
               Join The{" "}
-              <span className="text-transparent outline-title">Elite</span>
+              <span className="text-copper">Elite</span>
             </h3>
             <p className="font-text text-steel-dim text-lg mb-10 max-w-xl mx-auto">
               Become a part of India&apos;s most prestigious riding brotherhood.
@@ -253,3 +237,4 @@ const Members = () => {
 };
 
 export default Members;
+

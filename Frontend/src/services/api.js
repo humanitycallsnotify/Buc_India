@@ -419,4 +419,19 @@ export const forumService = {
   },
 };
 
+export const partnerService = {
+  getAll: async () => {
+    const response = await api.get("/partners");
+    return response.data;
+  },
+  create: async (formData) => {
+    const response = await api.post("/partners", formData, multipartConfig);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/partners/${id}`);
+    return response.data;
+  },
+};
+
 export default api;

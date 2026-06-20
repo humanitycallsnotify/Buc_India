@@ -64,7 +64,7 @@ const AdminLogin = () => {
              </div>
           </div>
           <span className="text-copper font-body text-[10px] tracking-[0.4em] uppercase mb-2 block font-bold">Secure Access</span>
-          <h1 className="font-heading text-4xl uppercase text-white leading-none">Command <span className="text-transparent outline-title">Center</span></h1>
+          <h1 className="font-heading text-4xl uppercase text-white leading-none">Command <span className="text-copper">Center</span></h1>
         </div>
 
         <div className="bg-carbon-light border border-white/5 p-8 md:p-12 shadow-2xl relative group">
@@ -153,3 +153,4 @@ const AdminLogin = () => {
 };
 
 export default AdminLogin;
+

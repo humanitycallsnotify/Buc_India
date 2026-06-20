@@ -42,7 +42,7 @@ const InfluencerSpotlight = () => {
           </span>
           <h2 className="font-heading text-4xl sm:text-5xl md:text-6xl uppercase leading-none text-white">
             Meet Our{" "}
-            <span className="text-transparent outline-title">Influencers</span>
+            <span className="text-copper">Influencers</span>
           </h2>
         </div>
 
@@ -98,3 +98,4 @@ const InfluencerSpotlight = () => {
 };
 
 export default InfluencerSpotlight;
+

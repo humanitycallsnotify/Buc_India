@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Heart, Compass, Users, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import GalleryGlimpse from "./GalleryGlimpse";
+import PartnerMarquee from "./PartnerMarquee";
 import joinFamilyImg from "../assets/gallery/WhatsApp Image 2025-08-11 at 20.21.15_0db94979.jpg";
 
 const About = () => {
@@ -81,6 +82,9 @@ const About = () => {
           <div className="absolute -inset-4 bg-copper/5 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
         </motion.div>
       </div>
+
+      {/* Partners Marquee */}
+      <PartnerMarquee />
 
       {/* Our Mission Section - Awwwards Style Grid */}
       <div className="max-w-7xl mx-auto px-6 mb-40">

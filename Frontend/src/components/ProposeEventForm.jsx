@@ -72,7 +72,7 @@ Event proposal submitted successfully!`;
 
     try {
       const message = formatWhatsAppMessage();
-      const whatsappUrl = `https://wa.me/918867718080?text=${encodeURIComponent(message)}`;
+      const whatsappUrl = `https://wa.me/918867713031?text=${encodeURIComponent(message)}`;
       
       await new Promise(resolve => setTimeout(resolve, 1500));
       

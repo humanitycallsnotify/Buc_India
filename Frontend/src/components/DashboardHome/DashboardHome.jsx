@@ -128,7 +128,7 @@ const DashboardHome = () => {
       {/* Header Section */}
       <div>
         <span className="text-copper font-body text-[10px] tracking-ultra uppercase mb-2 block font-bold">Commander Overlay</span>
-        <h2 className="font-heading text-4xl uppercase leading-none text-white">Dashboard <span className="text-transparent outline-title">Overview</span></h2>
+        <h2 className="font-heading text-4xl uppercase leading-none text-white">Dashboard <span className="text-copper">Overview</span></h2>
       </div>
 
       {/* Stats Grid */}
@@ -273,3 +273,4 @@ const DashboardHome = () => {
 };
 
 export default DashboardHome;
+

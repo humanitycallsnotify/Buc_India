@@ -67,7 +67,7 @@ const MembershipApplication = () => {
           </span>
           <h1 className="font-heading text-5xl md:text-6xl uppercase mt-2 leading-none">
             Apply For{" "}
-            <span className="text-transparent outline-title">Membership</span>
+            <span className="text-copper">Membership</span>
           </h1>
           <p className="font-text text-steel-dim mt-4">
             This is separate from event registration. Tell us about yourself and
@@ -174,3 +174,4 @@ const MembershipApplication = () => {
 };
 
 export default MembershipApplication;
+
