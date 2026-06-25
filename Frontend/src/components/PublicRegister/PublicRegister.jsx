@@ -157,13 +157,14 @@ const PublicRegister = () => {
     return date.toISOString().split("T")[0];
   }, []);
 
-  const loadEvent = useCallback(async () => {
+  const loadEvent = useCallback(async (silent = false) => {
     const lookupId = routeEventId || "community";
     if (lookupId === "community") {
       setEvent({ title: "BUC India Registration", _id: "community" });
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
+    if (!silent) setLoading(true);
     try {
       const allEvents = await eventService.getAll();
       const slugify = (text) =>
@@ -171,11 +172,11 @@ const PublicRegister = () => {
           .replace(/\-\-+/g, "-").replace(/^-+/, "").replace(/-+$/, "");
       const found = allEvents.find((e) => e._id === lookupId || slugify(e.title) === lookupId);
       if (found) setEvent(found);
-      else setEvent({ title: lookupId, _id: lookupId });
+      else if (!silent) setEvent({ title: lookupId, _id: lookupId });
     } catch {
-      setError("Failed to load event details");
+      if (!silent) setError("Failed to load event details");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [routeEventId]);
 
@@ -205,6 +206,17 @@ const PublicRegister = () => {
 
     fetchProfile();
     loadEvent();
+  }, [routeEventId, loadEvent]);
+
+  useEffect(() => {
+    if (!routeEventId || routeEventId === "community") return undefined;
+    const refresh = () => loadEvent(true);
+    window.addEventListener("focus", refresh);
+    const interval = setInterval(refresh, 15000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      clearInterval(interval);
+    };
   }, [routeEventId, loadEvent]);
 
   const lookupUserProfile = async (email, phone) => {
@@ -407,16 +419,15 @@ const PublicRegister = () => {
         {event && eventId !== "community" && event.banner && (
           <div className="event-cover-container">
             <img src={event.banner} alt={event.title} className="event-cover-img" />
-            <div className="event-cover-overlay"></div>
           </div>
         )}
 
         <div className="register-header">
-          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
+          <h2 className="register-page-title font-extrabold text-white">
             Event <span className="text-copper-accent">Registration</span>
           </h2>
           {event && (
-            <p className="mt-4 text-xl text-gray-400">
+            <p className="mt-3 register-page-subtitle text-gray-400">
               Registering for:{" "}
               <span className="text-white font-semibold">{event.title}</span>
             </p>
@@ -464,7 +475,7 @@ const PublicRegister = () => {
           </div>
         )}
 
-        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 md:p-10 border border-white/10 shadow-2xl">
+        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 md:p-7 border border-white/10 shadow-2xl">
           <form onSubmit={handleSubmit} className="registration-form" noValidate>
             {error && <div className="error-message">{error}</div>}
 

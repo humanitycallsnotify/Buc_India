@@ -2,6 +2,7 @@ import {
   isFieldEnabled,
   isFieldRequired,
   getDeclarationText,
+  FIELD_TO_FORM,
 } from "../../constants/eventRegistrationConfig";
 
 const pickProfileValue = (prevVal, profileVal) => {
@@ -49,10 +50,10 @@ export const buildRegistrationErrors = ({
   const show = (key) => isFieldEnabled(regConfig, key);
   const require = (key) => isFieldRequired(regConfig, key);
 
-  const requireField = (field, configKey = null) => {
-    const enabled = configKey ? show(configKey) : true;
-    const required = configKey ? require(configKey) : true;
-    if (enabled && required && (!formData[field] || String(formData[field]).trim() === "")) {
+  const requireField = (field, configKey) => {
+    if (!show(configKey) || !require(configKey)) return;
+    const value = formData[field];
+    if (value === undefined || value === null || String(value).trim() === "") {
       errors[field] = "This field is mandatory";
     }
   };
@@ -62,48 +63,23 @@ export const buildRegistrationErrors = ({
       "fullName", "email", "phone", "address", "city", "state", "pincode",
       "emergencyContactName", "emergencyContactPhone", "dateOfBirth",
       "bloodGroup", "anyMedicalCondition",
-    ].forEach((f) => requireField(f));
+    ].forEach((f) => {
+      if (!formData[f] || String(formData[f]).trim() === "") {
+        errors[f] = "This field is mandatory";
+      }
+    });
   } else {
-    requireField("fullName", "fullName");
-    requireField("email", "email");
-    requireField("phone", "mobile");
-    requireField("dateOfBirth", "dob");
-    requireField("city", "city");
-    requireField("state", "state");
-    requireField("bloodGroup", "bloodGroup");
-    requireField("anyMedicalCondition", "medicalConditions");
-    requireField("gender", "gender");
-    requireField("allergies", "allergies");
-    requireField("insurance", "insurance");
+    Object.entries(FIELD_TO_FORM).forEach(([configKey, formKey]) => {
+      requireField(formKey, configKey);
+    });
+
     if (show("emergencyContact") && require("emergencyContact")) {
-      requireField("emergencyContactName");
-      requireField("emergencyContactPhone");
+      requireField("emergencyContactName", "emergencyContact");
+      requireField("emergencyContactPhone", "emergencyContact");
     }
   }
 
   if (formData.registrationType === "rider") {
-    if (regConfig.isLegacy || show("bikeModel")) {
-      requireField("bikeModel", regConfig.isLegacy ? null : "bikeModel");
-    }
-    if (regConfig.isLegacy || show("bikeRegistrationNumber")) {
-      requireField("bikeRegistrationNumber", regConfig.isLegacy ? null : "bikeRegistrationNumber");
-    }
-    if (regConfig.isLegacy || show("drivingLicence")) {
-      requireField("licenseNumber", regConfig.isLegacy ? null : "drivingLicence");
-    }
-    if (regConfig.isLegacy || show("bikeBrand")) {
-      requireField("bikeBrand", regConfig.isLegacy ? null : "bikeBrand");
-    }
-    if (regConfig.isLegacy || show("ridingExperience")) {
-      requireField("ridingExperience", regConfig.isLegacy ? null : "ridingExperience");
-    }
-    if (regConfig.isLegacy || show("ridingClub")) {
-      requireField("clubName", regConfig.isLegacy ? null : "ridingClub");
-    }
-    if (regConfig.isLegacy || show("aadhaar")) {
-      requireField("aadhaarNumber", regConfig.isLegacy ? null : "aadhaar");
-    }
-
     if (show("licenceUpload") && require("licenceUpload")) {
       if (!formData.licenseImage && !profileData?.licenseImage) {
         errors.licenseImage = "Driving License image is mandatory";

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Registration from "../models/Registration.js";
 import User from "../models/User.js";
+import Event from "../models/Event.js";
 import ClubMembership from "../models/ClubMembership.js";
 import Certificate from "../models/Certificate.js";
 import { cloudinary } from "../middleware/cloudinaryConfig.js";
@@ -10,6 +11,13 @@ import {
   getResolvedClubName,
   getRegistrationTypeLabel,
 } from "../utils/registrationValidation.js";
+import {
+  resolveRegistrationConfig,
+  validateEventRegistrationPayload,
+  applyConfiguredFieldsToRegistration,
+  buildConfiguredDuplicateQuery,
+  isFieldEnabled,
+} from "../utils/eventRegistrationConfig.js";
 
 const buildDuplicateQuery = (eventId, body) => {
   const orConditions = [
@@ -82,11 +90,18 @@ export const createRegistration = async (req, res) => {
       registrationStatus,
     } = req.body;
 
-    const { errors, isLegacy } = validateRegistrationPayload(req.body);
+    let eventConfig = null;
+    let usesEventConfig = false;
 
-    if (!isLegacy) {
-      if (errors.length > 0) {
-        return res.status(400).json({ message: errors[0], errors });
+    if (
+      eventId &&
+      eventId !== "community" &&
+      mongoose.Types.ObjectId.isValid(eventId)
+    ) {
+      const eventDoc = await Event.findById(eventId).lean();
+      if (eventDoc) {
+        eventConfig = resolveRegistrationConfig(eventDoc);
+        usesEventConfig = !eventConfig.isLegacy;
       }
     }
 
@@ -94,53 +109,94 @@ export const createRegistration = async (req, res) => {
       $or: [{ email: email?.toLowerCase() }, { phone: phone }],
     });
 
-    if (isLegacy) {
-      if (eventId !== "community") {
-        const hasUploadedLicense = req.files && req.files.licenseImage;
-        const hasExistingLicense = existingUser && existingUser.licenseImage;
-        if (!hasUploadedLicense && !hasExistingLicense) {
-          return res
-            .status(400)
-            .json({ message: "Driving license image is mandatory" });
+    if (usesEventConfig) {
+      const configErrors = validateEventRegistrationPayload(
+        req.body,
+        eventConfig,
+        req.files,
+        existingUser,
+      );
+      if (configErrors.length > 0) {
+        return res.status(400).json({
+          message: configErrors[0],
+          errors: configErrors,
+        });
+      }
+    } else {
+      const { errors, isLegacy } = validateRegistrationPayload(req.body);
+
+      if (!isLegacy) {
+        if (errors.length > 0) {
+          return res.status(400).json({ message: errors[0], errors });
         }
       }
 
-      if (eventId !== "community") {
-        const hasUploadedProfile = req.files && req.files.profileImage;
-        const hasExistingProfile = existingUser && existingUser.profileImage;
-        if (!hasUploadedProfile && !hasExistingProfile) {
-          return res
-            .status(400)
-            .json({ message: "Profile picture is mandatory" });
+      if (isLegacy) {
+        if (eventId !== "community") {
+          const hasUploadedLicense = req.files && req.files.licenseImage;
+          const hasExistingLicense = existingUser && existingUser.licenseImage;
+          if (!hasUploadedLicense && !hasExistingLicense) {
+            return res
+              .status(400)
+              .json({ message: "Driving license image is mandatory" });
+          }
         }
-      }
 
-      if (eventId !== "community" && dateOfBirth) {
-        const dob = new Date(dateOfBirth);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const monthDiff = today.getMonth() - dob.getMonth();
-        if (
-          monthDiff < 0 ||
-          (monthDiff === 0 && today.getDate() < dob.getDate())
-        ) {
-          age--;
+        if (eventId !== "community") {
+          const hasUploadedProfile = req.files && req.files.profileImage;
+          const hasExistingProfile = existingUser && existingUser.profileImage;
+          if (!hasUploadedProfile && !hasExistingProfile) {
+            return res
+              .status(400)
+              .json({ message: "Profile picture is mandatory" });
+          }
         }
-        if (age < 18) {
-          return res
-            .status(400)
-            .json({ message: "You must be at least 18 years old to register" });
+
+        if (eventId !== "community" && dateOfBirth) {
+          const dob = new Date(dateOfBirth);
+          const today = new Date();
+          let age = today.getFullYear() - dob.getFullYear();
+          const monthDiff = today.getMonth() - dob.getMonth();
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < dob.getDate())
+          ) {
+            age--;
+          }
+          if (age < 18) {
+            return res
+              .status(400)
+              .json({ message: "You must be at least 18 years old to register" });
+          }
         }
       }
     }
 
-    if (phone && !/^\d{10}$/.test(phone)) {
+    const { isLegacy } = validateRegistrationPayload(req.body);
+
+    if (
+      !usesEventConfig &&
+      phone &&
+      !/^\d{10}$/.test(phone)
+    ) {
       return res
         .status(400)
         .json({ message: "Phone number must be exactly 10 digits" });
     }
 
     if (
+      usesEventConfig &&
+      isFieldEnabled(eventConfig, "mobile") &&
+      phone &&
+      !/^\d{10}$/.test(phone)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Phone number must be exactly 10 digits" });
+    }
+
+    if (
+      !usesEventConfig &&
       emergencyContactPhone &&
       !/^\d{10}$/.test(emergencyContactPhone)
     ) {
@@ -149,9 +205,13 @@ export const createRegistration = async (req, res) => {
       });
     }
 
-    const duplicate = await Registration.findOne(
-      buildDuplicateQuery(eventId, req.body),
-    );
+    const duplicateQuery = usesEventConfig
+      ? buildConfiguredDuplicateQuery(eventId, req.body, eventConfig)
+      : buildDuplicateQuery(eventId, req.body);
+
+    const duplicate = duplicateQuery
+      ? await Registration.findOne(duplicateQuery)
+      : null;
 
     if (duplicate) {
       let field = "Details";
@@ -173,9 +233,6 @@ export const createRegistration = async (req, res) => {
 
     const registrationData = {
       eventId,
-      fullName,
-      email: email?.toLowerCase(),
-      phone,
       registrationType: registrationType || "",
       clubName: clubName || "",
       clubNameCustom: clubNameCustom || "",
@@ -198,7 +255,71 @@ export const createRegistration = async (req, res) => {
       profileImagePublicId: "",
     };
 
-    if (isLegacy && eventId !== "community") {
+    if (usesEventConfig) {
+      applyConfiguredFieldsToRegistration(
+        registrationData,
+        req.body,
+        eventConfig,
+        req.files,
+        existingUser,
+      );
+
+      registrationData.facebookUrl = facebookUrl || "";
+      registrationData.instagramUrl = instagramUrl || "";
+      registrationData.twitterUrl = twitterUrl || "";
+      registrationData.youtubeUrl = youtubeUrl || "";
+      registrationData.websiteUrl = websiteUrl || "";
+      registrationData.acceptedTerms =
+        acceptedTerms === true || acceptedTerms === "true";
+      registrationData.requestRidingGears = false;
+      registrationData.requestedGears = {};
+
+      if (registrationType === "rider") {
+        registrationData.hasLinkedPillion =
+          hasLinkedPillion === true || hasLinkedPillion === "true";
+        if (registrationData.hasLinkedPillion) {
+          registrationData.linkedPillion = {
+            name: linkedPillionName || "",
+            mobile: linkedPillionMobile || "",
+            tShirtSize: linkedPillionTShirtSize || "",
+          };
+        }
+      }
+
+      if (registrationType === "pillion") {
+        registrationData.riderReference = {
+          riderRegistrationId: riderRegistrationId || "",
+          riderPhone: riderPhone || "",
+          riderName: "",
+        };
+
+        let mappedRider = null;
+        if (riderRegistrationId && mongoose.Types.ObjectId.isValid(riderRegistrationId)) {
+          mappedRider = await Registration.findById(riderRegistrationId)
+            .select("fullName phone registrationType");
+        }
+        if (!mappedRider && riderPhone) {
+          mappedRider = await Registration.findOne({
+            phone: riderPhone,
+            registrationType: "rider",
+          }).select("fullName phone registrationType");
+        }
+        if (!mappedRider || mappedRider.registrationType !== "rider") {
+          return res.status(400).json({
+            message:
+              "Unable to map pillion to rider. Check rider phone or registration ID.",
+          });
+        }
+        registrationData.riderReference = {
+          riderRegistrationId: String(mappedRider._id),
+          riderPhone: mappedRider.phone || riderPhone || "",
+          riderName: mappedRider.fullName || "",
+        };
+      }
+    } else if (isLegacy && eventId !== "community") {
+      registrationData.fullName = fullName;
+      registrationData.email = email?.toLowerCase();
+      registrationData.phone = phone;
       registrationData.dateOfBirth = dateOfBirth;
       registrationData.bloodGroup = bloodGroup;
       registrationData.address = address;
@@ -251,7 +372,10 @@ export const createRegistration = async (req, res) => {
         registrationData.requestRidingGears = false;
         registrationData.requestedGears = {};
       }
-    } else if (!isLegacy) {
+    } else if (!isLegacy && !usesEventConfig) {
+      registrationData.fullName = fullName;
+      registrationData.email = email?.toLowerCase();
+      registrationData.phone = phone;
       registrationData.dateOfBirth = dateOfBirth || undefined;
       registrationData.bloodGroup = bloodGroup || "";
       registrationData.address = address || "";
@@ -340,11 +464,29 @@ export const createRegistration = async (req, res) => {
       }
     }
 
-    if (gender) registrationData.gender = gender;
-    if (bikeBrand) registrationData.bikeBrand = bikeBrand;
-    if (aadhaarNumber) registrationData.aadhaarNumber = aadhaarNumber;
-    if (allergies) registrationData.allergies = allergies;
-    if (insurance) registrationData.insurance = insurance;
+    if (usesEventConfig) {
+      if (isFieldEnabled(eventConfig, "gender") && gender) {
+        registrationData.gender = gender;
+      }
+      if (isFieldEnabled(eventConfig, "bikeBrand") && bikeBrand) {
+        registrationData.bikeBrand = bikeBrand;
+      }
+      if (isFieldEnabled(eventConfig, "aadhaar") && aadhaarNumber) {
+        registrationData.aadhaarNumber = aadhaarNumber;
+      }
+      if (isFieldEnabled(eventConfig, "allergies") && allergies) {
+        registrationData.allergies = allergies;
+      }
+      if (isFieldEnabled(eventConfig, "insurance") && insurance) {
+        registrationData.insurance = insurance;
+      }
+    } else {
+      if (gender) registrationData.gender = gender;
+      if (bikeBrand) registrationData.bikeBrand = bikeBrand;
+      if (aadhaarNumber) registrationData.aadhaarNumber = aadhaarNumber;
+      if (allergies) registrationData.allergies = allergies;
+      if (insurance) registrationData.insurance = insurance;
+    }
     if (registrationStatus) registrationData.registrationStatus = registrationStatus;
     if (customAnswers) {
       try {

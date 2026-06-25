@@ -8,18 +8,21 @@ const registrationSchema = new mongoose.Schema({
   },
   fullName: {
     type: String,
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: "",
   },
   email: {
     type: String,
-    required: true,
+    required: false,
     trim: true,
-    lowercase: true
+    lowercase: true,
+    default: "",
   },
   phone: {
     type: String,
-    required: true
+    required: false,
+    default: "",
   },
   registrationType: {
     type: String,
@@ -161,9 +164,9 @@ const registrationSchema = new mongoose.Schema({
   customAnswers: { type: mongoose.Schema.Types.Mixed, default: null },
 }, { timestamps: true });
 
-// Event-scoped uniqueness indexes
-registrationSchema.index({ eventId: 1, email: 1 }, { unique: true });
-registrationSchema.index({ eventId: 1, phone: 1 }, { unique: true });
+// Event-scoped uniqueness indexes (sparse — only index when field is present)
+registrationSchema.index({ eventId: 1, email: 1 }, { unique: true, sparse: true });
+registrationSchema.index({ eventId: 1, phone: 1 }, { unique: true, sparse: true });
 registrationSchema.index(
   { eventId: 1, bikeRegistrationNumber: 1 },
   { unique: true, sparse: true }
