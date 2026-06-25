@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  eventService,
-  registrationService,
-  profileService,
-} from "../../services/api";
-import { toast } from "react-toastify";
+import { eventService } from "../../services/api";
+import { getRemainingSeats } from "../../constants/eventRegistrationConfig";
 
 const PublicHome = () => {
   const navigate = useNavigate();
@@ -14,9 +10,6 @@ const PublicHome = () => {
   const [pastEvents, setPastEvents] = useState([]);
   const [pastLimit, setPastLimit] = useState(6);
   const [loading, setLoading] = useState(false);
-  const [registrationLoading, setRegistrationLoading] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
     loadEvents();
@@ -58,41 +51,8 @@ const PublicHome = () => {
     }
   };
 
-  const handleRegisterClick = async (event) => {
-    const isLoggedIn = sessionStorage.getItem("userLoggedIn") === "true";
-    if (!isLoggedIn) {
-      toast.info("Please Sign Up / Login first to register for events");
-      navigate("/signup");
-      return;
-    }
-    setSelectedEvent(event);
-    setShowConfirmModal(true);
-  };
-
-  const confirmRegistration = async () => {
-    setRegistrationLoading(true);
-    try {
-      const userEmail = sessionStorage.getItem("userEmail");
-      const userPhone = sessionStorage.getItem("userPhone");
-      const profile = await profileService.get(userEmail, userPhone);
-
-      const data = new FormData();
-      Object.keys(profile).forEach((key) => {
-        if (!["_id", "__v", "createdAt", "updatedAt", "profileImage"].includes(key)) {
-          data.append(key, profile[key]);
-        }
-      });
-      data.append("eventId", selectedEvent._id);
-
-      await registrationService.create(data);
-      toast.success(`Registered for ${selectedEvent.title}!`);
-      setShowConfirmModal(false);
-      loadEvents();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Registration failed");
-    } finally {
-      setRegistrationLoading(false);
-    }
+  const handleRegisterClick = (event) => {
+    navigate(`/event-register/${event._id}`);
   };
 
   const displayedEvents = activeTab === "upcoming" ? upcomingEvents : pastEvents.slice(0, pastLimit);
@@ -128,7 +88,9 @@ const PublicHome = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-            {displayedEvents.map((event) => (
+            {displayedEvents.map((event) => {
+              const remaining = getRemainingSeats(event);
+              return (
               <div key={event._id} className="group relative border border-white/5 bg-carbon-light overflow-hidden">
                 <div className="relative aspect-[16/9] overflow-hidden">
                   <img src={event.banner} alt={event.title} className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105" />
@@ -140,7 +102,14 @@ const PublicHome = () => {
                 <div className="p-8">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="font-heading text-2xl uppercase group-hover:text-copper transition-colors">{event.title}</h3>
-                    <span className="text-steel-dim font-body text-[10px] uppercase tracking-tighter whitespace-nowrap">{event.registrationCount || 0} RIDERS</span>
+                    <div className="text-right">
+                      <span className="text-steel-dim font-body text-[10px] uppercase tracking-tighter whitespace-nowrap block">{event.registrationCount || 0} RIDERS</span>
+                      {remaining != null && activeTab === "upcoming" && (
+                        <span className="text-copper font-body text-[10px] uppercase tracking-tighter whitespace-nowrap block mt-1">
+                          {remaining} SEATS LEFT
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <p className="font-text text-steel-dim text-sm mb-8 line-clamp-2">{event.description}</p>
@@ -165,41 +134,14 @@ const PublicHome = () => {
                       : "border-white/10 text-white hover:bg-white hover:text-carbon"
                     }`}
                   >
-                    {activeTab === "past" ? "COMPLETED" : "RESERVE SLOT"}
+                    {activeTab === "past" ? "COMPLETED" : "REGISTER"}
                   </button>
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         )}
       </div>
-
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-carbon/95 backdrop-blur-xl">
-           <div className="max-w-md w-full bg-carbon-light border border-white/10 p-10">
-              <h3 className="font-heading text-3xl uppercase mb-4">Confirm Slot</h3>
-              <p className="font-text text-steel-dim mb-10">
-                You are about to register for <span className="text-white">{selectedEvent?.title}</span>. Your club profile data will be shared with the road captain for safety logs.
-              </p>
-              <div className="flex gap-4">
-                 <button 
-                    onClick={() => setShowConfirmModal(false)}
-                    className="flex-1 py-4 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-white/5"
-                 >
-                    Cancel
-                 </button>
-                 <button 
-                    onClick={confirmRegistration}
-                    disabled={registrationLoading}
-                    className="flex-1 py-4 bg-copper text-carbon font-heading text-lg uppercase hover:bg-white transition-all duration-500"
-                 >
-                    {registrationLoading ? "..." : "Confirm"}
-                 </button>
-              </div>
-           </div>
-        </div>
-      )}
     </section>
   );
 };

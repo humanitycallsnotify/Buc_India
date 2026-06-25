@@ -20,6 +20,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@studio-freight/lenis": "^1.0.42",
     "axios": "^1.6.2",
+    "buc-india-root": "file:..",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^12.8.0",

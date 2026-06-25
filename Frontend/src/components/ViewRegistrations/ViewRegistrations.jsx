@@ -26,6 +26,9 @@ const ViewRegistrations = () => {
   const [filterEventName, setFilterEventName] = useState("");
   const [filterEventDate, setFilterEventDate] = useState("");
   const [filterClubName, setFilterClubName] = useState("");
+  const [filterCity, setFilterCity] = useState("");
+  const [filterState, setFilterState] = useState("");
+  const [filterSearch, setFilterSearch] = useState("");
   const [filterRegistrationType, setFilterRegistrationType] = useState("");
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportType, setExportType] = useState(null); // 'excel', 'pdf', or 'docx'
@@ -135,8 +138,25 @@ const ViewRegistrations = () => {
       );
     }
 
+    if (filterCity.trim()) {
+      const s = filterCity.trim().toLowerCase();
+      filtered = filtered.filter((reg) => (reg.city || "").toLowerCase().includes(s));
+    }
+    if (filterState.trim()) {
+      const s = filterState.trim().toLowerCase();
+      filtered = filtered.filter((reg) => (reg.state || "").toLowerCase().includes(s));
+    }
+    if (filterSearch.trim()) {
+      const s = filterSearch.trim().toLowerCase();
+      filtered = filtered.filter((reg) =>
+        (reg.fullName || "").toLowerCase().includes(s) ||
+        (reg.phone || "").includes(s) ||
+        (reg.email || "").toLowerCase().includes(s),
+      );
+    }
+
     setFilteredRegistrations(filtered);
-  }, [registrations, filterEventName, filterEventDate, filterClubName, filterRegistrationType, events, getEventName]);
+  }, [registrations, filterEventName, filterEventDate, filterClubName, filterCity, filterState, filterSearch, filterRegistrationType, events, getEventName]);
 
   useEffect(() => {
     filterRegistrations();
@@ -159,6 +179,13 @@ const ViewRegistrations = () => {
     linkedPillion: "Linked Pillion Details",
     riderReference: "Mapped Rider",
     registeredAt: "Registered At",
+    gender: "Gender",
+    bikeBrand: "Bike Brand",
+    aadhaarNumber: "Aadhaar",
+    allergies: "Allergies",
+    insurance: "Insurance",
+    registrationStatus: "Status",
+    customAnswers: "Custom Answers",
   };
 
   const getAvailableFields = () => {
@@ -701,6 +728,27 @@ const ViewRegistrations = () => {
             onChange={(e) => setFilterClubName(e.target.value)}
             className="filter-input"
           />
+          <input
+            type="text"
+            placeholder="Filter by city..."
+            value={filterCity}
+            onChange={(e) => setFilterCity(e.target.value)}
+            className="filter-input"
+          />
+          <input
+            type="text"
+            placeholder="Filter by state..."
+            value={filterState}
+            onChange={(e) => setFilterState(e.target.value)}
+            className="filter-input"
+          />
+          <input
+            type="text"
+            placeholder="Search name, phone, email..."
+            value={filterSearch}
+            onChange={(e) => setFilterSearch(e.target.value)}
+            className="filter-input"
+          />
           <select
             value={filterRegistrationType}
             onChange={(e) => setFilterRegistrationType(e.target.value)}
@@ -713,15 +761,21 @@ const ViewRegistrations = () => {
               </option>
             ))}
           </select>
-          {(filterEventName ||
+  (filterEventName ||
             filterEventDate ||
             filterClubName ||
+            filterCity ||
+            filterState ||
+            filterSearch ||
             filterRegistrationType) && (
             <button
               onClick={() => {
                 setFilterEventName("");
                 setFilterEventDate("");
                 setFilterClubName("");
+                setFilterCity("");
+                setFilterState("");
+                setFilterSearch("");
                 setFilterRegistrationType("");
               }}
               className="clear-filters-button"

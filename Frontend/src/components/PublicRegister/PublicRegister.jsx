@@ -1,8 +1,22 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { eventService, registrationService, profileService } from "../../services/api";
+import { eventService, registrationService, profileService, otpService } from "../../services/api";
 import { TERMS_SUMMARY } from "../../constants/registrationConstants";
+import {
+  resolveRegistrationConfig,
+  isFieldEnabled,
+  isFieldRequired,
+  computeAgeFromDob,
+  isRegistrationWindowOpen,
+  getRemainingSeats,
+} from "../../constants/eventRegistrationConfig";
+import CustomQuestionsSection from "./CustomQuestionsSection.jsx";
+import {
+  applyProfileToForm,
+  buildRegistrationErrors,
+  getDeclarationText,
+} from "./eventRegisterFormUtils.js";
 import {
   User,
   Mail,
@@ -37,6 +51,13 @@ const INITIAL_FORM = {
   licenseImage: null,
   profileImage: null,
   dateOfBirth: "",
+  gender: "",
+  bikeBrand: "",
+  ridingExperience: "",
+  clubName: "",
+  aadhaarNumber: "",
+  allergies: "",
+  insurance: "",
   bloodGroup: "",
   anyMedicalCondition: "",
   tShirtSize: "",
@@ -56,10 +77,11 @@ const INITIAL_FORM = {
   riderPhone: "",
   riderRegistrationId: "",
   acceptedTerms: false,
+  otp: "",
 };
 
 const PublicRegister = () => {
-  const { slug } = useParams();
+  const { eventId: routeEventId } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,8 +92,19 @@ const PublicRegister = () => {
   const [profileData, setProfileData] = useState(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [customAnswers, setCustomAnswers] = useState({});
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtpVerified, setEmailOtpVerified] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
-  const eventId = event ? event._id : (slug || "community");
+  const regConfig = useMemo(() => resolveRegistrationConfig(event), [event]);
+  const computedAge = useMemo(() => computeAgeFromDob(formData.dateOfBirth), [formData.dateOfBirth]);
+  const declarationText = useMemo(
+    () => getDeclarationText(regConfig.settings) || TERMS_SUMMARY,
+    [regConfig.settings],
+  );
+
+  const eventId = event ? event._id : (routeEventId || "community");
 
   const maxDate = useMemo(() => {
     const date = new Date();
@@ -80,38 +113,26 @@ const PublicRegister = () => {
   }, []);
 
   const loadEvent = useCallback(async () => {
-    const currentSlug = slug || "community";
-    if (currentSlug === "community") {
+    const lookupId = routeEventId || "community";
+    if (lookupId === "community") {
       setEvent({ title: "BUC India Registration", _id: "community" });
       setLoading(false);
       return;
     }
     try {
       const allEvents = await eventService.getAll();
-      
-      const slugify = (text) => text.toString().toLowerCase()
-        .replace(/\s+/g, '-')           // Replace spaces with -
-        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-        .replace(/^-+/, '')             // Trim - from start
-        .replace(/-+$/, '');            // Trim - from end
-
-      const found = allEvents.find((e) => slugify(e.title) === currentSlug || e._id === currentSlug);
-      if (found) {
-        setEvent(found);
-      } else {
-        const formattedTitle = currentSlug
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-        setEvent({ title: formattedTitle, _id: currentSlug });
-      }
+      const slugify = (text) =>
+        text.toString().toLowerCase().replace(/\s+/g, "-").replace(/[^\w\-]+/g, "")
+          .replace(/\-\-+/g, "-").replace(/^-+/, "").replace(/-+$/, "");
+      const found = allEvents.find((e) => e._id === lookupId || slugify(e.title) === lookupId);
+      if (found) setEvent(found);
+      else setEvent({ title: lookupId, _id: lookupId });
     } catch {
       setError("Failed to load event details");
     } finally {
       setLoading(false);
     }
-  }, [slug]);
+  }, [routeEventId]);
 
   useEffect(() => {
     const userLoggedIn = sessionStorage.getItem("userLoggedIn") === "true";
@@ -124,30 +145,14 @@ const PublicRegister = () => {
           const profile = await profileService.get(userEmail, userPhone);
           if (profile) {
             setProfileData(profile);
-            setFormData(prev => ({
-              ...prev,
-              fullName: profile.fullName || prev.fullName,
-              email: profile.email || prev.email,
-              phone: profile.phone || prev.phone,
-              address: profile.address || prev.address,
-              city: profile.city || prev.city,
-              state: profile.state || prev.state,
-              pincode: profile.pincode || prev.pincode,
-              dateOfBirth: profile.dateOfBirth ? new Date(profile.dateOfBirth).toISOString().split('T')[0] : prev.dateOfBirth,
-              bloodGroup: profile.bloodGroup || prev.bloodGroup,
-              bikeModel: profile.bikeModel || prev.bikeModel,
-              bikeRegistrationNumber: profile.bikeRegistrationNumber || prev.bikeRegistrationNumber,
-              licenseNumber: profile.licenseNumber || prev.licenseNumber,
-              emergencyContactName: profile.emergencyContactName || prev.emergencyContactName,
-              emergencyContactPhone: profile.emergencyContactPhone || prev.emergencyContactPhone,
-            }));
+            setFormData((prev) => applyProfileToForm(profile, prev));
           }
         } catch (err) {
           console.error("Error fetching profile:", err);
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
             email: userEmail || prev.email,
-            phone: userPhone || prev.phone
+            phone: userPhone || prev.phone,
           }));
         }
       }
@@ -155,7 +160,55 @@ const PublicRegister = () => {
 
     fetchProfile();
     loadEvent();
-  }, [slug, loadEvent]);
+  }, [routeEventId, loadEvent]);
+
+  const lookupUserProfile = async (email, phone) => {
+    if (!email && !phone) return;
+    try {
+      const profile = await profileService.get(email, phone);
+      if (profile) {
+        setProfileData(profile);
+        setFormData((prev) => applyProfileToForm(profile, prev));
+        toast.info("Profile loaded — you can edit before submitting.");
+      }
+    } catch (err) {
+      console.error("Profile lookup failed:", err);
+    }
+  };
+
+  const handleSendEmailOtp = async () => {
+    if (!formData.email) {
+      toast.error("Enter email first.");
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      await otpService.send(formData.email, "signup", formData.registrationType);
+      setEmailOtpSent(true);
+      toast.success("OTP sent to your email.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send OTP.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    if (!formData.otp) {
+      toast.error("Enter OTP.");
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      await otpService.verify(formData.email, formData.otp, "signup");
+      setEmailOtpVerified(true);
+      toast.success("Email verified.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Invalid OTP.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, files, type, checked } = e.target;
@@ -195,104 +248,32 @@ const PublicRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Base mandatory fields for all
-    const mandatoryFields = [
-      "fullName",
-      "email",
-      "phone",
-      "address",
-      "city",
-      "state",
-      "pincode",
-      "emergencyContactName",
-      "emergencyContactPhone",
-      "dateOfBirth",
-      "bloodGroup",
-      "anyMedicalCondition",
-    ];
+    const windowCheck = isRegistrationWindowOpen(regConfig.settings, event);
+    if (!windowCheck.open) {
+      setError(windowCheck.message);
+      toast.error(windowCheck.message);
+      return;
+    }
+    const remaining = getRemainingSeats(event);
+    if (remaining === 0) {
+      const msg = "This event is full.";
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
 
-    const errors = {};
-    mandatoryFields.forEach((field) => {
-      if (!formData[field] || formData[field].toString().trim() === "") {
-        errors[field] = "This field is mandatory";
-      }
+    const { errors, blocked } = buildRegistrationErrors({
+      formData,
+      regConfig,
+      profileData,
+      customAnswers,
+      emailOtpVerified,
     });
 
-    if (formData.registrationType === "rider") {
-      const riderMandatory = ["bikeModel", "bikeRegistrationNumber", "licenseNumber"];
-      riderMandatory.forEach((field) => {
-        if (!formData[field] || formData[field].toString().trim() === "") {
-          errors[field] = "This field is mandatory";
-        }
-      });
-
-      if (!formData.licenseImage && (!profileData || !profileData.licenseImage)) {
-        errors.licenseImage = "Driving License image is mandatory";
-      }
-
-      if (formData.hasLinkedPillion) {
-        if (!formData.linkedPillionName || formData.linkedPillionName.trim() === "") {
-          errors.linkedPillionName = "Pillion name is mandatory";
-        }
-        if (!formData.linkedPillionMobile || formData.linkedPillionMobile.trim() === "") {
-          errors.linkedPillionMobile = "Pillion mobile number is mandatory";
-        } else if (formData.linkedPillionMobile.length !== 10) {
-          errors.linkedPillionMobile = "Pillion mobile must be exactly 10 digits";
-        }
-        if (!formData.linkedPillionTShirtSize || formData.linkedPillionTShirtSize === "") {
-          errors.linkedPillionTShirtSize = "Pillion T-shirt size is mandatory";
-        }
-      }
-    }
-
-    if (formData.registrationType === "pillion") {
-      if (!formData.tShirtSize || formData.tShirtSize === "") {
-        errors.tShirtSize = "T-shirt size is mandatory";
-      }
-      if (!formData.riderPhone && !formData.riderRegistrationId) {
-        errors.riderPhone = "Please provide Rider Phone or Rider Registration ID";
-      }
-      if (formData.riderPhone && formData.riderPhone.length !== 10) {
-        errors.riderPhone = "Rider phone must be exactly 10 digits";
-      }
-    }
-
-    if (!formData.profileImage && (!profileData || !profileData.profileImage)) {
-      errors.profileImage = "Profile picture is mandatory";
-    }
-
-    if (!formData.acceptedTerms) {
-      errors.acceptedTerms = "You must accept the Terms and Conditions";
-    }
-
-    // Age validation (18+)
-    if (formData.dateOfBirth) {
-      const birthDate = new Date(formData.dateOfBirth);
-      const age = new Date().getFullYear() - birthDate.getFullYear();
-      if (age < 18) {
-        errors.dateOfBirth = "You must be at least 18 years old";
-      }
-    }
-
-    // Phone validation (exactly 10 digits)
-    if (formData.phone && formData.phone.length !== 10) {
-      errors.phone = "Phone number must be exactly 10 digits";
-    }
-
-    if (
-      formData.emergencyContactPhone &&
-      formData.emergencyContactPhone.length !== 10
-    ) {
-      errors.emergencyContactPhone = "Phone number must be exactly 10 digits";
-    }
-
-    if (
-      formData.phone &&
-      formData.emergencyContactPhone &&
-      formData.phone === formData.emergencyContactPhone
-    ) {
-      errors.emergencyContactPhone =
-        "Phone number and emergency contact number must be different";
+    if (blocked) {
+      setError(blocked);
+      toast.error(blocked);
+      return;
     }
 
     if (Object.keys(errors).length > 0) {
@@ -300,9 +281,7 @@ const PublicRegister = () => {
       setError("Please fill all mandatory fields");
       const firstErrorField = Object.keys(errors)[0];
       const element = document.getElementsByName(firstErrorField)[0] || document.querySelector(`[name="${firstErrorField}"]`);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
+      if (element) element.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -327,6 +306,17 @@ const PublicRegister = () => {
       }
     });
     data.append("eventId", eventId);
+    if (Object.keys(customAnswers).length) {
+      data.append("customAnswers", JSON.stringify(customAnswers));
+    }
+    if (formData.gender) data.append("gender", formData.gender);
+    if (formData.bikeBrand) data.append("bikeBrand", formData.bikeBrand);
+    if (formData.aadhaarNumber) data.append("aadhaarNumber", formData.aadhaarNumber);
+    if (formData.allergies) data.append("allergies", formData.allergies);
+    if (formData.insurance) data.append("insurance", formData.insurance);
+    if (remaining === 1 && regConfig.settings.waitingListEnabled) {
+      data.append("registrationStatus", "waiting");
+    }
 
     try {
       await registrationService.create(data);
@@ -359,7 +349,7 @@ const PublicRegister = () => {
       <div className="register-container">
         <button
           className="back-btn-float"
-          onClick={() => navigate("/register/june-21-event")}
+          onClick={() => navigate("/events")}
           title="Back to home"
         >
           <X size={24} />
@@ -503,6 +493,7 @@ const PublicRegister = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
+                    onBlur={() => lookupUserProfile(formData.email, formData.phone)}
                     placeholder="your.email@example.com"
                     className={fieldErrors.email ? "input-error" : ""}
                   />
@@ -525,6 +516,7 @@ const PublicRegister = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
+                      onBlur={() => formData.phone?.length === 10 && lookupUserProfile(formData.email, formData.phone)}
                       placeholder="9876543210"
                       className={fieldErrors.phone ? "input-error" : ""}
                       maxLength="10"
@@ -972,7 +964,40 @@ const PublicRegister = () => {
               </div>
             </div>
 
+            <CustomQuestionsSection
+              questions={regConfig.customQuestions}
+              answers={customAnswers}
+              onChange={setCustomAnswers}
+              fieldErrors={fieldErrors}
+            />
+
+            {regConfig.settings.verifyEmailOtp && (
+              <div className="form-section">
+                <h3>Email Verification</h3>
+                <div className="form-group">
+                  <label>Email OTP *</label>
+                  <input
+                    type="text"
+                    name="otp"
+                    value={formData.otp}
+                    onChange={handleInputChange}
+                    placeholder="6-digit OTP"
+                    maxLength="6"
+                  />
+                </div>
+                <div className="form-actions mt-4">
+                  <button type="button" className="btn-secondary" onClick={handleSendEmailOtp} disabled={otpLoading || emailOtpVerified}>
+                    {emailOtpSent ? "Resend OTP" : "Send OTP"}
+                  </button>
+                  <button type="button" className="btn-primary" onClick={handleVerifyEmailOtp} disabled={otpLoading || emailOtpVerified}>
+                    {emailOtpVerified ? "Verified" : "Verify OTP"}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* 7. Declaration & Legal Agreement */}
+            {(regConfig.settings.requireDeclaration !== false) && (
             <div className="form-section">
               <h3>Declaration & Legal Agreement</h3>
               <div className="reg-terms-check-container">
@@ -1004,12 +1029,13 @@ const PublicRegister = () => {
                 )}
               </div>
             </div>
+            )}
 
             {/* Form Actions */}
             <div className="form-actions mt-8">
               <button
                 type="button"
-                onClick={() => navigate(`/register/${slug || "june-21-event"}`)}
+                onClick={() => navigate("/events")}
                 className="btn-secondary"
                 disabled={submitting}
               >
@@ -1038,7 +1064,7 @@ const PublicRegister = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <h4 className="text-2xl font-bold text-white mb-6 uppercase tracking-wider border-b border-white/10 pb-4">Terms & Conditions</h4>
-            <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{TERMS_SUMMARY}</p>
+            <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{declarationText}</p>
             <button
               type="button"
               className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors uppercase tracking-wider"
@@ -1068,7 +1094,7 @@ const PublicRegister = () => {
             <button
               onClick={() => {
                 setShowSuccessOverlay(false);
-                navigate(`/register/${slug || "june-21-event"}`);
+                navigate("/events");
               }}
               className="w-full bg-white text-black py-4 rounded-xl font-bold text-lg hover:bg-gray-200 transition-all shadow-xl"
             >

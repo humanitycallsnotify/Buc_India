@@ -20,6 +20,10 @@ import {
   ChevronUp,
   Image as ImageIcon
 } from "lucide-react";
+import EventRegistrationConfigPanel, {
+  createDefaultRegistrationFields,
+  createDefaultRegistrationSettings,
+} from "./EventRegistrationConfigPanel.jsx";
 
 const EventManagement = () => {
   const [events, setEvents] = useState([]);
@@ -41,6 +45,9 @@ const EventManagement = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [registrationFields, setRegistrationFields] = useState(createDefaultRegistrationFields());
+  const [registrationSettings, setRegistrationSettings] = useState(createDefaultRegistrationSettings());
+  const [customQuestions, setCustomQuestions] = useState([]);
 
   useEffect(() => { loadEvents(); }, []);
   useEffect(() => { filterEventsFn(); }, [events, filterName, filterDate, activeTab]);
@@ -113,6 +120,9 @@ const EventManagement = () => {
     if (!editingEvent && !bannerFile) { toast.error("Deployment banner is mandatory"); return; }
     const data = new FormData();
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
+    data.append("registrationFields", JSON.stringify(registrationFields));
+    data.append("registrationSettings", JSON.stringify(registrationSettings));
+    data.append("customQuestions", JSON.stringify(customQuestions));
     if (bannerFile) data.append('banner', bannerFile);
     setSubmitLoading(true);
     try {
@@ -131,6 +141,9 @@ const EventManagement = () => {
 
   const resetForm = () => {
     setFormData({ title: "", description: "", eventDate: "", eventTime: "", location: "", meetingPoint: "", isActive: true, showOnHomepage: false, certificateEnabled: false });
+    setRegistrationFields(createDefaultRegistrationFields());
+    setRegistrationSettings(createDefaultRegistrationSettings());
+    setCustomQuestions([]);
     setBannerFile(null); setBannerPreview(null); setEditingEvent(null); setShowForm(false);
   };
 
@@ -145,6 +158,15 @@ const EventManagement = () => {
       showOnHomepage: event.showOnHomepage !== undefined ? event.showOnHomepage : false,
       certificateEnabled: event.certificateEnabled !== undefined ? event.certificateEnabled : false,
     });
+    setRegistrationFields({
+      ...createDefaultRegistrationFields(),
+      ...(event.registrationFields || {}),
+    });
+    setRegistrationSettings({
+      ...createDefaultRegistrationSettings(),
+      ...(event.registrationSettings || {}),
+    });
+    setCustomQuestions(Array.isArray(event.customQuestions) ? event.customQuestions : []);
     setBannerPreview(event.banner);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -277,6 +299,15 @@ const EventManagement = () => {
                         </div>
                      </label>
                   </div>
+
+                  <EventRegistrationConfigPanel
+                    registrationFields={registrationFields}
+                    setRegistrationFields={setRegistrationFields}
+                    registrationSettings={registrationSettings}
+                    setRegistrationSettings={setRegistrationSettings}
+                    customQuestions={customQuestions}
+                    setCustomQuestions={setCustomQuestions}
+                  />
                 </div>
 
                 <div className="flex gap-4 border-t border-white/5 pt-8">

@@ -151,7 +151,14 @@ const registrationSchema = new mongoose.Schema({
   registeredAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  gender: { type: String, trim: true, default: '' },
+  bikeBrand: { type: String, trim: true, default: '' },
+  aadhaarNumber: { type: String, trim: true, default: '' },
+  allergies: { type: String, trim: true, default: '' },
+  insurance: { type: String, trim: true, default: '' },
+  registrationStatus: { type: String, trim: true, default: 'confirmed' },
+  customAnswers: { type: mongoose.Schema.Types.Mixed, default: null },
 }, { timestamps: true });
 
 // Event-scoped uniqueness indexes

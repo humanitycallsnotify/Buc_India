@@ -48,6 +48,18 @@ const eventSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    registrationFields: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    registrationSettings: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    customQuestions: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
   },
   { timestamps: true },
 );

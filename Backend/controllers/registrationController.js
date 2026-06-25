@@ -73,6 +73,13 @@ export const createRegistration = async (req, res) => {
       tShirtSize,
       requestRidingGears,
       requestedGears,
+      gender,
+      bikeBrand,
+      aadhaarNumber,
+      allergies,
+      insurance,
+      customAnswers,
+      registrationStatus,
     } = req.body;
 
     const { errors, isLegacy } = validateRegistrationPayload(req.body);
@@ -330,6 +337,21 @@ export const createRegistration = async (req, res) => {
           registrationData.profileImagePublicId =
             existingUser.profileImagePublicId;
         }
+      }
+    }
+
+    if (gender) registrationData.gender = gender;
+    if (bikeBrand) registrationData.bikeBrand = bikeBrand;
+    if (aadhaarNumber) registrationData.aadhaarNumber = aadhaarNumber;
+    if (allergies) registrationData.allergies = allergies;
+    if (insurance) registrationData.insurance = insurance;
+    if (registrationStatus) registrationData.registrationStatus = registrationStatus;
+    if (customAnswers) {
+      try {
+        registrationData.customAnswers =
+          typeof customAnswers === "string" ? JSON.parse(customAnswers) : customAnswers;
+      } catch {
+        registrationData.customAnswers = { raw: customAnswers };
       }
     }
 

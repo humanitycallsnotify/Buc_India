@@ -38,6 +38,7 @@ const YourEvents = lazy(() => import("./components/YourEvents.jsx"));
 const LoginForm = lazy(() => import("./components/LoginForm.jsx"));
 const SignUpForm = lazy(() => import("./components/SignUpForm.jsx"));
 const MainRegistration = lazy(() => import("./components/MainRegistration.jsx"));
+const PublicRegister = lazy(() => import("./components/PublicRegister/PublicRegister.jsx"));
 const AdminLogin = lazy(() => import("./components/AdminLogin/AdminLogin.jsx"));
 const AdminDashboard = lazy(
   () => import("./components/AdminDashboardNav/AdminDashboardNav.jsx"),
@@ -110,6 +111,9 @@ function App() {
                     </AdminProtectedRoute>
                   }
                 />
+
+                {/* Event registration (standalone layout) */}
+                <Route path="/event-register/:eventId" element={<PublicRegister />} />
 
                 {/* Registration portal (standalone layout) */}
                 <Route path="/register" element={<MainRegistration />} />

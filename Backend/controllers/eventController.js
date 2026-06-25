@@ -1,6 +1,11 @@
 import Event from '../models/Event.js';
 import Registration from '../models/Registration.js';
 import { cloudinary } from '../middleware/cloudinaryConfig.js';
+import {
+  parseRegistrationFields,
+  parseRegistrationSettings,
+  parseCustomQuestions,
+} from '../utils/eventRegistrationConfig.js';
 
 export const getEvents = async (req, res) => {
   try {
@@ -49,7 +54,14 @@ export const createEvent = async (req, res) => {
       isActive,
       showOnHomepage,
       certificateEnabled,
+      registrationFields,
+      registrationSettings,
+      customQuestions,
     } = req.body;
+
+    const parsedRegistrationFields = parseRegistrationFields(registrationFields);
+    const parsedRegistrationSettings = parseRegistrationSettings(registrationSettings);
+    const parsedCustomQuestions = parseCustomQuestions(customQuestions);
     
     if (!req.file) {
       return res.status(400).json({ message: 'Event banner is mandatory' });
@@ -78,6 +90,9 @@ export const createEvent = async (req, res) => {
           : !!certificateEnabled,
       banner: req.file.path,
       bannerPublicId: req.file.filename,
+      ...(parsedRegistrationFields ? { registrationFields: parsedRegistrationFields } : {}),
+      ...(parsedRegistrationSettings ? { registrationSettings: parsedRegistrationSettings } : {}),
+      ...(parsedCustomQuestions ? { customQuestions: parsedCustomQuestions } : {}),
     });
 
     const newEvent = await event.save();
@@ -121,6 +136,16 @@ export const updateEvent = async (req, res) => {
       }
       updateData.banner = req.file.path;
       updateData.bannerPublicId = req.file.filename;
+    }
+
+    if (updateData.registrationFields !== undefined) {
+      updateData.registrationFields = parseRegistrationFields(updateData.registrationFields);
+    }
+    if (updateData.registrationSettings !== undefined) {
+      updateData.registrationSettings = parseRegistrationSettings(updateData.registrationSettings);
+    }
+    if (updateData.customQuestions !== undefined) {
+      updateData.customQuestions = parseCustomQuestions(updateData.customQuestions);
     }
 
     const updatedEvent = await Event.findByIdAndUpdate(id, updateData, {
