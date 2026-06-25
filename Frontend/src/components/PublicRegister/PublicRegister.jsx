@@ -27,6 +27,7 @@ import {
   Bike,
   Droplets,
   CheckCircle2,
+  CheckCircle,
   X,
   Loader2,
   MapPin,
@@ -36,6 +37,10 @@ import {
   Zap,
 } from "lucide-react";
 import "./PublicRegister.css";
+
+const EVENT_OTP_TYPE = "event_registration";
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const isValidEmail = (email) => EMAIL_REGEX.test(String(email || "").trim());
 
 const RegField = ({ fieldKey, regConfig, children, className = "form-group" }) =>
   isFieldEnabled(regConfig, fieldKey) ? <div className={className}>{children}</div> : null;
@@ -139,6 +144,7 @@ const PublicRegister = () => {
   const [customAnswers, setCustomAnswers] = useState({});
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtpVerified, setEmailOtpVerified] = useState(false);
+  const [verifiedEmail, setVerifiedEmail] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
@@ -233,14 +239,21 @@ const PublicRegister = () => {
     }
   };
 
+  const showEmailOtp = regConfig.settings.verifyEmailOtp && (regConfig.isLegacy || isFieldEnabled(regConfig, "email"));
+  const canSendEmailOtp =
+    showEmailOtp &&
+    !emailOtpVerified &&
+    isValidEmail(formData.email) &&
+    !otpLoading;
+
   const handleSendEmailOtp = async () => {
-    if (!formData.email) {
-      toast.error("Enter email first.");
+    if (!formData.email || !isValidEmail(formData.email)) {
+      toast.error("Enter a valid email address first.");
       return;
     }
     setOtpLoading(true);
     try {
-      await otpService.send(formData.email, "signup", formData.registrationType);
+      await otpService.send(formData.email, EVENT_OTP_TYPE);
       setEmailOtpSent(true);
       toast.success("OTP sent to your email.");
     } catch (err) {
@@ -257,8 +270,9 @@ const PublicRegister = () => {
     }
     setOtpLoading(true);
     try {
-      await otpService.verify(formData.email, formData.otp, "signup");
+      await otpService.verify(formData.email, formData.otp, EVENT_OTP_TYPE);
       setEmailOtpVerified(true);
+      setVerifiedEmail(formData.email.trim().toLowerCase());
       toast.success("Email verified.");
     } catch (err) {
       toast.error(err.response?.data?.message || "Invalid OTP.");
@@ -275,6 +289,20 @@ const PublicRegister = () => {
       setFormData((prev) => ({ ...prev, profileImage: files[0] }));
     } else if (type === "checkbox") {
       setFormData((prev) => ({ ...prev, [name]: checked }));
+    } else if (name === "email") {
+      const shouldResetOtp =
+        emailOtpVerified &&
+        value.trim().toLowerCase() !== verifiedEmail.trim().toLowerCase();
+      if (shouldResetOtp) {
+        setEmailOtpVerified(false);
+        setEmailOtpSent(false);
+        setVerifiedEmail("");
+      }
+      setFormData((prev) => ({
+        ...prev,
+        email: value,
+        ...(shouldResetOtp ? { otp: "" } : {}),
+      }));
     } else if (
       name === "phone" ||
       name === "emergencyContactPhone" ||
@@ -551,19 +579,70 @@ const PublicRegister = () => {
                 
                 <RegField fieldKey="email" regConfig={regConfig}>
                   <label>{fieldLabel(regConfig, "email", "Email")}</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    onBlur={() => {
-                      if (formData.email?.includes("@") || formData.phone?.length === 10) {
-                        lookupUserProfile(formData.email, formData.phone);
-                      }
-                    }}
-                    placeholder="your.email@example.com"
-                    className={fieldErrors.email ? "input-error" : ""}
-                  />
+                  <div className="email-otp-row">
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      onBlur={() => {
+                        if (formData.email?.includes("@") || formData.phone?.length === 10) {
+                          lookupUserProfile(formData.email, formData.phone);
+                        }
+                      }}
+                      placeholder="your.email@example.com"
+                      className={fieldErrors.email ? "input-error" : ""}
+                      disabled={showEmailOtp && emailOtpVerified}
+                      readOnly={showEmailOtp && emailOtpVerified}
+                    />
+                    {showEmailOtp && !emailOtpVerified && !emailOtpSent && canSendEmailOtp && (
+                      <button
+                        type="button"
+                        className="email-otp-btn"
+                        onClick={handleSendEmailOtp}
+                        disabled={otpLoading}
+                      >
+                        {otpLoading ? "..." : "Send OTP"}
+                      </button>
+                    )}
+                  </div>
+                  {showEmailOtp && emailOtpVerified && (
+                    <p className="email-verified-badge">
+                      <CheckCircle size={14} /> Email Verified
+                    </p>
+                  )}
+                  {showEmailOtp && emailOtpSent && !emailOtpVerified && (
+                    <div className="email-otp-verify-block">
+                      <label className="email-otp-verify-label">OTP</label>
+                      <div className="email-otp-row">
+                        <input
+                          type="text"
+                          name="otp"
+                          value={formData.otp}
+                          onChange={handleInputChange}
+                          placeholder="6-digit OTP"
+                          maxLength="6"
+                          className="email-otp-input"
+                        />
+                        <button
+                          type="button"
+                          className="email-otp-btn email-otp-btn-primary"
+                          onClick={handleVerifyEmailOtp}
+                          disabled={otpLoading || formData.otp?.length !== 6}
+                        >
+                          {otpLoading ? "..." : "Verify OTP"}
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className="email-otp-resend"
+                        onClick={handleSendEmailOtp}
+                        disabled={otpLoading}
+                      >
+                        Resend OTP
+                      </button>
+                    </div>
+                  )}
                   {fieldErrors.email && (
                     <span className="field-error">{fieldErrors.email}</span>
                   )}
@@ -1180,31 +1259,6 @@ const PublicRegister = () => {
               onChange={setCustomAnswers}
               fieldErrors={fieldErrors}
             />
-
-            {regConfig.settings.verifyEmailOtp && (
-              <div className="form-section">
-                <h3>Email Verification</h3>
-                <div className="form-group">
-                  <label>Email OTP *</label>
-                  <input
-                    type="text"
-                    name="otp"
-                    value={formData.otp}
-                    onChange={handleInputChange}
-                    placeholder="6-digit OTP"
-                    maxLength="6"
-                  />
-                </div>
-                <div className="form-actions mt-4">
-                  <button type="button" className="btn-secondary" onClick={handleSendEmailOtp} disabled={otpLoading || emailOtpVerified}>
-                    {emailOtpSent ? "Resend OTP" : "Send OTP"}
-                  </button>
-                  <button type="button" className="btn-primary" onClick={handleVerifyEmailOtp} disabled={otpLoading || emailOtpVerified}>
-                    {emailOtpVerified ? "Verified" : "Verify OTP"}
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* 7. Declaration & Legal Agreement */}
             {(regConfig.settings.requireDeclaration !== false) && (

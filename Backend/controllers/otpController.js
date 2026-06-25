@@ -10,11 +10,11 @@ export const requestOTP = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    if (!["signup", "forgot_password", "talent_signup", "club_signup"].includes(type)) {
+    if (!["signup", "forgot_password", "talent_signup", "club_signup", "event_registration"].includes(type)) {
       return res.status(400).json({ message: "Invalid OTP type" });
     }
 
-    // For signup, check if email exists
+    // For signup, check if email exists (not used for event registration)
     if (type === "signup") {
       const existingUser = await User.findOne({ email: email.toLowerCase() });
       if (existingUser) {

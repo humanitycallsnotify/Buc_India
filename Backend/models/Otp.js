@@ -14,7 +14,7 @@ const otpSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["signup", "forgot_password", "talent_signup", "club_signup"],
+      enum: ["signup", "forgot_password", "talent_signup", "club_signup", "event_registration"],
       required: true,
     },
     expiresAt: {

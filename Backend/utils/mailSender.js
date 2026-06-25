@@ -6,12 +6,18 @@ import { fileURLToPath } from "url";
 const client = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
 
 export const sendOTP = async (email, otp, type) => {
-  const subject =
-    type === "signup"
-      ? "Verify your BUC India Account"
-      : "Reset your BUC India Password";
-  const actionText =
-    type === "signup" ? "signing up" : "resetting your password";
+  const subjectByType = {
+    signup: "Verify your BUC India Account",
+    forgot_password: "Reset your BUC India Password",
+    event_registration: "Verify your Email — BUC India Event Registration",
+  };
+  const subject = subjectByType[type] || "Verify your BUC India Account";
+  const actionByType = {
+    signup: "signing up",
+    forgot_password: "resetting your password",
+    event_registration: "registering for a BUC India event",
+  };
+  const actionText = actionByType[type] || "signing up";
 
   const logoUrl = "https://res.cloudinary.com/dhdxoawdk/image/upload/v1779437906/qszeyqwcg2qa9vfmpzjh.jpg";
 
