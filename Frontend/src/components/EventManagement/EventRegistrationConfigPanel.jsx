@@ -21,7 +21,7 @@ import {
 import {
   REGISTRATION_FIELD_SECTIONS,
   QUESTION_TYPES,
-  createDefaultRegistrationFields,
+  createEmptyRegistrationFields,
   createDefaultRegistrationSettings,
   createQuestionId,
 } from "../../constants/eventRegistrationConfig";
@@ -155,17 +155,17 @@ const EventRegistrationConfigPanel = ({
                       >
                         <p className="font-body text-xs text-white font-bold mb-3">{label}</p>
                         <label className="flex items-center gap-2 cursor-pointer text-steel-dim text-[10px] uppercase tracking-wider mb-2">
-                          <input
-                            type="checkbox"
-                            checked={registrationFields[key]?.enabled !== false}
-                            onChange={() => toggleField(key, "enabled")}
-                            className="w-4 h-4 accent-amber-500"
-                          />
+                                <input
+                                  type="checkbox"
+                                  checked={registrationFields[key]?.enabled === true}
+                                  onChange={() => toggleField(key, "enabled")}
+                                  className="w-4 h-4 accent-amber-500"
+                                />
                           Enabled
                         </label>
                         <label
                           className={`flex items-center gap-2 cursor-pointer text-[10px] uppercase tracking-wider ${
-                            registrationFields[key]?.enabled === false
+                            registrationFields[key]?.enabled !== true
                               ? "opacity-40 pointer-events-none"
                               : "text-steel-dim"
                           }`}
@@ -174,7 +174,7 @@ const EventRegistrationConfigPanel = ({
                             type="checkbox"
                             checked={registrationFields[key]?.required === true}
                             onChange={() => toggleField(key, "required")}
-                            disabled={registrationFields[key]?.enabled === false}
+                            disabled={registrationFields[key]?.enabled !== true}
                             className="w-4 h-4 accent-amber-500"
                           />
                           Required
@@ -396,6 +396,6 @@ const EventRegistrationConfigPanel = ({
 export default EventRegistrationConfigPanel;
 
 export {
-  createDefaultRegistrationFields,
+  createEmptyRegistrationFields as createDefaultRegistrationFields,
   createDefaultRegistrationSettings,
 };

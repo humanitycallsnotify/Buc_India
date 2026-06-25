@@ -18,14 +18,18 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Eye,
 } from "lucide-react";
 import EventRegistrationConfigPanel, {
   createDefaultRegistrationFields,
   createDefaultRegistrationSettings,
 } from "./EventRegistrationConfigPanel.jsx";
+import EventShareModal from "../EventShare/EventShareModal.jsx";
+import { useNavigate } from "react-router-dom";
 
 const EventManagement = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
@@ -48,6 +52,7 @@ const EventManagement = () => {
   const [registrationFields, setRegistrationFields] = useState(createDefaultRegistrationFields());
   const [registrationSettings, setRegistrationSettings] = useState(createDefaultRegistrationSettings());
   const [customQuestions, setCustomQuestions] = useState([]);
+  const [shareEvent, setShareEvent] = useState(null);
 
   useEffect(() => { loadEvents(); }, []);
   useEffect(() => { filterEventsFn(); }, [events, filterName, filterDate, activeTab]);
@@ -55,11 +60,23 @@ const EventManagement = () => {
   const loadEvents = async () => {
     setLoading(true);
     try {
-      const [eventsData, registrationsData] = await Promise.all([
-        eventService.getAll(), registrationService.getAll()
-      ]);
-      setEvents(eventsData || []);
-      setRegistrations(registrationsData || []);
+      const eventsResult = await eventService.getAll().then(
+        (v) => ({ ok: true, data: Array.isArray(v) ? v : [] }),
+        (err) => ({ ok: false, err }),
+      );
+      if (eventsResult.ok) {
+        setEvents(eventsResult.data);
+      } else {
+        setEvents([]);
+        toast.error("Failed to load events");
+      }
+
+      try {
+        const registrationsData = await registrationService.getAll();
+        setRegistrations(Array.isArray(registrationsData) ? registrationsData : []);
+      } catch {
+        setRegistrations([]);
+      }
     } catch (error) {
       toast.error("Failed to load operational data");
     } finally {
@@ -73,11 +90,16 @@ const EventManagement = () => {
     ).length;
   };
 
-  const handleShare = (eventId) => {
-    const registrationLink = `${window.location.origin}/event-register/${eventId}`;
-    navigator.clipboard.writeText(registrationLink).then(() => {
-      toast.success("Deployment link copied to clipboard");
-    }).catch(() => { toast.error("Failed to copy link"); });
+  const handleShare = (event) => {
+    setShareEvent(event);
+  };
+
+  const handleViewRegistrations = (eventId) => {
+    navigate(`/admin/registrations?eventId=${eventId}`);
+  };
+
+  const handlePreview = (eventId) => {
+    window.open(`/event-register/${eventId}`, "_blank", "noopener,noreferrer");
   };
 
   const filterEventsFn = () => {
@@ -393,11 +415,9 @@ const EventManagement = () => {
                <div className="relative h-48 overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-1000">
                   <img src={event.banner} alt={event.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000" />
                   <div className="absolute top-4 right-4 flex gap-2">
-                     {activeTab === 'upcoming' && (
-                       <button onClick={() => handleShare(event._id)} className="p-2 bg-carbon/80 text-white hover:bg-copper hover:text-carbon transition-colors rounded-sm" title="Share link">
+                     <button onClick={() => handleShare(event)} className="p-2 bg-carbon/80 text-white hover:bg-copper hover:text-carbon transition-colors rounded-sm" title="Share">
                           <Share2 size={14} />
                        </button>
-                     )}
                      <span className={`px-2 py-1 font-body text-[8px] uppercase font-bold tracking-widest ${event.isActive ? 'bg-green-500 text-white' : 'bg-red-500/80 text-white'}`}>
                         {event.isActive ? "Active" : "Internal"}
                      </span>
@@ -435,17 +455,21 @@ const EventManagement = () => {
                   </div>
                </div>
 
-               <div className="p-4 bg-carbon/50 mt-auto flex items-center justify-between border-t border-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="flex gap-2">
-                    <button onClick={() => handleEdit(event)} className="p-3 text-steel-dim hover:text-white hover:bg-white/5 transition-all">
-                       <Edit3 size={16} />
-                    </button>
-                    <button onClick={() => handleDelete(event._id)} className="p-3 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all">
-                       <Trash2 size={16} />
-                    </button>
-                  </div>
-                  <button onClick={() => handleShare(event._id)} className="font-body text-[8px] uppercase tracking-widest font-bold text-steel-dim hover:text-copper transition-colors">
-                     Open Manifest →
+               <div className="p-4 bg-carbon/50 mt-auto flex flex-wrap items-center gap-1 border-t border-white/5">
+                  <button onClick={() => handleEdit(event)} className="p-2.5 text-steel-dim hover:text-white hover:bg-white/5 transition-all rounded-sm" title="Edit">
+                     <Edit3 size={16} />
+                  </button>
+                  <button onClick={() => handlePreview(event._id)} className="p-2.5 text-steel-dim hover:text-copper hover:bg-white/5 transition-all rounded-sm" title="View registration page">
+                     <Eye size={16} />
+                  </button>
+                  <button onClick={() => handleViewRegistrations(event._id)} className="p-2.5 text-steel-dim hover:text-copper hover:bg-white/5 transition-all rounded-sm" title="View registrations">
+                     <Users size={16} />
+                  </button>
+                  <button onClick={() => handleShare(event)} className="p-2.5 text-steel-dim hover:text-copper hover:bg-white/5 transition-all rounded-sm" title="Share">
+                     <Share2 size={16} />
+                  </button>
+                  <button onClick={() => handleDelete(event._id)} className="p-2.5 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all rounded-sm ml-auto" title="Delete">
+                     <Trash2 size={16} />
                   </button>
                </div>
             </div>
@@ -495,6 +519,12 @@ const EventManagement = () => {
                </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {shareEvent && (
+          <EventShareModal event={shareEvent} onClose={() => setShareEvent(null)} />
         )}
       </AnimatePresence>
     </div>

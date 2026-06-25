@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { Download, Trash2, X, AlertTriangle, RefreshCw } from "lucide-react";
 import { eventService, registrationService } from "../../services/api";
 import {
@@ -18,9 +18,11 @@ import "./ViewRegistrations.css";
 
 const ViewRegistrations = () => {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const eventIdFromUrl = searchParams.get("eventId");
   const [registrations, setRegistrations] = useState([]);
   const [filteredRegistrations, setFilteredRegistrations] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState("current");
+  const [selectedEvent, setSelectedEvent] = useState(eventIdFromUrl || "current");
   const [events, setEvents] = useState([]);
   const [viewingLicense, setViewingLicense] = useState(null);
   const [filterEventName, setFilterEventName] = useState("");
@@ -38,6 +40,21 @@ const ViewRegistrations = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [qrData, setQrData] = useState(null);
+
+  useEffect(() => {
+    if (eventIdFromUrl) {
+      setSelectedEvent(eventIdFromUrl);
+    } else if (location.state?.selectedEventId) {
+      setSelectedEvent(location.state.selectedEventId);
+    }
+  }, [eventIdFromUrl, location.state?.selectedEventId]);
+
+  useEffect(() => {
+    if (selectedEvent && selectedEvent !== "current" && selectedEvent !== "all") {
+      const match = events.find((e) => e._id === selectedEvent);
+      if (match?.title) setFilterEventName(match.title);
+    }
+  }, [selectedEvent, events]);
 
   const loadData = useCallback(async () => {
     try {

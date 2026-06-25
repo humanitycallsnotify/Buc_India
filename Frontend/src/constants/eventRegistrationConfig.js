@@ -86,6 +86,19 @@ export const DEFAULT_REGISTRATION_FIELDS = {
   insurance: { enabled: false, required: false },
 };
 
+/** Admin create form — all fields start unchecked/disabled */
+export const createEmptyRegistrationFields = () => {
+  const empty = {};
+  Object.keys(DEFAULT_REGISTRATION_FIELDS).forEach((key) => {
+    empty[key] = { enabled: false, required: false };
+  });
+  return empty;
+};
+
+/** Legacy events without saved config — full previous form behavior */
+export const createLegacyRegistrationFields = () =>
+  JSON.parse(JSON.stringify(DEFAULT_REGISTRATION_FIELDS));
+
 export const DEFAULT_REGISTRATION_SETTINGS = {
   verifyEmailOtp: false,
   verifyMobileOtp: false,
@@ -141,23 +154,25 @@ export const FIELD_TO_FORM = {
 };
 
 export const createDefaultRegistrationFields = () =>
-  JSON.parse(JSON.stringify(DEFAULT_REGISTRATION_FIELDS));
+  createEmptyRegistrationFields();
 
 export const createDefaultRegistrationSettings = () =>
   JSON.parse(JSON.stringify(DEFAULT_REGISTRATION_SETTINGS));
 
-export const hasCustomRegistrationConfig = (event) =>
-  event?.registrationFields != null &&
-  typeof event.registrationFields === "object" &&
-  Object.keys(event.registrationFields).length > 0;
+export const hasCustomRegistrationConfig = (event) => {
+  if (!event?.registrationFields || typeof event.registrationFields !== "object") {
+    return false;
+  }
+  return Object.values(event.registrationFields).some((f) => f?.enabled === true);
+};
 
 export const resolveRegistrationConfig = (event) => {
   const isLegacy = !hasCustomRegistrationConfig(event);
   return {
     isLegacy,
     fields: isLegacy
-      ? createDefaultRegistrationFields()
-      : { ...createDefaultRegistrationFields(), ...event.registrationFields },
+      ? createLegacyRegistrationFields()
+      : { ...createEmptyRegistrationFields(), ...event.registrationFields },
     settings: {
       ...createDefaultRegistrationSettings(),
       ...(event?.registrationSettings || {}),
@@ -168,7 +183,7 @@ export const resolveRegistrationConfig = (event) => {
 
 export const isFieldEnabled = (config, key) => {
   if (config.isLegacy) return true;
-  return config.fields[key]?.enabled !== false;
+  return config.fields[key]?.enabled === true;
 };
 
 export const isFieldRequired = (config, key) => {
@@ -199,16 +214,32 @@ export const getRemainingSeats = (event) => {
 
 export const isRegistrationWindowOpen = (settings, event) => {
   const now = new Date();
-  if (settings.registrationOpenDate) {
-    const open = new Date(settings.registrationOpenDate);
-    if (now < open) return { open: false, message: "Registration has not opened yet." };
+  const openStr = settings?.registrationOpenDate;
+  const closeStr = settings?.registrationCloseDate;
+
+  if (openStr && String(openStr).trim()) {
+    const part = String(openStr).split("T")[0];
+    const [y, m, d] = part.split("-").map(Number);
+    if (y && m && d) {
+      const open = new Date(y, m - 1, d, 0, 0, 0, 0);
+      if (now < open) {
+        return { open: false, message: "Registration has not opened yet." };
+      }
+    }
   }
-  if (settings.registrationCloseDate) {
-    const close = new Date(settings.registrationCloseDate);
-    close.setHours(23, 59, 59, 999);
-    if (now > close) return { open: false, message: "Registration is closed for this event." };
+
+  if (closeStr && String(closeStr).trim()) {
+    const part = String(closeStr).split("T")[0];
+    const [y, m, d] = part.split("-").map(Number);
+    if (y && m && d) {
+      const close = new Date(y, m - 1, d, 23, 59, 59, 999);
+      if (now > close) {
+        return { open: false, message: "Registration is closed for this event." };
+      }
+    }
   }
-  if (settings.autoCloseWhenFull !== false && event) {
+
+  if (settings?.autoCloseWhenFull !== false && event) {
     const remaining = getRemainingSeats(event);
     if (remaining === 0) {
       return { open: false, message: "This event is full." };

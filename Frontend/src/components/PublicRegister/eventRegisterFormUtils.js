@@ -4,32 +4,38 @@ import {
   getDeclarationText,
 } from "../../constants/eventRegistrationConfig";
 
+const pickProfileValue = (prevVal, profileVal) => {
+  if (prevVal != null && String(prevVal).trim() !== "") return prevVal;
+  return profileVal ?? prevVal;
+};
+
 export const applyProfileToForm = (profile, prev) => ({
   ...prev,
-  fullName: profile.fullName || prev.fullName,
-  email: profile.email || prev.email,
-  phone: profile.phone || prev.phone,
-  address: profile.address || prev.address,
-  city: profile.city || prev.city,
-  state: profile.state || prev.state,
-  pincode: profile.pincode || prev.pincode,
-  dateOfBirth: profile.dateOfBirth
-    ? new Date(profile.dateOfBirth).toISOString().split("T")[0]
-    : prev.dateOfBirth,
-  gender: profile.gender || prev.gender,
-  bloodGroup: profile.bloodGroup || prev.bloodGroup,
-  bikeBrand: profile.bikeBrand || prev.bikeBrand,
-  bikeModel: profile.bikeModel || prev.bikeModel,
-  bikeRegistrationNumber: profile.bikeRegistrationNumber || prev.bikeRegistrationNumber,
-  licenseNumber: profile.licenseNumber || prev.licenseNumber,
-  ridingExperience: profile.ridingExperience || prev.ridingExperience,
-  clubName: profile.clubName || prev.clubName,
-  emergencyContactName: profile.emergencyContactName || prev.emergencyContactName,
-  emergencyContactPhone: profile.emergencyContactPhone || prev.emergencyContactPhone,
-  anyMedicalCondition: profile.anyMedicalCondition || prev.anyMedicalCondition,
-  allergies: profile.allergies || prev.allergies,
-  insurance: profile.insurance || prev.insurance,
-  aadhaarNumber: profile.aadhaarNumber || prev.aadhaarNumber,
+  fullName: pickProfileValue(prev.fullName, profile.fullName),
+  email: pickProfileValue(prev.email, profile.email),
+  phone: pickProfileValue(prev.phone, profile.phone),
+  address: pickProfileValue(prev.address, profile.address),
+  city: pickProfileValue(prev.city, profile.city),
+  state: pickProfileValue(prev.state, profile.state),
+  pincode: pickProfileValue(prev.pincode, profile.pincode),
+  dateOfBirth: pickProfileValue(
+    prev.dateOfBirth,
+    profile.dateOfBirth ? new Date(profile.dateOfBirth).toISOString().split("T")[0] : "",
+  ),
+  gender: pickProfileValue(prev.gender, profile.gender),
+  bloodGroup: pickProfileValue(prev.bloodGroup, profile.bloodGroup),
+  bikeBrand: pickProfileValue(prev.bikeBrand, profile.bikeBrand),
+  bikeModel: pickProfileValue(prev.bikeModel, profile.bikeModel),
+  bikeRegistrationNumber: pickProfileValue(prev.bikeRegistrationNumber, profile.bikeRegistrationNumber),
+  licenseNumber: pickProfileValue(prev.licenseNumber, profile.licenseNumber),
+  ridingExperience: pickProfileValue(prev.ridingExperience, profile.ridingExperience),
+  clubName: pickProfileValue(prev.clubName, profile.clubName),
+  emergencyContactName: pickProfileValue(prev.emergencyContactName, profile.emergencyContactName),
+  emergencyContactPhone: pickProfileValue(prev.emergencyContactPhone, profile.emergencyContactPhone),
+  anyMedicalCondition: pickProfileValue(prev.anyMedicalCondition, profile.anyMedicalCondition),
+  allergies: pickProfileValue(prev.allergies, profile.allergies),
+  insurance: pickProfileValue(prev.insurance, profile.insurance),
+  aadhaarNumber: pickProfileValue(prev.aadhaarNumber, profile.aadhaarNumber),
 });
 
 export const buildRegistrationErrors = ({
@@ -67,24 +73,36 @@ export const buildRegistrationErrors = ({
     requireField("bloodGroup", "bloodGroup");
     requireField("anyMedicalCondition", "medicalConditions");
     requireField("gender", "gender");
-    requireField("bikeBrand", "bikeBrand");
-    requireField("ridingExperience", "ridingExperience");
-    requireField("clubName", "ridingClub");
-    requireField("aadhaarNumber", "aadhaar");
     requireField("allergies", "allergies");
     requireField("insurance", "insurance");
     if (show("emergencyContact") && require("emergencyContact")) {
       requireField("emergencyContactName");
       requireField("emergencyContactPhone");
     }
-    requireField("address");
-    requireField("pincode");
   }
 
   if (formData.registrationType === "rider") {
-    requireField("bikeModel", regConfig.isLegacy ? null : "bikeModel");
-    requireField("bikeRegistrationNumber", regConfig.isLegacy ? null : "bikeRegistrationNumber");
-    requireField("licenseNumber", regConfig.isLegacy ? null : "drivingLicence");
+    if (regConfig.isLegacy || show("bikeModel")) {
+      requireField("bikeModel", regConfig.isLegacy ? null : "bikeModel");
+    }
+    if (regConfig.isLegacy || show("bikeRegistrationNumber")) {
+      requireField("bikeRegistrationNumber", regConfig.isLegacy ? null : "bikeRegistrationNumber");
+    }
+    if (regConfig.isLegacy || show("drivingLicence")) {
+      requireField("licenseNumber", regConfig.isLegacy ? null : "drivingLicence");
+    }
+    if (regConfig.isLegacy || show("bikeBrand")) {
+      requireField("bikeBrand", regConfig.isLegacy ? null : "bikeBrand");
+    }
+    if (regConfig.isLegacy || show("ridingExperience")) {
+      requireField("ridingExperience", regConfig.isLegacy ? null : "ridingExperience");
+    }
+    if (regConfig.isLegacy || show("ridingClub")) {
+      requireField("clubName", regConfig.isLegacy ? null : "ridingClub");
+    }
+    if (regConfig.isLegacy || show("aadhaar")) {
+      requireField("aadhaarNumber", regConfig.isLegacy ? null : "aadhaar");
+    }
 
     if (show("licenceUpload") && require("licenceUpload")) {
       if (!formData.licenseImage && !profileData?.licenseImage) {
@@ -136,16 +154,27 @@ export const buildRegistrationErrors = ({
     }
   });
 
-  if (formData.dateOfBirth) {
+  if ((regConfig.isLegacy || show("dob")) && formData.dateOfBirth) {
     const birthDate = new Date(formData.dateOfBirth);
     const age = new Date().getFullYear() - birthDate.getFullYear();
     if (age < 18) errors.dateOfBirth = "You must be at least 18 years old";
   }
-  if (formData.phone && formData.phone.length !== 10) errors.phone = "Phone number must be exactly 10 digits";
-  if (formData.emergencyContactPhone && formData.emergencyContactPhone.length !== 10) {
+  if ((regConfig.isLegacy || show("mobile")) && formData.phone && formData.phone.length !== 10) {
+    errors.phone = "Phone number must be exactly 10 digits";
+  }
+  if (
+    (regConfig.isLegacy || show("emergencyContact")) &&
+    formData.emergencyContactPhone &&
+    formData.emergencyContactPhone.length !== 10
+  ) {
     errors.emergencyContactPhone = "Phone number must be exactly 10 digits";
   }
-  if (formData.phone && formData.emergencyContactPhone && formData.phone === formData.emergencyContactPhone) {
+  if (
+    (regConfig.isLegacy || show("emergencyContact")) &&
+    formData.phone &&
+    formData.emergencyContactPhone &&
+    formData.phone === formData.emergencyContactPhone
+  ) {
     errors.emergencyContactPhone = "Phone number and emergency contact number must be different";
   }
 

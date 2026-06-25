@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { Share2 } from "lucide-react";
 import { eventService } from "../../services/api";
 import { getRemainingSeats } from "../../constants/eventRegistrationConfig";
+import { getRegistrationStatusLabel } from "../../utils/eventShareUtils";
+import EventShareModal from "../EventShare/EventShareModal.jsx";
 
 const PublicHome = () => {
   const navigate = useNavigate();
@@ -10,6 +14,7 @@ const PublicHome = () => {
   const [pastEvents, setPastEvents] = useState([]);
   const [pastLimit, setPastLimit] = useState(6);
   const [loading, setLoading] = useState(false);
+  const [shareEvent, setShareEvent] = useState(null);
 
   useEffect(() => {
     loadEvents();
@@ -57,6 +62,12 @@ const PublicHome = () => {
 
   const displayedEvents = activeTab === "upcoming" ? upcomingEvents : pastEvents.slice(0, pastLimit);
 
+  const statusClass = (status) => {
+    if (status === "Open") return "text-green-400";
+    if (status === "Opens Soon") return "text-copper";
+    return "text-steel-dim";
+  };
+
   return (
     <section className="section-container py-24 bg-carbon text-white">
       <div className="max-w-7xl mx-auto px-6">
@@ -90,34 +101,39 @@ const PublicHome = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
             {displayedEvents.map((event) => {
               const remaining = getRemainingSeats(event);
+              const regStatus = getRegistrationStatusLabel(event);
               return (
-              <div key={event._id} className="group relative border border-white/5 bg-carbon-light overflow-hidden">
-                <div className="relative aspect-[16/9] overflow-hidden">
-                  <img src={event.banner} alt={event.title} className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105" />
+              <div key={event._id} className="group relative border border-white/5 bg-carbon-light overflow-hidden flex flex-col">
+                <div className="relative aspect-[16/9] overflow-hidden bg-carbon flex items-center justify-center">
+                  <img src={event.banner} alt={event.title} className="w-full h-full object-contain transition-all duration-700 group-hover:scale-[1.02]" />
                   <div className="absolute top-4 left-4 bg-copper text-carbon px-3 py-1 font-heading text-xs uppercase">
                     {new Date(event.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </div>
+                  {activeTab === "upcoming" && (
+                    <div className={`absolute top-4 right-4 bg-carbon/90 border border-white/10 px-3 py-1 font-body text-[10px] uppercase tracking-widest ${statusClass(regStatus)}`}>
+                      {regStatus}
+                    </div>
+                  )}
                 </div>
                 
-                <div className="p-8">
-                  <div className="flex justify-between items-start mb-4">
+                <div className="p-8 flex-grow flex flex-col">
+                  <div className="flex justify-between items-start mb-4 gap-4">
                     <h3 className="font-heading text-2xl uppercase group-hover:text-copper transition-colors">{event.title}</h3>
-                    <div className="text-right">
-                      <span className="text-steel-dim font-body text-[10px] uppercase tracking-tighter whitespace-nowrap block">{event.registrationCount || 0} RIDERS</span>
+                    <div className="text-right shrink-0">
                       {remaining != null && activeTab === "upcoming" && (
-                        <span className="text-copper font-body text-[10px] uppercase tracking-tighter whitespace-nowrap block mt-1">
+                        <span className="text-copper font-body text-[10px] uppercase tracking-tighter whitespace-nowrap block">
                           {remaining} SEATS LEFT
                         </span>
                       )}
                     </div>
                   </div>
                   
-                  <p className="font-text text-steel-dim text-sm mb-8 line-clamp-2">{event.description}</p>
+                  <p className="font-text text-steel-dim text-sm mb-6 line-clamp-2">{event.description}</p>
                   
                   <div className="space-y-3 mb-8">
                      <div className="flex items-center gap-3 text-steel-dim">
                         <span className="w-1 h-1 bg-copper rounded-full"></span>
-                        <span className="font-body text-[10px] uppercase tracking-widest">{event.location}</span>
+                        <span className="font-body text-[10px] uppercase tracking-widest">{event.location || event.meetingPoint || "Venue TBA"}</span>
                      </div>
                      <div className="flex items-center gap-3 text-steel-dim">
                         <span className="w-1 h-1 bg-copper rounded-full"></span>
@@ -125,26 +141,41 @@ const PublicHome = () => {
                      </div>
                   </div>
 
-                  <button 
-                    disabled={activeTab === "past"}
-                    onClick={() => handleRegisterClick(event)}
-                    className={`w-full py-4 border font-body text-[10px] uppercase tracking-widest transition-all duration-500 ${
-                      activeTab === "past" 
-                      ? "border-white/5 text-white/20 cursor-not-allowed" 
-                      : "border-white/10 text-white hover:bg-white hover:text-carbon"
-                    }`}
-                  >
-                    {activeTab === "past" ? "COMPLETED" : "REGISTER"}
-                  </button>
+                  <div className="mt-auto flex gap-3">
+                    <button 
+                      disabled={activeTab === "past"}
+                      onClick={() => handleRegisterClick(event)}
+                      className={`flex-1 py-4 border font-body text-[10px] uppercase tracking-widest transition-all duration-500 ${
+                        activeTab === "past" 
+                        ? "border-white/5 text-white/20 cursor-not-allowed" 
+                        : "border-white/10 text-white hover:bg-copper hover:text-carbon hover:border-copper"
+                      }`}
+                    >
+                      {activeTab === "past" ? "COMPLETED" : "REGISTER"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShareEvent(event)}
+                      className="px-4 py-4 border border-white/10 text-steel-dim hover:text-copper hover:border-copper/50 transition-all"
+                      title="Share event"
+                    >
+                      <Share2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );})}
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {shareEvent && (
+          <EventShareModal event={shareEvent} onClose={() => setShareEvent(null)} />
+        )}
+      </AnimatePresence>
     </section>
   );
 };
 
 export default PublicHome;
-

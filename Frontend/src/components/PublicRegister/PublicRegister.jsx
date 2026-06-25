@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { AnimatePresence } from "framer-motion";
 import { eventService, registrationService, profileService, otpService } from "../../services/api";
 import { TERMS_SUMMARY } from "../../constants/registrationConstants";
 import {
@@ -10,8 +11,10 @@ import {
   computeAgeFromDob,
   isRegistrationWindowOpen,
   getRemainingSeats,
+  FIELD_TO_FORM,
 } from "../../constants/eventRegistrationConfig";
 import CustomQuestionsSection from "./CustomQuestionsSection.jsx";
+import EventShareModal from "../EventShare/EventShareModal.jsx";
 import {
   applyProfileToForm,
   buildRegistrationErrors,
@@ -33,6 +36,47 @@ import {
   Zap,
 } from "lucide-react";
 import "./PublicRegister.css";
+
+const RegField = ({ fieldKey, regConfig, children, className = "form-group" }) =>
+  isFieldEnabled(regConfig, fieldKey) ? <div className={className}>{children}</div> : null;
+
+const fieldLabel = (regConfig, fieldKey, text) =>
+  `${text}${isFieldRequired(regConfig, fieldKey) || regConfig.isLegacy ? " *" : ""}`;
+
+const sectionVisible = (regConfig, keys) =>
+  regConfig.isLegacy || keys.some((key) => isFieldEnabled(regConfig, key));
+
+const CONFIG_KEY_BY_FORM = Object.entries(FIELD_TO_FORM).reduce((acc, [configKey, formKey]) => {
+  acc[formKey] = configKey;
+  return acc;
+}, {});
+
+const shouldAppendField = (regConfig, formKey) => {
+  if (regConfig.isLegacy) return true;
+  if (formKey === "address" || formKey === "pincode") return false;
+  if (formKey === "emergencyContactName" || formKey === "emergencyContactPhone") {
+    return isFieldEnabled(regConfig, "emergencyContact");
+  }
+  const configKey = CONFIG_KEY_BY_FORM[formKey];
+  if (!configKey) {
+    const metaFields = new Set([
+      "registrationType",
+      "acceptedTerms",
+      "hasLinkedPillion",
+      "linkedPillionName",
+      "linkedPillionMobile",
+      "linkedPillionTShirtSize",
+      "riderPhone",
+      "riderRegistrationId",
+      "tShirtSize",
+      "requestRidingGears",
+      "requestedGears",
+      "otp",
+    ]);
+    return metaFields.has(formKey);
+  }
+  return isFieldEnabled(regConfig, configKey);
+};
 
 const INITIAL_FORM = {
   registrationType: "rider",
@@ -96,6 +140,7 @@ const PublicRegister = () => {
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtpVerified, setEmailOtpVerified] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const regConfig = useMemo(() => resolveRegistrationConfig(event), [event]);
   const computedAge = useMemo(() => computeAgeFromDob(formData.dateOfBirth), [formData.dateOfBirth]);
@@ -291,6 +336,9 @@ const PublicRegister = () => {
 
     const data = new FormData();
     Object.keys(formData).forEach((key) => {
+      if (!shouldAppendField(regConfig, key) && key !== "registrationType" && key !== "acceptedTerms") {
+        return;
+      }
       if (key === "licenseImage") {
         if (formData.licenseImage) data.append("licenseImage", formData.licenseImage);
       } else if (key === "profileImage") {
@@ -365,7 +413,7 @@ const PublicRegister = () => {
 
         <div className="register-header">
           <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
-            Event <span className="text-blue-500">Registration</span>
+            Event <span className="text-copper-accent">Registration</span>
           </h2>
           {event && (
             <p className="mt-4 text-xl text-gray-400">
@@ -446,12 +494,16 @@ const PublicRegister = () => {
             </div>
             
             {/* 1. Personal Information */}
+            {sectionVisible(regConfig, [
+              "fullName", "dob", "age", "gender", "mobile", "email",
+              "city", "state", "bloodGroup", "idUpload",
+            ]) && (
             <div className="form-section">
               <h3>Personal Information</h3>
               
               <div className="form-row">
-                <div className="form-group">
-                  <label>Profile Picture *</label>
+                <RegField fieldKey="idUpload" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "idUpload", "Profile Picture")}</label>
                   <input
                     type="file"
                     name="profileImage"
@@ -467,12 +519,12 @@ const PublicRegister = () => {
                   {fieldErrors.profileImage && (
                     <span className="field-error">{fieldErrors.profileImage}</span>
                   )}
-                </div>
+                </RegField>
               </div>
 
               <div className="form-row">
-                <div className="form-group">
-                  <label>Full Name *</label>
+                <RegField fieldKey="fullName" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "fullName", "Full Name")}</label>
                   <input
                     type="text"
                     name="fullName"
@@ -484,29 +536,33 @@ const PublicRegister = () => {
                   {fieldErrors.fullName && (
                     <span className="field-error">{fieldErrors.fullName}</span>
                   )}
-                </div>
+                </RegField>
                 
-                <div className="form-group">
-                  <label>Email *</label>
+                <RegField fieldKey="email" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "email", "Email")}</label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    onBlur={() => lookupUserProfile(formData.email, formData.phone)}
+                    onBlur={() => {
+                      if (formData.email?.includes("@") || formData.phone?.length === 10) {
+                        lookupUserProfile(formData.email, formData.phone);
+                      }
+                    }}
                     placeholder="your.email@example.com"
                     className={fieldErrors.email ? "input-error" : ""}
                   />
                   {fieldErrors.email && (
                     <span className="field-error">{fieldErrors.email}</span>
                   )}
-                </div>
+                </RegField>
               </div>
 
               <div className="form-row">
-                <div className="form-group">
+                <RegField fieldKey="mobile" regConfig={regConfig}>
                   <label>
-                    Phone Number *{" "}
+                    {fieldLabel(regConfig, "mobile", "Phone Number")}{" "}
                     <span className="label-hint">(10-digit Indian mobile)</span>
                   </label>
                   <div className="phone-input-wrapper">
@@ -516,7 +572,11 @@ const PublicRegister = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      onBlur={() => formData.phone?.length === 10 && lookupUserProfile(formData.email, formData.phone)}
+                      onBlur={() => {
+                        if (formData.phone?.length === 10 || formData.email?.includes("@")) {
+                          lookupUserProfile(formData.email, formData.phone);
+                        }
+                      }}
                       placeholder="9876543210"
                       className={fieldErrors.phone ? "input-error" : ""}
                       maxLength="10"
@@ -525,10 +585,10 @@ const PublicRegister = () => {
                   {fieldErrors.phone && (
                     <span className="field-error">{fieldErrors.phone}</span>
                   )}
-                </div>
+                </RegField>
 
-                <div className="form-group">
-                  <label>Date of Birth *</label>
+                <RegField fieldKey="dob" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "dob", "Date of Birth")}</label>
                   <input
                     type="date"
                     name="dateOfBirth"
@@ -540,12 +600,45 @@ const PublicRegister = () => {
                   {fieldErrors.dateOfBirth && (
                     <span className="field-error">{fieldErrors.dateOfBirth}</span>
                   )}
-                </div>
+                </RegField>
               </div>
 
               <div className="form-row">
-                <div className="form-group">
-                  <label>Blood Group *</label>
+                <RegField fieldKey="age" regConfig={regConfig}>
+                  <label>Age</label>
+                  <input
+                    type="text"
+                    name="age"
+                    value={computedAge ?? ""}
+                    readOnly
+                    placeholder="Calculated from DOB"
+                    className="opacity-80"
+                  />
+                </RegField>
+
+                <RegField fieldKey="gender" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "gender", "Gender")}</label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    className={fieldErrors.gender ? "input-error" : ""}
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
+                  {fieldErrors.gender && (
+                    <span className="field-error">{fieldErrors.gender}</span>
+                  )}
+                </RegField>
+              </div>
+
+              <div className="form-row">
+                <RegField fieldKey="bloodGroup" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "bloodGroup", "Blood Group")}</label>
                   <select
                     name="bloodGroup"
                     value={formData.bloodGroup}
@@ -565,10 +658,11 @@ const PublicRegister = () => {
                   {fieldErrors.bloodGroup && (
                     <span className="field-error">{fieldErrors.bloodGroup}</span>
                   )}
-                </div>
+                </RegField>
 
+                {formData.registrationType === "pillion" && (
                 <div className="form-group">
-                  <label>T-Shirt Size {formData.registrationType === "pillion" ? "*" : "(Optional)"}</label>
+                  <label>T-Shirt Size *</label>
                   <select
                     name="tShirtSize"
                     value={formData.tShirtSize}
@@ -587,10 +681,46 @@ const PublicRegister = () => {
                     <span className="field-error">{fieldErrors.tShirtSize}</span>
                   )}
                 </div>
+                )}
               </div>
-            </div>
 
-            {/* 2. Address */}
+              {(regConfig.isLegacy || isFieldEnabled(regConfig, "city") || isFieldEnabled(regConfig, "state")) && (
+              <div className="form-row">
+                <RegField fieldKey="city" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "city", "City")}</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    placeholder="City"
+                    className={fieldErrors.city ? "input-error" : ""}
+                  />
+                  {fieldErrors.city && (
+                    <span className="field-error">{fieldErrors.city}</span>
+                  )}
+                </RegField>
+                <RegField fieldKey="state" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "state", "State")}</label>
+                  <input
+                    type="text"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    placeholder="State"
+                    className={fieldErrors.state ? "input-error" : ""}
+                  />
+                  {fieldErrors.state && (
+                    <span className="field-error">{fieldErrors.state}</span>
+                  )}
+                </RegField>
+              </div>
+              )}
+            </div>
+            )}
+
+            {/* 2. Address (legacy events only) */}
+            {regConfig.isLegacy && (
             <div className="form-section">
               <h3>Address</h3>
               <div className="form-group">
@@ -609,34 +739,6 @@ const PublicRegister = () => {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>City *</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    placeholder="City"
-                    className={fieldErrors.city ? "input-error" : ""}
-                  />
-                  {fieldErrors.city && (
-                    <span className="field-error">{fieldErrors.city}</span>
-                  )}
-                </div>
-                <div className="form-group">
-                  <label>State *</label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    placeholder="State"
-                    className={fieldErrors.state ? "input-error" : ""}
-                  />
-                  {fieldErrors.state && (
-                    <span className="field-error">{fieldErrors.state}</span>
-                  )}
-                </div>
-                <div className="form-group">
                   <label>Pincode *</label>
                   <input
                     type="text"
@@ -652,13 +754,15 @@ const PublicRegister = () => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* 3. Emergency Contact */}
+            {sectionVisible(regConfig, ["emergencyContact"]) && (
             <div className="form-section">
               <h3>Emergency Contact</h3>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Emergency Contact Name *</label>
+                  <label>{fieldLabel(regConfig, "emergencyContact", "Emergency Contact Name")}</label>
                   <input
                     type="text"
                     name="emergencyContactName"
@@ -672,7 +776,7 @@ const PublicRegister = () => {
                   )}
                 </div>
                 <div className="form-group">
-                  <label>Emergency Contact Phone *</label>
+                  <label>{fieldLabel(regConfig, "emergencyContact", "Emergency Contact Phone")}</label>
                   <div className="phone-input-wrapper">
                     <span className="phone-prefix">+91</span>
                     <input
@@ -691,18 +795,34 @@ const PublicRegister = () => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Rider specific fields */}
-            {formData.registrationType === "rider" && (
+            {formData.registrationType === "rider" && sectionVisible(regConfig, [
+              "bikeBrand", "bikeModel", "bikeRegistrationNumber", "ridingExperience",
+              "ridingClub", "aadhaar", "drivingLicence", "licenceUpload",
+            ]) && (
               <>
                 {/* 4. Bike Information */}
                 <div className="form-section">
-                  <h3>
-                    Bike Information <span className="section-required">(All fields required)</span>
-                  </h3>
+                  <h3>Bike Information</h3>
                   <div className="form-row">
-                    <div className="form-group">
-                      <label>Bike Model *</label>
+                    <RegField fieldKey="bikeBrand" regConfig={regConfig}>
+                      <label>{fieldLabel(regConfig, "bikeBrand", "Bike Brand")}</label>
+                      <input
+                        type="text"
+                        name="bikeBrand"
+                        value={formData.bikeBrand}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Royal Enfield"
+                        className={fieldErrors.bikeBrand ? "input-error" : ""}
+                      />
+                      {fieldErrors.bikeBrand && (
+                        <span className="field-error">{fieldErrors.bikeBrand}</span>
+                      )}
+                    </RegField>
+                    <RegField fieldKey="bikeModel" regConfig={regConfig}>
+                      <label>{fieldLabel(regConfig, "bikeModel", "Bike Model")}</label>
                       <input
                         type="text"
                         name="bikeModel"
@@ -714,9 +834,11 @@ const PublicRegister = () => {
                       {fieldErrors.bikeModel && (
                         <span className="field-error">{fieldErrors.bikeModel}</span>
                       )}
-                    </div>
-                    <div className="form-group">
-                      <label>Bike Registration Number *</label>
+                    </RegField>
+                  </div>
+                  <div className="form-row">
+                    <RegField fieldKey="bikeRegistrationNumber" regConfig={regConfig}>
+                      <label>{fieldLabel(regConfig, "bikeRegistrationNumber", "Bike Registration Number")}</label>
                       <input
                         type="text"
                         name="bikeRegistrationNumber"
@@ -728,11 +850,55 @@ const PublicRegister = () => {
                       {fieldErrors.bikeRegistrationNumber && (
                         <span className="field-error">{fieldErrors.bikeRegistrationNumber}</span>
                       )}
-                    </div>
+                    </RegField>
+                    <RegField fieldKey="ridingExperience" regConfig={regConfig}>
+                      <label>{fieldLabel(regConfig, "ridingExperience", "Riding Experience")}</label>
+                      <input
+                        type="text"
+                        name="ridingExperience"
+                        value={formData.ridingExperience}
+                        onChange={handleInputChange}
+                        placeholder="Years / experience level"
+                        className={fieldErrors.ridingExperience ? "input-error" : ""}
+                      />
+                      {fieldErrors.ridingExperience && (
+                        <span className="field-error">{fieldErrors.ridingExperience}</span>
+                      )}
+                    </RegField>
                   </div>
                   <div className="form-row">
-                    <div className="form-group">
-                      <label>License Number *</label>
+                    <RegField fieldKey="ridingClub" regConfig={regConfig}>
+                      <label>{fieldLabel(regConfig, "ridingClub", "Riding Club")}</label>
+                      <input
+                        type="text"
+                        name="clubName"
+                        value={formData.clubName}
+                        onChange={handleInputChange}
+                        placeholder="Club name (if any)"
+                        className={fieldErrors.clubName ? "input-error" : ""}
+                      />
+                      {fieldErrors.clubName && (
+                        <span className="field-error">{fieldErrors.clubName}</span>
+                      )}
+                    </RegField>
+                    <RegField fieldKey="aadhaar" regConfig={regConfig}>
+                      <label>{fieldLabel(regConfig, "aadhaar", "Aadhaar Number")}</label>
+                      <input
+                        type="text"
+                        name="aadhaarNumber"
+                        value={formData.aadhaarNumber}
+                        onChange={handleInputChange}
+                        placeholder="12-digit Aadhaar"
+                        className={fieldErrors.aadhaarNumber ? "input-error" : ""}
+                      />
+                      {fieldErrors.aadhaarNumber && (
+                        <span className="field-error">{fieldErrors.aadhaarNumber}</span>
+                      )}
+                    </RegField>
+                  </div>
+                  <div className="form-row">
+                    <RegField fieldKey="drivingLicence" regConfig={regConfig}>
+                      <label>{fieldLabel(regConfig, "drivingLicence", "License Number")}</label>
                       <input
                         type="text"
                         name="licenseNumber"
@@ -744,9 +910,9 @@ const PublicRegister = () => {
                       {fieldErrors.licenseNumber && (
                         <span className="field-error">{fieldErrors.licenseNumber}</span>
                       )}
-                    </div>
-                    <div className="form-group">
-                      <label>License Proof (Photo) *</label>
+                    </RegField>
+                    <RegField fieldKey="licenceUpload" regConfig={regConfig}>
+                      <label>{fieldLabel(regConfig, "licenceUpload", "License Proof (Photo)")}</label>
                       <input
                         type="file"
                         name="licenseImage"
@@ -762,7 +928,7 @@ const PublicRegister = () => {
                       {fieldErrors.licenseImage && (
                         <span className="field-error">{fieldErrors.licenseImage}</span>
                       )}
-                    </div>
+                    </RegField>
                   </div>
                 </div>
 
@@ -943,26 +1109,59 @@ const PublicRegister = () => {
               </div>
             )}
 
-            {/* 6. Additional Information */}
+            {/* Medical & Additional */}
+            {sectionVisible(regConfig, ["medicalConditions", "allergies", "insurance"]) && (
             <div className="form-section">
-              <h3>Additional Information</h3>
-              <div className="form-group">
+              <h3>Medical Information</h3>
+              <RegField fieldKey="medicalConditions" regConfig={regConfig}>
                 <label>
-                  Medical Conditions (if any) (Write 'None' if not applicable) *
+                  {fieldLabel(regConfig, "medicalConditions", "Medical Conditions (if any)")}
+                  <span className="label-hint"> — Write &apos;None&apos; if not applicable</span>
                 </label>
                 <textarea
                   name="anyMedicalCondition"
                   value={formData.anyMedicalCondition}
                   onChange={handleInputChange}
                   rows="2"
-                  placeholder="Please mention any medical conditions or allergies (Write 'None' if not applicable)"
+                  placeholder="Please mention any medical conditions"
                   className={fieldErrors.anyMedicalCondition ? "input-error" : ""}
                 />
                 {fieldErrors.anyMedicalCondition && (
                   <span className="field-error">{fieldErrors.anyMedicalCondition}</span>
                 )}
+              </RegField>
+              <div className="form-row">
+                <RegField fieldKey="allergies" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "allergies", "Allergies")}</label>
+                  <input
+                    type="text"
+                    name="allergies"
+                    value={formData.allergies}
+                    onChange={handleInputChange}
+                    placeholder="Allergies (if any)"
+                    className={fieldErrors.allergies ? "input-error" : ""}
+                  />
+                  {fieldErrors.allergies && (
+                    <span className="field-error">{fieldErrors.allergies}</span>
+                  )}
+                </RegField>
+                <RegField fieldKey="insurance" regConfig={regConfig}>
+                  <label>{fieldLabel(regConfig, "insurance", "Insurance")}</label>
+                  <input
+                    type="text"
+                    name="insurance"
+                    value={formData.insurance}
+                    onChange={handleInputChange}
+                    placeholder="Insurance details (if any)"
+                    className={fieldErrors.insurance ? "input-error" : ""}
+                  />
+                  {fieldErrors.insurance && (
+                    <span className="field-error">{fieldErrors.insurance}</span>
+                  )}
+                </RegField>
               </div>
             </div>
+            )}
 
             <CustomQuestionsSection
               questions={regConfig.customQuestions}
@@ -1007,7 +1206,7 @@ const PublicRegister = () => {
                     name="acceptedTerms"
                     checked={formData.acceptedTerms}
                     onChange={handleInputChange}
-                    className="w-5 h-5 mt-1 accent-blue-500"
+                    className="w-5 h-5 mt-1 accent-copper"
                   />
                   <span className="text-gray-300 text-sm leading-relaxed">
                     I confirm that I have read and understood all{" "}
@@ -1017,7 +1216,7 @@ const PublicRegister = () => {
                         ev.preventDefault();
                         setShowTermsModal(true);
                       }}
-                      className="text-blue-500 underline hover:text-blue-400 font-semibold"
+                      className="text-copper-accent underline hover:text-white font-semibold"
                     >
                       Terms and Conditions
                     </button>
@@ -1067,7 +1266,7 @@ const PublicRegister = () => {
             <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{declarationText}</p>
             <button
               type="button"
-              className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors uppercase tracking-wider"
+              className="w-full mt-6 py-3 bg-copper text-carbon hover:opacity-90 font-bold rounded-xl transition-colors uppercase tracking-wider"
               onClick={() => setShowTermsModal(false)}
             >
               Close & Agree
@@ -1088,21 +1287,38 @@ const PublicRegister = () => {
             </h3>
             <p className="text-gray-300 text-lg mb-10 leading-relaxed">
               Your registration for{" "}
-              <span className="text-blue-500 font-bold">{event?.title}</span>{" "}
+              <span className="text-copper-accent font-bold">{event?.title}</span>{" "}
               has been confirmed. See you on the road!
             </p>
+            <div className="flex flex-col gap-3 mb-6">
+              {event && eventId !== "community" && (
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(true)}
+                  className="w-full border border-copper/40 text-copper py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-copper/10 transition-all"
+                >
+                  Share Event
+                </button>
+              )}
+            </div>
             <button
               onClick={() => {
                 setShowSuccessOverlay(false);
                 navigate("/events");
               }}
-              className="w-full bg-white text-black py-4 rounded-xl font-bold text-lg hover:bg-gray-200 transition-all shadow-xl"
+              className="w-full bg-copper text-carbon py-4 rounded-xl font-bold text-lg hover:opacity-90 transition-all shadow-xl"
             >
-              Return to Registration
+              Return to Events
             </button>
           </div>
         </div>
       )}
+
+      <AnimatePresence>
+        {showShareModal && event && (
+          <EventShareModal event={event} onClose={() => setShowShareModal(false)} compact />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
