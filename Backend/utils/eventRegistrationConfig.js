@@ -208,7 +208,7 @@ export const hasCustomRegistrationConfig = (event) => {
   if (!event?.registrationFields || typeof event.registrationFields !== "object") {
     return false;
   }
-  return Object.values(event.registrationFields).some((f) => f?.enabled === true);
+  return Object.keys(event.registrationFields).length > 0;
 };
 
 export const resolveRegistrationConfig = (event) => {
@@ -232,12 +232,31 @@ export const isFieldEnabled = (config, key) => {
 };
 
 export const isFieldRequired = (config, key) => {
-  if (!config || config.isLegacy) {
+  if (!isFieldEnabled(config, key)) return false;
+  if (config?.isLegacy) {
     return DEFAULT_REGISTRATION_FIELDS[key]?.required === true;
   }
-  const field = config.fields[key];
-  return field?.enabled === true && field?.required === true;
+  return config.fields[key]?.required === true;
 };
+
+/** Registration settings — explicit true only (never default-on) */
+export const isDeclarationRequired = (config) =>
+  config?.settings?.requireDeclaration === true;
+
+export const isEmailOtpEnabled = (config) =>
+  config?.settings?.verifyEmailOtp === true && isFieldEnabled(config, "email");
+
+export const isMobileOtpEnabled = (config) =>
+  config?.settings?.verifyMobileOtp === true && isFieldEnabled(config, "mobile");
+
+export const isWaitingListEnabled = (config) =>
+  config?.settings?.waitingListEnabled === true;
+
+export const isDuplicateRegistrationAllowed = (config) =>
+  config?.settings?.allowDuplicateRegistration === true;
+
+export const isAutoCloseWhenFull = (config) =>
+  config?.settings?.autoCloseWhenFull === true;
 
 const PHONE_REGEX = /^\d{10}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -271,7 +290,7 @@ export const validateEventRegistrationPayload = (
   existingUser = null,
 ) => {
   const errors = [];
-  if (!config || config.isLegacy) return errors;
+  if (!config) return errors;
 
   const show = (key) => isFieldEnabled(config, key);
   const require = (key) => isFieldRequired(config, key);
@@ -326,39 +345,11 @@ export const validateEventRegistrationPayload = (
     }
   }
 
-  const registrationType = body.registrationType;
-
-  if (registrationType === "rider") {
-    if (show("licenceUpload") && require("licenceUpload")) {
-      const hasUpload = files?.licenseImage;
-      const hasExisting = existingUser?.licenseImage;
-      if (!hasUpload && !hasExisting) {
-        errors.push("Driving licence image is mandatory");
-      }
-    }
-
-    if (
-      body.hasLinkedPillion === true ||
-      body.hasLinkedPillion === "true"
-    ) {
-      requireBodyField(body, "linkedPillionName", "Pillion name", errors);
-      requireBodyField(body, "linkedPillionMobile", "Pillion mobile number", errors);
-      requireBodyField(body, "linkedPillionTShirtSize", "Pillion T-shirt size", errors);
-      if (body.linkedPillionMobile && !PHONE_REGEX.test(body.linkedPillionMobile)) {
-        errors.push("Pillion mobile number must be exactly 10 digits");
-      }
-    }
-  }
-
-  if (registrationType === "pillion") {
-    if (!body.tShirtSize?.trim()) {
-      errors.push("T-shirt size is required");
-    }
-    if (!body.riderPhone?.trim() && !body.riderRegistrationId?.trim()) {
-      errors.push("Provide Rider phone or Rider registration ID for mapping");
-    }
-    if (body.riderPhone && !PHONE_REGEX.test(body.riderPhone)) {
-      errors.push("Rider phone must be exactly 10 digits");
+  if (show("licenceUpload") && require("licenceUpload")) {
+    const hasUpload = files?.licenseImage;
+    const hasExisting = existingUser?.licenseImage;
+    if (!hasUpload && !hasExisting) {
+      errors.push("Driving licence image is mandatory");
     }
   }
 
@@ -370,7 +361,7 @@ export const validateEventRegistrationPayload = (
     }
   }
 
-  if (config.settings?.requireDeclaration !== false) {
+  if (isDeclarationRequired(config)) {
     if (
       body.acceptedTerms !== true &&
       body.acceptedTerms !== "true" &&
@@ -400,7 +391,7 @@ export const applyConfiguredFieldsToRegistration = (
   files,
   existingUser,
 ) => {
-  if (!config || config.isLegacy) return registrationData;
+  if (!config) return registrationData;
 
   Object.entries(CONFIG_TO_BODY).forEach(([configKey, bodyKey]) => {
     if (!isFieldEnabled(config, configKey)) return;
@@ -422,15 +413,13 @@ export const applyConfiguredFieldsToRegistration = (
     if (ecPhone) registrationData.emergencyContactPhone = ecPhone;
   }
 
-  if (body.registrationType === "rider") {
-    if (isFieldEnabled(config, "licenceUpload")) {
-      if (files?.licenseImage) {
-        registrationData.licenseImage = files.licenseImage[0].path;
-        registrationData.licenseImagePublicId = files.licenseImage[0].filename;
-      } else if (existingUser?.licenseImage) {
-        registrationData.licenseImage = existingUser.licenseImage;
-        registrationData.licenseImagePublicId = existingUser.licenseImagePublicId;
-      }
+  if (isFieldEnabled(config, "licenceUpload")) {
+    if (files?.licenseImage) {
+      registrationData.licenseImage = files.licenseImage[0].path;
+      registrationData.licenseImagePublicId = files.licenseImage[0].filename;
+    } else if (existingUser?.licenseImage) {
+      registrationData.licenseImage = existingUser.licenseImage;
+      registrationData.licenseImagePublicId = existingUser.licenseImagePublicId;
     }
   }
 
@@ -448,7 +437,7 @@ export const applyConfiguredFieldsToRegistration = (
 };
 
 export const buildConfiguredDuplicateQuery = (eventId, body, config) => {
-  if (!config || config.isLegacy) return null;
+  if (!config) return null;
   const orConditions = [];
 
   if (isFieldEnabled(config, "email") && body.email?.trim()) {

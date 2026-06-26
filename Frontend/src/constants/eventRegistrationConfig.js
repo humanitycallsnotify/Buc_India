@@ -163,7 +163,7 @@ export const hasCustomRegistrationConfig = (event) => {
   if (!event?.registrationFields || typeof event.registrationFields !== "object") {
     return false;
   }
-  return Object.values(event.registrationFields).some((f) => f?.enabled === true);
+  return Object.keys(event.registrationFields).length > 0;
 };
 
 export const resolveRegistrationConfig = (event) => {
@@ -182,15 +182,39 @@ export const resolveRegistrationConfig = (event) => {
 };
 
 export const isFieldEnabled = (config, key) => {
-  if (config.isLegacy) return true;
+  if (!config?.fields) return false;
+  if (config.isLegacy) {
+    return config.fields[key]?.enabled !== false;
+  }
   return config.fields[key]?.enabled === true;
 };
 
 export const isFieldRequired = (config, key) => {
-  if (config.isLegacy) return LEGACY_CLIENT_REQUIRED[key] === true;
-  const field = config.fields[key];
-  return field?.enabled === true && field?.required === true;
+  if (!isFieldEnabled(config, key)) return false;
+  if (config.isLegacy) {
+    return LEGACY_CLIENT_REQUIRED[key] === true;
+  }
+  return config.fields[key]?.required === true;
 };
+
+/** Registration settings — explicit true only (never default-on) */
+export const isDeclarationRequired = (config) =>
+  config?.settings?.requireDeclaration === true;
+
+export const isEmailOtpEnabled = (config) =>
+  config?.settings?.verifyEmailOtp === true && isFieldEnabled(config, "email");
+
+export const isMobileOtpEnabled = (config) =>
+  config?.settings?.verifyMobileOtp === true && isFieldEnabled(config, "mobile");
+
+export const isWaitingListEnabled = (config) =>
+  config?.settings?.waitingListEnabled === true;
+
+export const isDuplicateRegistrationAllowed = (config) =>
+  config?.settings?.allowDuplicateRegistration === true;
+
+export const isAutoCloseWhenFull = (config) =>
+  config?.settings?.autoCloseWhenFull === true;
 
 export const computeAgeFromDob = (dateOfBirth) => {
   if (!dateOfBirth) return "";
@@ -239,7 +263,7 @@ export const isRegistrationWindowOpen = (settings, event) => {
     }
   }
 
-  if (settings?.autoCloseWhenFull !== false && event) {
+  if (isAutoCloseWhenFull(settings) && event) {
     const remaining = getRemainingSeats(event);
     if (remaining === 0) {
       return { open: false, message: "This event is full." };

@@ -8,6 +8,8 @@ import {
   resolveRegistrationConfig,
   isFieldEnabled,
   isFieldRequired,
+  isDeclarationRequired,
+  isEmailOtpEnabled,
   computeAgeFromDob,
   isRegistrationWindowOpen,
   getRemainingSeats,
@@ -207,7 +209,7 @@ const PublicRegister = () => {
     }
   };
 
-  const showEmailOtp = regConfig.settings.verifyEmailOtp && (regConfig.isLegacy || isFieldEnabled(regConfig, "email"));
+  const showEmailOtp = isEmailOtpEnabled(regConfig);
   const canSendEmailOtp =
     showEmailOtp &&
     !emailOtpVerified &&
@@ -1209,7 +1211,7 @@ const PublicRegister = () => {
             />
 
             {/* 7. Declaration & Legal Agreement */}
-            {(regConfig.settings.requireDeclaration !== false) && (
+            {isDeclarationRequired(regConfig) && (
             <div className="form-section">
               <h3>Declaration & Legal Agreement</h3>
               <div className="reg-terms-check-container">

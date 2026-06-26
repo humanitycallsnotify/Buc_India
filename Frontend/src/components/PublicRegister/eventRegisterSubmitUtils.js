@@ -1,6 +1,7 @@
 import {
   FIELD_TO_FORM,
   isFieldEnabled,
+  isDeclarationRequired,
 } from "../../constants/eventRegistrationConfig";
 
 const CONFIG_KEY_BY_FORM = Object.entries(FIELD_TO_FORM).reduce((acc, [configKey, formKey]) => {
@@ -10,7 +11,6 @@ const CONFIG_KEY_BY_FORM = Object.entries(FIELD_TO_FORM).reduce((acc, [configKey
 
 const META_FORM_KEYS = new Set([
   "registrationType",
-  "acceptedTerms",
   "hasLinkedPillion",
   "linkedPillionName",
   "linkedPillionMobile",
@@ -42,6 +42,7 @@ export const normalizeScalar = (value) => {
 
 export const shouldAppendField = (regConfig, formKey) => {
   if (SKIP_FORM_KEYS.has(formKey)) return false;
+  if (formKey === "acceptedTerms") return isDeclarationRequired(regConfig);
   if (regConfig.isLegacy) return true;
   if (formKey === "address" || formKey === "pincode") return regConfig.isLegacy;
   if (formKey === "emergencyContactName" || formKey === "emergencyContactPhone") {

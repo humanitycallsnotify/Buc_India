@@ -17,6 +17,7 @@ import {
   applyConfiguredFieldsToRegistration,
   buildConfiguredDuplicateQuery,
   isFieldEnabled,
+  isDeclarationRequired,
   normalizeRegistrationBody,
   normalizeScalarField,
   sanitizeRegistrationDocument,
@@ -107,7 +108,7 @@ export const createRegistration = async (req, res) => {
       const eventDoc = await Event.findById(eventId).lean();
       if (eventDoc) {
         eventConfig = resolveRegistrationConfig(eventDoc);
-        usesEventConfig = !eventConfig.isLegacy;
+        usesEventConfig = true;
       }
     }
 
@@ -137,28 +138,26 @@ export const createRegistration = async (req, res) => {
         }
       }
 
-      if (isLegacy) {
-        if (eventId !== "community") {
-          const hasUploadedLicense = req.files && req.files.licenseImage;
-          const hasExistingLicense = existingUser && existingUser.licenseImage;
-          if (!hasUploadedLicense && !hasExistingLicense) {
-            return res
-              .status(400)
-              .json({ message: "Driving license image is mandatory" });
-          }
+      if (isLegacy && eventId === "community") {
+        // Community registration only — event registrations use event config above.
+      } else if (isLegacy) {
+        const hasUploadedLicense = req.files && req.files.licenseImage;
+        const hasExistingLicense = existingUser && existingUser.licenseImage;
+        if (!hasUploadedLicense && !hasExistingLicense) {
+          return res
+            .status(400)
+            .json({ message: "Driving license image is mandatory" });
         }
 
-        if (eventId !== "community") {
-          const hasUploadedProfile = req.files && req.files.profileImage;
-          const hasExistingProfile = existingUser && existingUser.profileImage;
-          if (!hasUploadedProfile && !hasExistingProfile) {
-            return res
-              .status(400)
-              .json({ message: "Profile picture is mandatory" });
-          }
+        const hasUploadedProfile = req.files && req.files.profileImage;
+        const hasExistingProfile = existingUser && existingUser.profileImage;
+        if (!hasUploadedProfile && !hasExistingProfile) {
+          return res
+            .status(400)
+            .json({ message: "Profile picture is mandatory" });
         }
 
-        if (eventId !== "community" && dateOfBirth) {
+        if (dateOfBirth) {
           const dob = new Date(dateOfBirth);
           const today = new Date();
           let age = today.getFullYear() - dob.getFullYear();
@@ -275,8 +274,9 @@ export const createRegistration = async (req, res) => {
       registrationData.twitterUrl = twitterUrl || "";
       registrationData.youtubeUrl = youtubeUrl || "";
       registrationData.websiteUrl = websiteUrl || "";
-      registrationData.acceptedTerms =
-        acceptedTerms === true || acceptedTerms === "true";
+      registrationData.acceptedTerms = isDeclarationRequired(eventConfig)
+        ? acceptedTerms === true || acceptedTerms === "true"
+        : false;
       registrationData.requestRidingGears = false;
       registrationData.requestedGears = {};
 
