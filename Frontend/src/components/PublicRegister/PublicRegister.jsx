@@ -11,7 +11,6 @@ import {
   computeAgeFromDob,
   isRegistrationWindowOpen,
   getRemainingSeats,
-  FIELD_TO_FORM,
 } from "../../constants/eventRegistrationConfig";
 import CustomQuestionsSection from "./CustomQuestionsSection.jsx";
 import EventShareModal from "../EventShare/EventShareModal.jsx";
@@ -20,6 +19,7 @@ import {
   buildRegistrationErrors,
   getDeclarationText,
 } from "./eventRegisterFormUtils.js";
+import { buildEventRegistrationFormData } from "./eventRegisterSubmitUtils.js";
 import {
   User,
   Mail,
@@ -50,38 +50,6 @@ const fieldLabel = (regConfig, fieldKey, text) =>
 
 const sectionVisible = (regConfig, keys) =>
   regConfig.isLegacy || keys.some((key) => isFieldEnabled(regConfig, key));
-
-const CONFIG_KEY_BY_FORM = Object.entries(FIELD_TO_FORM).reduce((acc, [configKey, formKey]) => {
-  acc[formKey] = configKey;
-  return acc;
-}, {});
-
-const shouldAppendField = (regConfig, formKey) => {
-  if (regConfig.isLegacy) return true;
-  if (formKey === "address" || formKey === "pincode") return false;
-  if (formKey === "emergencyContactName" || formKey === "emergencyContactPhone") {
-    return isFieldEnabled(regConfig, "emergencyContact");
-  }
-  const configKey = CONFIG_KEY_BY_FORM[formKey];
-  if (!configKey) {
-    const metaFields = new Set([
-      "registrationType",
-      "acceptedTerms",
-      "hasLinkedPillion",
-      "linkedPillionName",
-      "linkedPillionMobile",
-      "linkedPillionTShirtSize",
-      "riderPhone",
-      "riderRegistrationId",
-      "tShirtSize",
-      "requestRidingGears",
-      "requestedGears",
-      "otp",
-    ]);
-    return metaFields.has(formKey);
-  }
-  return isFieldEnabled(regConfig, configKey);
-};
 
 const INITIAL_FORM = {
   registrationType: "rider",
@@ -374,37 +342,14 @@ const PublicRegister = () => {
     setSubmitting(true);
     setError("");
 
-    const data = new FormData();
-    Object.keys(formData).forEach((key) => {
-      if (!shouldAppendField(regConfig, key) && key !== "registrationType" && key !== "acceptedTerms") {
-        return;
-      }
-      if (key === "licenseImage") {
-        if (formData.licenseImage) data.append("licenseImage", formData.licenseImage);
-      } else if (key === "profileImage") {
-        if (formData.profileImage) data.append("profileImage", formData.profileImage);
-      } else if (key === "requestedGears") {
-        data.append("requestedGears", JSON.stringify(formData.requestedGears));
-      } else if (key === "acceptedTerms") {
-        data.append(key, formData.acceptedTerms ? "true" : "false");
-      } else if (key === "hasLinkedPillion") {
-        data.append(key, formData.hasLinkedPillion ? "true" : "false");
-      } else {
-        data.append(key, formData[key]);
-      }
+    const data = buildEventRegistrationFormData({
+      formData,
+      regConfig,
+      eventId,
+      customAnswers,
+      registrationStatus:
+        remaining === 1 && regConfig.settings.waitingListEnabled ? "waiting" : undefined,
     });
-    data.append("eventId", eventId);
-    if (Object.keys(customAnswers).length) {
-      data.append("customAnswers", JSON.stringify(customAnswers));
-    }
-    if (formData.gender) data.append("gender", formData.gender);
-    if (formData.bikeBrand) data.append("bikeBrand", formData.bikeBrand);
-    if (formData.aadhaarNumber) data.append("aadhaarNumber", formData.aadhaarNumber);
-    if (formData.allergies) data.append("allergies", formData.allergies);
-    if (formData.insurance) data.append("insurance", formData.insurance);
-    if (remaining === 1 && regConfig.settings.waitingListEnabled) {
-      data.append("registrationStatus", "waiting");
-    }
 
     try {
       await registrationService.create(data);
@@ -415,8 +360,11 @@ const PublicRegister = () => {
       setShowSuccessOverlay(true);
       toast.success("Registration successful!");
     } catch (err) {
+      const apiMessage = err.response?.data?.message;
       const errorMessage =
-        err.response?.data?.message || "Registration failed. Please try again.";
+        apiMessage && !/cast to string failed|CastError|validation failed/i.test(apiMessage)
+          ? apiMessage
+          : "Please check the highlighted fields and try again.";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

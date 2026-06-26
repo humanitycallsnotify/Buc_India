@@ -102,7 +102,7 @@ export const createLegacyRegistrationFields = () =>
 export const DEFAULT_REGISTRATION_SETTINGS = {
   verifyEmailOtp: false,
   verifyMobileOtp: false,
-  requireDeclaration: true,
+  requireDeclaration: false,
   declarationText: "",
   registrationOpenDate: "",
   registrationCloseDate: "",
@@ -110,7 +110,7 @@ export const DEFAULT_REGISTRATION_SETTINGS = {
   waitingListEnabled: false,
   registrationFee: "",
   allowDuplicateRegistration: false,
-  autoCloseWhenFull: true,
+  autoCloseWhenFull: false,
 };
 
 export const LEGACY_CLIENT_REQUIRED = {

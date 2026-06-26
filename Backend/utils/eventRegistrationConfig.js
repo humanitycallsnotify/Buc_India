@@ -26,7 +26,7 @@ export const DEFAULT_REGISTRATION_FIELDS = {
 export const DEFAULT_REGISTRATION_SETTINGS = {
   verifyEmailOtp: false,
   verifyMobileOtp: false,
-  requireDeclaration: true,
+  requireDeclaration: false,
   declarationText: "",
   registrationOpenDate: "",
   registrationCloseDate: "",
@@ -34,7 +34,7 @@ export const DEFAULT_REGISTRATION_SETTINGS = {
   waitingListEnabled: false,
   registrationFee: "",
   allowDuplicateRegistration: false,
-  autoCloseWhenFull: true,
+  autoCloseWhenFull: false,
 };
 
 export const FIELD_LABELS = {
@@ -129,6 +129,79 @@ export const parseCustomQuestions = (value) => {
   const parsed = parseJsonBodyField(value);
   if (!Array.isArray(parsed)) return null;
   return parsed;
+};
+
+/** Collapse duplicate multipart values (e.g. ["Male","Male"]) to a single string */
+export const normalizeScalarField = (value) => {
+  if (value === undefined || value === null) return value;
+  if (Array.isArray(value)) {
+    const items = value
+      .map((v) => (v === undefined || v === null ? "" : String(v).trim()))
+      .filter(Boolean);
+    const unique = [...new Set(items)];
+    return unique[0] ?? "";
+  }
+  if (typeof value === "string") return value.trim();
+  return value;
+};
+
+export const REGISTRATION_SCALAR_BODY_FIELDS = [
+  "fullName",
+  "email",
+  "phone",
+  "gender",
+  "bikeBrand",
+  "bikeModel",
+  "bikeRegistrationNumber",
+  "ridingExperience",
+  "clubName",
+  "aadhaarNumber",
+  "licenseNumber",
+  "allergies",
+  "insurance",
+  "bloodGroup",
+  "anyMedicalCondition",
+  "city",
+  "state",
+  "pincode",
+  "address",
+  "emergencyContactName",
+  "emergencyContactPhone",
+  "linkedPillionName",
+  "linkedPillionMobile",
+  "linkedPillionTShirtSize",
+  "riderPhone",
+  "riderRegistrationId",
+  "tShirtSize",
+  "dateOfBirth",
+  "clubNameCustom",
+  "collegeName",
+  "department",
+  "year",
+  "interestReason",
+];
+
+export const normalizeRegistrationBody = (body) => {
+  if (!body || typeof body !== "object") return body;
+  const out = { ...body };
+  REGISTRATION_SCALAR_BODY_FIELDS.forEach((field) => {
+    if (field in out) {
+      out[field] = normalizeScalarField(out[field]);
+    }
+  });
+  if (out.email && typeof out.email === "string") {
+    out.email = out.email.toLowerCase();
+  }
+  return out;
+};
+
+export const sanitizeRegistrationDocument = (doc) => {
+  REGISTRATION_SCALAR_BODY_FIELDS.forEach((field) => {
+    if (doc[field] !== undefined && doc[field] !== null) {
+      doc[field] = normalizeScalarField(doc[field]);
+    }
+  });
+  return doc;
 };
 
 export const hasCustomRegistrationConfig = (event) => {
@@ -331,8 +404,8 @@ export const applyConfiguredFieldsToRegistration = (
 
   Object.entries(CONFIG_TO_BODY).forEach(([configKey, bodyKey]) => {
     if (!isFieldEnabled(config, configKey)) return;
-    const value = body[bodyKey];
-    if (value === undefined || value === null) return;
+    const value = normalizeScalarField(body[bodyKey]);
+    if (value === undefined || value === null || value === "") return;
     if (configKey === "email") {
       registrationData.email = String(value).toLowerCase().trim();
     } else if (configKey === "dob") {
@@ -343,12 +416,10 @@ export const applyConfiguredFieldsToRegistration = (
   });
 
   if (isFieldEnabled(config, "emergencyContact")) {
-    if (body.emergencyContactName) {
-      registrationData.emergencyContactName = body.emergencyContactName;
-    }
-    if (body.emergencyContactPhone) {
-      registrationData.emergencyContactPhone = body.emergencyContactPhone;
-    }
+    const ecName = normalizeScalarField(body.emergencyContactName);
+    const ecPhone = normalizeScalarField(body.emergencyContactPhone);
+    if (ecName) registrationData.emergencyContactName = ecName;
+    if (ecPhone) registrationData.emergencyContactPhone = ecPhone;
   }
 
   if (body.registrationType === "rider") {

@@ -17,6 +17,9 @@ import {
   applyConfiguredFieldsToRegistration,
   buildConfiguredDuplicateQuery,
   isFieldEnabled,
+  normalizeRegistrationBody,
+  normalizeScalarField,
+  sanitizeRegistrationDocument,
 } from "../utils/eventRegistrationConfig.js";
 
 const buildDuplicateQuery = (eventId, body) => {
@@ -36,11 +39,14 @@ const buildDuplicateQuery = (eventId, body) => {
 };
 
 export const createRegistration = async (req, res) => {
-  console.log("Incoming Registration Request:", {
-    body: req.body,
-    files: req.files ? Object.keys(req.files) : "no files",
-  });
   try {
+    req.body = normalizeRegistrationBody(req.body);
+
+    console.log("Incoming Registration Request:", {
+      body: req.body,
+      files: req.files ? Object.keys(req.files) : "no files",
+    });
+
     const {
       eventId,
       fullName,
@@ -464,29 +470,13 @@ export const createRegistration = async (req, res) => {
       }
     }
 
-    if (usesEventConfig) {
-      if (isFieldEnabled(eventConfig, "gender") && gender) {
-        registrationData.gender = gender;
-      }
-      if (isFieldEnabled(eventConfig, "bikeBrand") && bikeBrand) {
-        registrationData.bikeBrand = bikeBrand;
-      }
-      if (isFieldEnabled(eventConfig, "aadhaar") && aadhaarNumber) {
-        registrationData.aadhaarNumber = aadhaarNumber;
-      }
-      if (isFieldEnabled(eventConfig, "allergies") && allergies) {
-        registrationData.allergies = allergies;
-      }
-      if (isFieldEnabled(eventConfig, "insurance") && insurance) {
-        registrationData.insurance = insurance;
-      }
-    } else {
-      if (gender) registrationData.gender = gender;
-      if (bikeBrand) registrationData.bikeBrand = bikeBrand;
-      if (aadhaarNumber) registrationData.aadhaarNumber = aadhaarNumber;
-      if (allergies) registrationData.allergies = allergies;
-      if (insurance) registrationData.insurance = insurance;
+    if (!usesEventConfig) {
+      ["gender", "bikeBrand", "aadhaarNumber", "allergies", "insurance"].forEach((field) => {
+        const val = normalizeScalarField(req.body[field]);
+        if (val) registrationData[field] = val;
+      });
     }
+
     if (registrationStatus) registrationData.registrationStatus = registrationStatus;
     if (customAnswers) {
       try {
@@ -496,6 +486,8 @@ export const createRegistration = async (req, res) => {
         registrationData.customAnswers = { raw: customAnswers };
       }
     }
+
+    sanitizeRegistrationDocument(registrationData);
 
     const registration = new Registration(registrationData);
     const newRegistration = await registration.save();
@@ -561,7 +553,22 @@ export const createRegistration = async (req, res) => {
       });
     }
 
-    res.status(400).json({ message: error.message });
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Please check the highlighted fields and try again.",
+      });
+    }
+
+    const rawMessage = error.message || "";
+    if (/cast to string failed|CastError|validation failed/i.test(rawMessage)) {
+      return res.status(400).json({
+        message: "Please check the highlighted fields and try again.",
+      });
+    }
+
+    res.status(400).json({
+      message: "Registration failed. Please try again.",
+    });
   }
 };
 
