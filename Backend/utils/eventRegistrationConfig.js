@@ -386,7 +386,6 @@ export const validateEventRegistrationPayload = (
   return errors;
 };
 
-/** Apply only enabled fields from body onto registration data object */
 export const applyConfiguredFieldsToRegistration = (
   registrationData,
   body,
@@ -436,7 +435,33 @@ export const applyConfiguredFieldsToRegistration = (
     }
   }
 
+  // BUC INDIA: Bypass unique compound indexes for disabled/blank fields to prevent E11000 errors.
+  const uniqueId = () => Math.random().toString(36).substring(2, 10) + "-" + Date.now();
+
+  if (!isFieldEnabled(config, "email") || !registrationData.email) {
+    registrationData.email = `unset-email-${uniqueId()}@bucindia.com`;
+  }
+  if (!isFieldEnabled(config, "mobile") || !registrationData.phone) {
+    registrationData.phone = `unset-phone-${uniqueId()}`;
+  }
+  if (!isFieldEnabled(config, "bikeRegistrationNumber") || !registrationData.bikeRegistrationNumber) {
+    registrationData.bikeRegistrationNumber = `unset-bike-${uniqueId()}`;
+  }
+  if (!isFieldEnabled(config, "drivingLicence") || !registrationData.licenseNumber) {
+    registrationData.licenseNumber = `unset-licence-${uniqueId()}`;
+  }
+
   return registrationData;
+};
+
+export const cleanRegistrationResponse = (obj) => {
+  if (!obj) return obj;
+  ["email", "phone", "bikeRegistrationNumber", "licenseNumber"].forEach((field) => {
+    if (obj[field] && (obj[field].startsWith("unset-") || obj[field].startsWith("disabled-"))) {
+      obj[field] = "";
+    }
+  });
+  return obj;
 };
 
 export const buildConfiguredDuplicateQuery = (eventId, body, config) => {

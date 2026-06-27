@@ -22,6 +22,7 @@ import {
   normalizeRegistrationBody,
   normalizeScalarField,
   sanitizeRegistrationDocument,
+  cleanRegistrationResponse,
 } from "../utils/eventRegistrationConfig.js";
 
 const buildDuplicateQuery = (eventId, body) => {
@@ -527,7 +528,7 @@ export const createRegistration = async (req, res) => {
       }
     }
 
-    const response = newRegistration.toObject();
+    const response = cleanRegistrationResponse(newRegistration.toObject());
     response.resolvedClubName = resolvedClub;
 
     res.status(201).json(response);
@@ -624,7 +625,7 @@ export const getRegistrations = async (req, res) => {
     });
 
     const enriched = registrations.map((reg) => {
-      const obj = reg.toObject();
+      const obj = cleanRegistrationResponse(reg.toObject());
       obj.resolvedClubName =
         obj.clubName === "Others" && obj.clubNameCustom
           ? obj.clubNameCustom
