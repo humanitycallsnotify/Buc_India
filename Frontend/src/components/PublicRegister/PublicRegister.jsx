@@ -37,6 +37,7 @@ import {
   FileText,
   ShieldCheck,
   Zap,
+  Share2,
 } from "lucide-react";
 import "./PublicRegister.css";
 
@@ -99,6 +100,22 @@ const INITIAL_FORM = {
   otp: "",
 };
 
+const getCategoryIcon = (category) => {
+  switch (category) {
+    case "Registration": return "📋";
+    case "Parking": return "🅿️";
+    case "Breakfast": return "🍳";
+    case "Ride Start": return "🏍️";
+    case "Fuel Stop": return "⛽";
+    case "Games": return "🎯";
+    case "Photography": return "📸";
+    case "Lunch": return "🍔";
+    case "Awards": return "🏆";
+    case "Closing": return "🏁";
+    default: return "📍";
+  }
+};
+
 const PublicRegister = () => {
   const { eventId: routeEventId } = useParams();
   const navigate = useNavigate();
@@ -117,6 +134,17 @@ const PublicRegister = () => {
   const [verifiedEmail, setVerifiedEmail] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const regConfig = useMemo(() => resolveRegistrationConfig(event), [event]);
   const computedAge = useMemo(() => computeAgeFromDob(formData.dateOfBirth), [formData.dateOfBirth]);
@@ -384,44 +412,58 @@ const PublicRegister = () => {
 
   return (
     <div className="public-register">
+      {/* Floating Back Button */}
+      <button
+        className="back-btn-float"
+        onClick={() => navigate("/events")}
+        title="Back to home"
+      >
+        <X size={24} />
+      </button>
+
       <div className="register-container">
-        <button
-          className="back-btn-float"
-          onClick={() => navigate("/events")}
-          title="Back to home"
-        >
-          <X size={24} />
-        </button>
-        
-        {/* Cover Photo / Banner */}
+        {/* BUC India Header Logo */}
+        <div className="buc-logo-container">
+          <div className="logo-text-wrapper">
+            <span className="logo-main font-heading">BUC INDIA</span>
+            <span className="logo-sub">UNITED RIDERS. ONE COMMUNITY.</span>
+          </div>
+        </div>
+
+        <div className="register-header">
+          <span className="ride-badge">OFFICIAL RIDE IN</span>
+          <h1 className="hero-title">{event ? event.title : "EVENT REGISTRATION"}</h1>
+          <p className="hero-tagline">One ride. One passion. One community. Join us for an unforgettable journey.</p>
+        </div>
+
+        {/* Admin Event Banner Poster */}
         {event && eventId !== "community" && event.banner && (
-          <div className="event-cover-container">
-            <img src={event.banner} alt={event.title} className="event-cover-img" />
+          <div className="admin-event-banner-container">
+            <img src={event.banner} alt={event.title} className="admin-event-banner-img" />
           </div>
         )}
 
-        <div className="register-header">
-          <h2 className="register-page-title font-extrabold text-white">
-            Event <span className="text-copper-accent">Registration</span>
-          </h2>
-          {event && (
-            <p className="mt-3 register-page-subtitle text-gray-400">
-              Registering for:{" "}
-              <span className="text-white font-semibold">{event.title}</span>
-            </p>
-          )}
-        </div>
-
         {/* Event Details Card */}
         {event && eventId !== "community" && (
-          <div className="event-details-card">
-            <h3 className="event-details-title">{event.title}</h3>
-            {event.description && <p className="event-details-desc">{event.description}</p>}
-            <div className="event-details-grid">
+          <div className="event-details-card bg-carbon-light border border-white/5 p-6 rounded-xl shadow-lg relative">
+            <div className="flex justify-between items-start mb-4 gap-4">
+              <div>
+                <h3 className="event-details-title font-heading text-2xl text-copper uppercase">{event.title}</h3>
+                {event.description && <p className="event-details-desc font-text text-steel-dim text-sm mt-2">{event.description}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-2 px-4 py-2 border border-copper/30 rounded text-copper font-body text-xs hover:bg-copper hover:text-carbon transition-all uppercase tracking-wider shrink-0"
+              >
+                <Share2 size={12} /> Share Event
+              </button>
+            </div>
+            <div className="event-details-grid grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/5 pt-4">
               {event.eventDate && (
-                <div className="event-detail-item">
-                  <span className="detail-label">Date:</span>
-                  <span className="detail-value">
+                <div className="event-detail-item flex items-center gap-2">
+                  <span className="detail-label text-copper font-bold">Date:</span>
+                  <span className="detail-value text-white">
                     {new Date(event.eventDate).toLocaleDateString("en-US", {
                       weekday: "long",
                       year: "numeric",
@@ -432,28 +474,141 @@ const PublicRegister = () => {
                 </div>
               )}
               {event.eventTime && (
-                <div className="event-detail-item">
-                  <span className="detail-label">Time:</span>
-                  <span className="detail-value">{event.eventTime}</span>
+                <div className="event-detail-item flex items-center gap-2">
+                  <span className="detail-label text-copper font-bold">Time:</span>
+                  <span className="detail-value text-white">{event.eventTime}</span>
                 </div>
               )}
               {event.location && (
-                <div className="event-detail-item">
-                  <span className="detail-label">Location:</span>
-                  <span className="detail-value">{event.location}</span>
+                <div className="event-detail-item flex items-center gap-2">
+                  <span className="detail-label text-copper font-bold">Location:</span>
+                  <span className="detail-value text-white">{event.location}</span>
                 </div>
               )}
               {event.meetingPoint && (
-                <div className="event-detail-item">
-                  <span className="detail-label">Meeting Point:</span>
-                  <span className="detail-value">{event.meetingPoint}</span>
+                <div className="event-detail-item flex items-center gap-2">
+                  <span className="detail-label text-copper font-bold">Meeting Point:</span>
+                  <span className="detail-value text-white">{event.meetingPoint}</span>
+                </div>
+              )}
+              {getRemainingSeats(event) !== null && (
+                <div className="event-detail-item flex items-center gap-2">
+                  <span className="detail-label text-copper font-bold">Seats Left:</span>
+                  <span className="detail-value text-white font-semibold">
+                    {getRemainingSeats(event) > 0 ? `${getRemainingSeats(event)} seats` : "Sold Out"}
+                  </span>
+                </div>
+              )}
+              {(regConfig.settings.registrationOpenDate || regConfig.settings.registrationCloseDate) && (
+                <div className="event-detail-item flex items-center gap-2 sm:col-span-2">
+                  <span className="detail-label text-copper font-bold">Registration Window:</span>
+                  <span className="detail-value text-white">
+                    {regConfig.settings.registrationOpenDate ? new Date(regConfig.settings.registrationOpenDate).toLocaleDateString() : "Immediate"} - {regConfig.settings.registrationCloseDate ? new Date(regConfig.settings.registrationCloseDate).toLocaleDateString() : "Close"}
+                  </span>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 md:p-7 border border-white/10 shadow-2xl">
+        {/* Event Itinerary Timeline */}
+        {event && event.itinerary && event.itinerary.length > 0 && (
+          <div className="itinerary-timeline-container bg-carbon-light border border-white/5 p-6 rounded-xl shadow-lg mb-8">
+            <h3 className="font-heading text-xl uppercase text-copper mb-6 tracking-wider border-b border-white/5 pb-2">
+              Event Itinerary
+            </h3>
+            <div className="vertical-timeline pl-4 border-l-2 border-copper/30 space-y-8">
+              {event.itinerary.map((item, index) => (
+                <div key={index} className="timeline-item relative pl-8">
+                  <div className="timeline-badge-icon absolute -left-12 top-1 w-8 h-8 rounded-full bg-carbon border border-copper/40 flex items-center justify-center text-sm shadow-md">
+                    {getCategoryIcon(item.category)}
+                  </div>
+                  <div className="timeline-content">
+                    <span className="timeline-time text-xs font-bold text-copper uppercase tracking-wider block mb-1">
+                      🕗 {item.time} &bull; {item.category}
+                    </span>
+                    <h4 className="timeline-title text-base font-semibold text-white">{item.title}</h4>
+                    {item.description && <p className="timeline-desc text-sm text-steel-dim mt-1 leading-relaxed">{item.description}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Event Gallery */}
+        {event && event.gallery && event.gallery.length > 0 && (
+          <div className="event-gallery-container bg-carbon-light border border-white/5 p-6 rounded-xl shadow-lg mb-8">
+            <h3 className="font-heading text-xl uppercase text-copper mb-6 tracking-wider border-b border-white/5 pb-2">
+              Event Gallery
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {event.gallery.map((img, index) => (
+                <div
+                  key={index}
+                  onClick={() => {
+                    setLightboxIndex(index);
+                    setShowLightbox(true);
+                  }}
+                  className="relative group aspect-square rounded-lg overflow-hidden border border-white/10 bg-carbon cursor-pointer hover:border-copper/50 transition-all duration-300 shadow-md"
+                >
+                  <img src={img.url} alt={`Gallery ${index}`} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+                  <div className="absolute inset-0 bg-carbon/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-xs uppercase tracking-widest font-bold border-b border-copper pb-1">View Image</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lightbox Modal */}
+        {showLightbox && event && event.gallery && (
+          <div
+            className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/95 backdrop-blur-md animate-fade-in"
+            onClick={() => setShowLightbox(false)}
+          >
+            <button
+              onClick={() => setShowLightbox(false)}
+              className="absolute top-6 right-6 text-white hover:text-copper transition-colors z-50 p-2"
+              title="Close Lightbox"
+            >
+              <X size={36} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((prev) => (prev === 0 ? event.gallery.length - 1 : prev - 1));
+              }}
+              className="absolute left-6 text-white hover:text-copper transition-colors z-50 p-4 bg-white/5 hover:bg-white/10 rounded-full text-2xl font-bold"
+              title="Previous"
+            >
+              &larr;
+            </button>
+            <div
+              className="max-w-[90vw] max-h-[85vh] flex items-center justify-center relative z-40"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={event.gallery[lightboxIndex]?.url}
+                alt={`Lightbox image ${lightboxIndex}`}
+                className="max-w-full max-h-[85vh] object-contain rounded-lg border border-white/10"
+              />
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((prev) => (prev === event.gallery.length - 1 ? 0 : prev + 1));
+              }}
+              className="absolute right-6 text-white hover:text-copper transition-colors z-50 p-4 bg-white/5 hover:bg-white/10 rounded-full text-2xl font-bold"
+              title="Next"
+            >
+              &rarr;
+            </button>
+          </div>
+        )}
+
+        <div className="registration-card-wrapper">
           <form onSubmit={handleSubmit} className="registration-form" noValidate>
             {error && <div className="error-message">{error}</div>}
 

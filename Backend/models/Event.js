@@ -60,6 +60,20 @@ const eventSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: null,
     },
+    itinerary: [
+      {
+        time: { type: String, required: true },
+        title: { type: String, required: true },
+        description: { type: String },
+        category: { type: String, required: true },
+      }
+    ],
+    gallery: [
+      {
+        url: { type: String, required: true },
+        publicId: { type: String }
+      }
+    ],
   },
   { timestamps: true },
 );

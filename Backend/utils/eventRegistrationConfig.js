@@ -227,13 +227,16 @@ export const resolveRegistrationConfig = (event) => {
 };
 
 export const isFieldEnabled = (config, key) => {
-  if (!config || config.isLegacy) return true;
+  if (!config?.fields) return false;
+  if (config.isLegacy) {
+    return config.fields[key]?.enabled !== false;
+  }
   return config.fields[key]?.enabled === true;
 };
 
 export const isFieldRequired = (config, key) => {
   if (!isFieldEnabled(config, key)) return false;
-  if (config?.isLegacy) {
+  if (config.isLegacy) {
     return DEFAULT_REGISTRATION_FIELDS[key]?.required === true;
   }
   return config.fields[key]?.required === true;

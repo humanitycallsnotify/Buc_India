@@ -57,14 +57,35 @@ export const createEvent = async (req, res) => {
       registrationFields,
       registrationSettings,
       customQuestions,
+      itinerary,
     } = req.body;
 
     const parsedRegistrationFields = parseRegistrationFields(registrationFields);
     const parsedRegistrationSettings = parseRegistrationSettings(registrationSettings);
     const parsedCustomQuestions = parseCustomQuestions(customQuestions);
     
-    if (!req.file) {
+    let parsedItinerary = [];
+    if (itinerary) {
+      try {
+        parsedItinerary = JSON.parse(itinerary);
+      } catch (e) {
+        console.error("Failed to parse itinerary JSON:", e);
+      }
+    }
+
+    const bannerFile = req.files && req.files.banner && req.files.banner[0];
+    if (!bannerFile) {
       return res.status(400).json({ message: 'Event banner is mandatory' });
+    }
+
+    const galleryImages = [];
+    if (req.files && req.files.gallery) {
+      req.files.gallery.forEach((file) => {
+        galleryImages.push({
+          url: file.path,
+          publicId: file.filename,
+        });
+      });
     }
 
     const event = new Event({
@@ -88,8 +109,10 @@ export const createEvent = async (req, res) => {
         typeof certificateEnabled === "string"
           ? certificateEnabled === "true"
           : !!certificateEnabled,
-      banner: req.file.path,
-      bannerPublicId: req.file.filename,
+      banner: bannerFile.path,
+      bannerPublicId: bannerFile.filename,
+      itinerary: parsedItinerary,
+      gallery: galleryImages,
       ...(parsedRegistrationFields ? { registrationFields: parsedRegistrationFields } : {}),
       ...(parsedRegistrationSettings ? { registrationSettings: parsedRegistrationSettings } : {}),
       ...(parsedCustomQuestions ? { customQuestions: parsedCustomQuestions } : {}),
@@ -128,14 +151,15 @@ export const updateEvent = async (req, res) => {
           : !!updateData.certificateEnabled;
     }
 
-    if (req.file) {
+    const bannerFile = req.files && req.files.banner && req.files.banner[0];
+    if (bannerFile) {
       // Delete old image if new one is uploaded
       const oldEvent = await Event.findById(id);
       if (oldEvent && oldEvent.bannerPublicId) {
         await cloudinary.uploader.destroy(oldEvent.bannerPublicId);
       }
-      updateData.banner = req.file.path;
-      updateData.bannerPublicId = req.file.filename;
+      updateData.banner = bannerFile.path;
+      updateData.bannerPublicId = bannerFile.filename;
     }
 
     if (updateData.registrationFields !== undefined) {
@@ -146,6 +170,54 @@ export const updateEvent = async (req, res) => {
     }
     if (updateData.customQuestions !== undefined) {
       updateData.customQuestions = parseCustomQuestions(updateData.customQuestions);
+    }
+
+    if (updateData.itinerary !== undefined) {
+      try {
+        updateData.itinerary = JSON.parse(updateData.itinerary);
+      } catch (e) {
+        console.error("Failed to parse itinerary JSON:", e);
+      }
+    }
+
+    // Process gallery updates
+    let currentGallery = [];
+    if (updateData.gallery !== undefined) {
+      try {
+        currentGallery = JSON.parse(updateData.gallery);
+      } catch (e) {
+        console.error("Failed to parse gallery JSON:", e);
+      }
+    }
+
+    // Delete removed images from Cloudinary
+    const oldEvent = await Event.findById(id);
+    if (oldEvent && oldEvent.gallery && updateData.gallery !== undefined) {
+      const remainingPublicIds = new Set(currentGallery.map((img) => img.publicId));
+      for (const img of oldEvent.gallery) {
+        if (img.publicId && !remainingPublicIds.has(img.publicId)) {
+          try {
+            await cloudinary.uploader.destroy(img.publicId);
+          } catch (clErr) {
+            console.error('Error deleting gallery image from Cloudinary:', clErr);
+          }
+        }
+      }
+    }
+
+    // Add new uploaded gallery images
+    if (req.files && req.files.gallery) {
+      req.files.gallery.forEach((file) => {
+        currentGallery.push({
+          url: file.path,
+          publicId: file.filename,
+        });
+      });
+    }
+
+    // If gallery was submitted or there were new uploads, update it
+    if (updateData.gallery !== undefined || (req.files && req.files.gallery)) {
+      updateData.gallery = currentGallery;
     }
 
     const updatedEvent = await Event.findByIdAndUpdate(id, updateData, {
@@ -180,6 +252,19 @@ export const deleteEvent = async (req, res) => {
     // Delete image from cloudinary
     if (event.bannerPublicId) {
       await cloudinary.uploader.destroy(event.bannerPublicId);
+    }
+
+    // Delete gallery images from cloudinary
+    if (event.gallery && event.gallery.length > 0) {
+      for (const img of event.gallery) {
+        if (img.publicId) {
+          try {
+            await cloudinary.uploader.destroy(img.publicId);
+          } catch (clErr) {
+            console.error('Error deleting gallery image from Cloudinary:', clErr);
+          }
+        }
+      }
     }
 
     await Event.findByIdAndDelete(req.params.id);

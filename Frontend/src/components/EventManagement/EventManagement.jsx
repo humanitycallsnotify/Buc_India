@@ -28,6 +28,20 @@ import EventRegistrationConfigPanel, {
 import EventShareModal from "../EventShare/EventShareModal.jsx";
 import { useNavigate } from "react-router-dom";
 
+const ITINERARY_CATEGORIES = [
+  "Registration",
+  "Parking",
+  "Breakfast",
+  "Ride Start",
+  "Fuel Stop",
+  "Games",
+  "Photography",
+  "Lunch",
+  "Awards",
+  "Closing",
+  "Custom",
+];
+
 const EventManagement = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
@@ -52,6 +66,10 @@ const EventManagement = () => {
   const [registrationFields, setRegistrationFields] = useState(createDefaultRegistrationFields());
   const [registrationSettings, setRegistrationSettings] = useState(createDefaultRegistrationSettings());
   const [customQuestions, setCustomQuestions] = useState([]);
+  const [itinerary, setItinerary] = useState([]);
+  const [gallery, setGallery] = useState([]);
+  const [newGalleryFiles, setNewGalleryFiles] = useState([]);
+  const [newGalleryPreviews, setNewGalleryPreviews] = useState([]);
   const [shareEvent, setShareEvent] = useState(null);
 
   useEffect(() => { loadEvents(); }, []);
@@ -145,7 +163,12 @@ const EventManagement = () => {
     data.append("registrationFields", JSON.stringify(registrationFields));
     data.append("registrationSettings", JSON.stringify(registrationSettings));
     data.append("customQuestions", JSON.stringify(customQuestions));
+    data.append("itinerary", JSON.stringify(itinerary));
+    data.append("gallery", JSON.stringify(gallery));
     if (bannerFile) data.append('banner', bannerFile);
+    newGalleryFiles.forEach((file) => {
+      data.append('gallery', file);
+    });
     setSubmitLoading(true);
     try {
       if (editingEvent) {
@@ -166,6 +189,10 @@ const EventManagement = () => {
     setRegistrationFields(createDefaultRegistrationFields());
     setRegistrationSettings(createDefaultRegistrationSettings());
     setCustomQuestions([]);
+    setItinerary([]);
+    setGallery([]);
+    setNewGalleryFiles([]);
+    setNewGalleryPreviews([]);
     setBannerFile(null); setBannerPreview(null); setEditingEvent(null); setShowForm(false);
   };
 
@@ -189,6 +216,10 @@ const EventManagement = () => {
       ...(event.registrationSettings || {}),
     });
     setCustomQuestions(Array.isArray(event.customQuestions) ? event.customQuestions : []);
+    setItinerary(Array.isArray(event.itinerary) ? event.itinerary : []);
+    setGallery(Array.isArray(event.gallery) ? event.gallery : []);
+    setNewGalleryFiles([]);
+    setNewGalleryPreviews([]);
     setBannerPreview(event.banner);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -320,6 +351,227 @@ const EventManagement = () => {
                            <div className="text-[8px] text-steel-dim uppercase tracking-wider">{formData.showOnHomepage ? "Register Now banner visible" : "Hidden from homepage"}</div>
                         </div>
                      </label>
+                  </div>
+
+                  {/* Event Itinerary Section */}
+                  <div className="md:col-span-2 space-y-4 border-t border-white/5 pt-8">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Clock className="text-copper" size={22} />
+                      <h4 className="font-heading text-2xl uppercase text-white">
+                        Event <span className="text-copper">Itinerary</span>
+                      </h4>
+                    </div>
+                    <p className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-6">
+                      Add schedule points for the event. Reorder them using the arrows.
+                    </p>
+
+                    <div className="space-y-4">
+                      {itinerary.map((item, index) => (
+                        <div key={index} className="bg-carbon border border-white/10 p-5 rounded-sm flex flex-col md:flex-row gap-4 items-start md:items-center relative">
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
+                            <div className="space-y-1">
+                              <label className="text-[10px] text-steel-dim uppercase tracking-wider block font-bold">Time</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 07:00 AM"
+                                value={item.time}
+                                onChange={(e) => {
+                                  const next = [...itinerary];
+                                  next[index].time = e.target.value;
+                                  setItinerary(next);
+                                }}
+                                required
+                                className="w-full bg-carbon-light border border-white/10 p-3 font-body text-xs text-white outline-none focus:border-copper"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] text-steel-dim uppercase tracking-wider block font-bold">Category</label>
+                              <select
+                                value={item.category}
+                                onChange={(e) => {
+                                  const next = [...itinerary];
+                                  next[index].category = e.target.value;
+                                  setItinerary(next);
+                                }}
+                                required
+                                className="w-full bg-carbon-light border border-white/10 p-3 font-body text-xs text-white outline-none focus:border-copper"
+                              >
+                                <option value="">Select Category</option>
+                                {ITINERARY_CATEGORIES.map((cat) => (
+                                  <option key={cat} value={cat}>
+                                    {cat}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="space-y-1 sm:col-span-2">
+                              <label className="text-[10px] text-steel-dim uppercase tracking-wider block font-bold">Title</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Flag Off"
+                                value={item.title}
+                                onChange={(e) => {
+                                  const next = [...itinerary];
+                                  next[index].title = e.target.value;
+                                  setItinerary(next);
+                                }}
+                                required
+                                className="w-full bg-carbon-light border border-white/10 p-3 font-body text-xs text-white outline-none focus:border-copper"
+                              />
+                            </div>
+                            <div className="space-y-1 sm:col-span-2 md:col-span-4">
+                              <label className="text-[10px] text-steel-dim uppercase tracking-wider block font-bold">Description</label>
+                              <textarea
+                                placeholder="Brief description of this itinerary item..."
+                                value={item.description || ""}
+                                rows={2}
+                                onChange={(e) => {
+                                  const next = [...itinerary];
+                                  next[index].description = e.target.value;
+                                  setItinerary(next);
+                                }}
+                                className="w-full bg-carbon-light border border-white/10 p-3 font-body text-xs text-white outline-none focus:border-copper resize-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex md:flex-col gap-2 shrink-0 self-end md:self-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (index === 0) return;
+                                const next = [...itinerary];
+                                [next[index], next[index - 1]] = [next[index - 1], next[index]];
+                                setItinerary(next);
+                              }}
+                              disabled={index === 0}
+                              className="p-2 border border-white/10 hover:border-copper hover:text-copper transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                              title="Move Up"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (index === itinerary.length - 1) return;
+                                const next = [...itinerary];
+                                [next[index], next[index + 1]] = [next[index + 1], next[index]];
+                                setItinerary(next);
+                              }}
+                              disabled={index === itinerary.length - 1}
+                              className="p-2 border border-white/10 hover:border-copper hover:text-copper transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                              title="Move Down"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setItinerary(itinerary.filter((_, i) => i !== index));
+                              }}
+                              className="p-2 border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors"
+                              title="Delete Item"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setItinerary([...itinerary, { time: "", category: "Custom", title: "", description: "" }]);
+                        }}
+                        className="flex items-center gap-2 border border-dashed border-copper/40 text-copper px-4 py-3 font-body text-[10px] uppercase tracking-widest font-bold hover:bg-copper/10 transition-colors"
+                      >
+                        <Plus size={14} /> Add Itinerary Point
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Event Gallery Section */}
+                  <div className="md:col-span-2 space-y-4 border-t border-white/5 pt-8">
+                    <div className="flex items-center gap-3 mb-2">
+                      <ImageIcon className="text-copper" size={22} />
+                      <h4 className="font-heading text-2xl uppercase text-white">
+                        Event <span className="text-copper">Gallery</span>
+                      </h4>
+                    </div>
+                    <p className="font-body text-[10px] uppercase tracking-widest text-steel-dim mb-6">
+                      Upload event photos for participants to view after the ride.
+                    </p>
+
+                    {/* Existing gallery images */}
+                    {gallery.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim font-bold">Existing Gallery Photos</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                          {gallery.map((img, index) => (
+                            <div key={index} className="relative group aspect-square rounded-sm overflow-hidden border border-white/10 bg-carbon">
+                              <img src={img.url} alt="Gallery" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setGallery(gallery.filter((_, i) => i !== index));
+                                }}
+                                className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Delete Photo"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Upload new images */}
+                    <div className="space-y-4">
+                      <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim font-bold">Upload New Photos</label>
+                      <label className="w-full border-2 border-dashed border-white/10 p-8 flex flex-col items-center gap-4 cursor-pointer hover:bg-white/5 transition-all group">
+                        <Plus size={32} className="text-steel-dim group-hover:text-copper" />
+                        <span className="font-body text-[10px] uppercase tracking-widest font-bold">Select Post-Event Images</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length === 0) return;
+                            setNewGalleryFiles([...newGalleryFiles, ...files]);
+                            
+                            const previews = files.map((file) => URL.createObjectURL(file));
+                            setNewGalleryPreviews([...newGalleryPreviews, ...previews]);
+                          }}
+                        />
+                      </label>
+
+                      {newGalleryPreviews.length > 0 && (
+                        <div className="space-y-2">
+                          <label className="font-body text-[10px] uppercase tracking-widest text-steel-dim font-bold">New Photos Selected</label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {newGalleryPreviews.map((preview, index) => (
+                              <div key={index} className="relative group aspect-square rounded-sm overflow-hidden border border-white/10 bg-carbon animate-fade-in">
+                                <img src={preview} alt="New Preview" className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setNewGalleryFiles(newGalleryFiles.filter((_, i) => i !== index));
+                                    setNewGalleryPreviews(newGalleryPreviews.filter((_, i) => i !== index));
+                                  }}
+                                  className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-sm"
+                                  title="Remove Selection"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <EventRegistrationConfigPanel

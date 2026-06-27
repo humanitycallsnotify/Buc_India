@@ -7,8 +7,8 @@ const router = express.Router();
 
 router.get('/', getEvents);
 router.get('/homepage', getHomepageEvents);
-router.post('/', protect, upload.single('banner'), createEvent);
-router.put('/:id', protect, upload.single('banner'), updateEvent);
+router.post('/', protect, upload.fields([{ name: 'banner', maxCount: 1 }, { name: 'gallery', maxCount: 20 }]), createEvent);
+router.put('/:id', protect, upload.fields([{ name: 'banner', maxCount: 1 }, { name: 'gallery', maxCount: 20 }]), updateEvent);
 router.delete('/:id', protect, deleteEvent);
 
 export default router;

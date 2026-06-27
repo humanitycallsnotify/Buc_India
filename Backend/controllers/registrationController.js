@@ -18,6 +18,7 @@ import {
   buildConfiguredDuplicateQuery,
   isFieldEnabled,
   isDeclarationRequired,
+  isDuplicateRegistrationAllowed,
   normalizeRegistrationBody,
   normalizeScalarField,
   sanitizeRegistrationDocument,
@@ -177,7 +178,7 @@ export const createRegistration = async (req, res) => {
       }
     }
 
-    const { isLegacy } = validateRegistrationPayload(req.body);
+    const isLegacy = usesEventConfig ? eventConfig.isLegacy : true;
 
     if (
       !usesEventConfig &&
@@ -210,9 +211,9 @@ export const createRegistration = async (req, res) => {
       });
     }
 
-    const duplicateQuery = usesEventConfig
+    const duplicateQuery = (usesEventConfig && !isDuplicateRegistrationAllowed(eventConfig))
       ? buildConfiguredDuplicateQuery(eventId, req.body, eventConfig)
-      : buildDuplicateQuery(eventId, req.body);
+      : (usesEventConfig ? null : buildDuplicateQuery(eventId, req.body));
 
     const duplicate = duplicateQuery
       ? await Registration.findOne(duplicateQuery)
