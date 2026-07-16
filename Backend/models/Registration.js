@@ -6,9 +6,26 @@ const registrationSchema = new mongoose.Schema({
     ref: 'Event',
     required: true
   },
+  firstName: {
+    type: String,
+    required: false,
+    trim: true,
+    default: "",
+  },
+  lastName: {
+    type: String,
+    required: false,
+    trim: true,
+    default: "",
+  },
   fullName: {
     type: String,
     required: false,
+    trim: true,
+    default: "",
+  },
+  designation: {
+    type: String,
     trim: true,
     default: "",
   },
@@ -26,7 +43,7 @@ const registrationSchema = new mongoose.Schema({
   },
   registrationType: {
     type: String,
-    enum: ['student', 'student_rider', 'rider', 'pillion', 'public', ''],
+    enum: ['student', 'student_rider', 'rider', 'pillion', 'public', 'international_rider', ''],
     default: ''
   },
   clubName: {
@@ -139,6 +156,14 @@ const registrationSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  profileVideo: {
+    type: String,
+    default: ''
+  },
+  visitedCountries: [{
+    type: String,
+    trim: true
+  }],
   requestRidingGears: {
     type: Boolean,
     default: false
@@ -160,7 +185,11 @@ const registrationSchema = new mongoose.Schema({
   aadhaarNumber: { type: String, trim: true, default: '' },
   allergies: { type: String, trim: true, default: '' },
   insurance: { type: String, trim: true, default: '' },
-  registrationStatus: { type: String, trim: true, default: 'confirmed' },
+  registrationStatus: { 
+    type: String, 
+    enum: ['draft', 'confirmed', 'cancelled'],
+    default: 'confirmed' 
+  },
   customAnswers: { type: mongoose.Schema.Types.Mixed, default: null },
 }, { timestamps: true });
 

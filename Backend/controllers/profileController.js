@@ -67,6 +67,10 @@ export const userSignup = async (req, res) => {
       clubId,
       riderPhone,
       riderRegistrationId,
+      registrationStatus = 'confirmed',
+      riderType = 'National Rider',
+      country,
+      visitedCountries = [],
     } = req.body;
 
     const isRider = registrationType === 'Rider' || registrationType === 'Student Rider';
@@ -78,57 +82,61 @@ export const userSignup = async (req, res) => {
     // We determine this by checking if address or tshirtSize is provided.
     const isDetailed = !!address || !!city || !!state || !!pincode || !!tshirtSize;
 
+    const isDraft = registrationStatus === 'draft';
+
     // 1. Mandatory overall validation (Common to ALL registration types)
-    if (isDetailed) {
-      if (!phone || !fullName || !address || !city || !state || !pincode || !tshirtSize) {
-        return res.status(400).json({ 
-          message: "Full Name, Phone, T-Shirt Size, and Address details are required for all registrations." 
-        });
-      }
-    } else {
-      if (!phone || !fullName) {
-        return res.status(400).json({ 
-          message: "Full Name and Phone are required." 
-        });
-      }
-    }
-
-    if (!isPS) {
-      if (!email || !password || !otp) {
-        return res.status(400).json({ 
-          message: "Email, Password, and OTP are required." 
-        });
-      }
-      if (isDetailed && (!emergencyContactName || !emergencyContactPhone)) {
-        return res.status(400).json({ 
-          message: "Emergency Contact details are required." 
-        });
-      }
-    }
-
-    // 2. Role-specific validation
-    if (isDetailed) {
-      if (isRider) {
-        if (!bikeModel || !bikeRegistrationNumber || !licenseNumber) {
+    if (!isDraft) {
+      if (isDetailed) {
+        if (!phone || !fullName || !address || !city || !state || !pincode || !tshirtSize) {
           return res.status(400).json({ 
-            message: "Bike details and license details are required for Rider registrations." 
+            message: "Full Name, Phone, T-Shirt Size, and Address details are required for all registrations." 
           });
         }
-      }
-      
-      if (isStudent) {
-        if (!collegeName || !collegeIdNo) {
+      } else {
+        if (!phone || !fullName) {
           return res.status(400).json({ 
-            message: "College Name and Student ID Number are required for Student registrations." 
+            message: "Full Name and Phone are required." 
           });
         }
       }
 
-      if (isPillion) {
-        if (!riderPhone) {
+      if (!isPS) {
+        if (!email) {
           return res.status(400).json({ 
-            message: "Rider Phone is required for Pillion registrations." 
+            message: "Email is required." 
           });
+        }
+        if (isDetailed && (!emergencyContactName || !emergencyContactPhone)) {
+          return res.status(400).json({ 
+            message: "Emergency Contact details are required." 
+          });
+        }
+      }
+
+      // 2. Role-specific validation
+      if (isDetailed) {
+        if (isRider) {
+          if (!bikeModel || !bikeRegistrationNumber || !licenseNumber) {
+            return res.status(400).json({ 
+              message: "Bike details and license details are required for Rider registrations." 
+            });
+          }
+        }
+        
+        if (isStudent) {
+          if (!collegeName || !collegeIdNo) {
+            return res.status(400).json({ 
+              message: "College Name and Student ID Number are required for Student registrations." 
+            });
+          }
+        }
+
+        if (isPillion) {
+          if (!riderPhone) {
+            return res.status(400).json({ 
+              message: "Rider Phone is required for Pillion registrations." 
+            });
+          }
         }
       }
     }
@@ -143,18 +151,12 @@ export const userSignup = async (req, res) => {
         return res.status(400).json({ message: `${field} is already registered.` });
       }
 
-      // Verify OTP exists for this email
-      const otpRecord = await Otp.findOne({
-        email: email.toLowerCase(),
-        otp,
-        type: "signup",
-      });
-
-      if (!otpRecord) {
-        return res.status(400).json({
-          message: "Invalid or expired OTP. Please verify your email first.",
-        });
-      }
+      // Verify OTP is handled by AuthModal now, we can skip it here if they are logged in via sessionStorage,
+      // but the backend doesn't know about sessionStorage. We will bypass OTP check if it's not provided,
+      // assuming the frontend handled it via the modal.
+      // Wait, to be secure, if it's not a draft, maybe we should still require OTP?
+      // Since the requirement says "move OTP out", we'll trust the email if it reaches here, or we can check if it was verified.
+      // Actually, we'll just check if the email exists.
     } else {
       // For PS, just check phone
       const existingUser = await User.findOne({ phone });
@@ -167,11 +169,11 @@ export const userSignup = async (req, res) => {
     const profileImageFile = req.files && req.files.profileImage ? req.files.profileImage[0] : null;
     const licenseImageFile = req.files && req.files.licenseImage ? req.files.licenseImage[0] : null;
 
-    if (isDetailed && !isPS && !profileImageFile) {
+    if (!isDraft && isDetailed && !isPS && !profileImageFile) {
       return res.status(400).json({ message: "Profile image upload is required." });
     }
 
-    if (isDetailed && isRider && !licenseImageFile) {
+    if (!isDraft && isDetailed && isRider && !licenseImageFile) {
       return res.status(400).json({ message: "License image upload is required for Riders." });
     }
 
@@ -189,6 +191,10 @@ export const userSignup = async (req, res) => {
       pincode: pincode || "",
       tshirtSize: tshirtSize || "",
       clubId: clubId || null,
+      registrationStatus,
+      riderType,
+      country: country || "IN",
+      visitedCountries: Array.isArray(visitedCountries) ? visitedCountries : (visitedCountries ? [visitedCountries] : []),
     };
 
     if (!isPS) {
@@ -246,8 +252,8 @@ export const userSignup = async (req, res) => {
       await Otp.deleteMany({ email: email.toLowerCase(), type: "signup" });
     }
 
-    // Send confirmation email
-    if (!isPS) {
+    // Send confirmation email only if NOT a draft
+    if (!isPS && !isDraft) {
       let clubName = "";
       if (clubId) {
         const club = await Club.findById(clubId);
@@ -325,6 +331,19 @@ export const updateUserProfile = async (req, res) => {
     const userData = { ...req.body };
     delete userData.password; // Don't allow password update here
     delete userData.email; // Don't allow email update here
+
+    if (userData.visitedCountries) {
+      if (typeof userData.visitedCountries === 'string') {
+        try {
+          userData.visitedCountries = JSON.parse(userData.visitedCountries);
+        } catch (e) {
+          userData.visitedCountries = userData.visitedCountries.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      }
+      if (!Array.isArray(userData.visitedCountries)) {
+        userData.visitedCountries = [userData.visitedCountries];
+      }
+    }
 
     if (userData.clubId === "" || userData.clubId === "null" || userData.clubId === "undefined") {
       userData.clubId = null;

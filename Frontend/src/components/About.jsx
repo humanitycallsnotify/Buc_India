@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { Heart, Compass, Users, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import GalleryGlimpse from "./GalleryGlimpse";
-import PartnerMarquee from "./PartnerMarquee";
 import joinFamilyImg from "../assets/gallery/WhatsApp Image 2025-08-11 at 20.21.15_0db94979.jpg";
 
 const About = () => {
@@ -27,7 +26,7 @@ const About = () => {
     <section id="about" className="section-container py-32 bg-carbon relative">
       {/* More Than A Club Section - Layout Swap */}
       <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-20 items-center mb-40">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -50 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -36,12 +35,12 @@ const About = () => {
         >
           <span className="text-copper font-body tracking-ultra text-xs md:text-sm uppercase mb-6 block font-bold">Our Legacy</span>
           <h2 className="font-heading text-6xl md:text-8xl text-white uppercase leading-none mb-8">
-            More Than <br/><span className="text-transparent" style={{ WebkitTextStroke: "1px rgba(255,255,255,0.2)" }}>A Community</span>
+            More Than <br /><span className="text-transparent" style={{ WebkitTextStroke: "1px rgba(255,255,255,0.2)" }}>A Community</span>
           </h2>
           <p className="font-text text-steel-dim text-lg leading-relaxed mb-10 border-l-2 border-copper pl-6 max-w-xl">
             BUC India is a community of passionate riders dedicated to the spirit of brotherhood. We stand for more than just the road — supporting humanity, fostering genuine connections, and leading the way in passionate safety.
           </p>
-          
+
           <div className="grid grid-cols-2 gap-6 mb-12">
             {["Organized Rides", "Safety First", "Pan-India Network", "Exclusive Events"].map((text) => (
               <div key={text} className="flex items-center gap-3 group">
@@ -52,7 +51,7 @@ const About = () => {
               </div>
             ))}
           </div>
-          
+
           <div className="relative group inline-block overflow-hidden">
             <button
               onClick={handleCtaClick}
@@ -64,7 +63,7 @@ const About = () => {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 50 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -72,9 +71,9 @@ const About = () => {
           className="order-1 md:order-2 group relative cursor-pointer"
         >
           <div className="overflow-hidden rounded-sm border border-white/10 shadow-2xl relative z-10">
-            <img 
-              src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop" 
-              alt="Biker Group" 
+            <img
+              src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop"
+              alt="Biker Group"
               className="w-full grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000"
             />
           </div>
@@ -83,8 +82,7 @@ const About = () => {
         </motion.div>
       </div>
 
-      {/* Partners Marquee */}
-      <PartnerMarquee />
+
 
       {/* Our Mission Section - Awwwards Style Grid */}
       <div className="max-w-7xl mx-auto px-6 mb-40">
@@ -111,27 +109,27 @@ const About = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {[
-            { 
-              title: "Brotherhood", 
-              icon: Heart, 
+            {
+              title: "Brotherhood",
+              icon: Heart,
               desc: "We believe in the unbreakable bonds formed between riders across India who share the same passion.",
               delay: 0.1
             },
-            { 
-              title: "Adventure", 
-              icon: Compass, 
+            {
+              title: "Adventure",
+              icon: Compass,
               desc: "Every ride is an opportunity to explore new horizons and create unforgettable memories.",
               delay: 0.2
             },
-            { 
-              title: "Community", 
-              icon: Users, 
+            {
+              title: "Community",
+              icon: Users,
               desc: "Supporting each other on and off the road, building lasting friendships and connections across India.",
               delay: 0.3
             },
-            { 
-              title: "Excellence", 
-              icon: Trophy, 
+            {
+              title: "Excellence",
+              icon: Trophy,
               desc: "Promoting safe riding practices and maintaining the highest standards in everything we do.",
               delay: 0.4
             }
@@ -146,7 +144,7 @@ const About = () => {
             >
               <div className="h-full bg-carbon-light/30 backdrop-blur-sm border border-white/5 p-12 transition-all duration-500 group-hover:border-copper/40 group-hover:bg-carbon relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-copper/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-copper/10 transition-colors"></div>
-                
+
                 <div className="flex items-start gap-8 relative z-10">
                   <div className="w-14 h-14 bg-copper/10 flex items-center justify-center rounded-sm transition-transform duration-500 group-hover:rotate-[360deg] group-hover:scale-110">
                     <pillar.icon className="text-copper w-7 h-7" />
@@ -173,20 +171,20 @@ const About = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div className="relative p-1 md:p-1 overflow-hidden group">
           <div className="absolute inset-0 bg-carbon-light/40 backdrop-blur-md border border-white/5 rounded-sm"></div>
-          
+
           <div className="grid lg:grid-cols-2 gap-0 relative z-10">
             {/* Image on Left now */}
             <div className="relative overflow-hidden group/img h-[400px] lg:h-auto">
-              <img 
-                src={joinFamilyImg} 
-                alt="Family" 
-                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000" 
+              <img
+                src={joinFamilyImg}
+                alt="Family"
+                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-carbon/80 lg:to-transparent"></div>
             </div>
 
             {/* Content on Right now */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
@@ -199,8 +197,8 @@ const About = () => {
               </p>
               <ul className="grid sm:grid-cols-1 gap-6 mb-12">
                 {highlights.map((item, i) => (
-                  <motion.li 
-                    key={i} 
+                  <motion.li
+                    key={i}
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 + i * 0.1 }}
@@ -211,18 +209,18 @@ const About = () => {
                   </motion.li>
                 ))}
               </ul>
-              
+
               <div className="relative group/btn inline-block self-start overflow-hidden">
-              <button
-                onClick={handleCtaClick}
-                className="relative px-12 py-5 bg-copper text-carbon font-heading text-lg uppercase tracking-widest hover:bg-white transition-colors duration-500 overflow-hidden"
-              >
+                <button
+                  onClick={handleCtaClick}
+                  className="relative px-12 py-5 bg-copper text-carbon font-heading text-lg uppercase tracking-widest hover:bg-white transition-colors duration-500 overflow-hidden"
+                >
                   <span className="relative z-10">Get Started</span>
                 </button>
               </div>
             </motion.div>
           </div>
-          
+
           {/* Atmospheric Elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-copper/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-copper/5 blur-[150px] rounded-full translate-y-1/2 -translate-x-1/2"></div>

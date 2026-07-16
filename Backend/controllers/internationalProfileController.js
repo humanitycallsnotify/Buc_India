@@ -3,7 +3,7 @@ import { cloudinary } from "../middleware/cloudinaryConfig.js";
 
 const parseBool = (value) => value === true || value === "true";
 
-const buildPayload = (body, file, existing = null) => {
+const buildPayload = (body, files, existing = null) => {
   const payload = {
     fullName: body.fullName?.trim() || existing?.fullName || "",
     designation: body.designation?.trim() ?? existing?.designation ?? "",
@@ -22,20 +22,39 @@ const buildPayload = (body, file, existing = null) => {
         : (existing?.isActive ?? true),
   };
 
-  if (file) {
-    payload.profilePhoto = file.path;
-    payload.profilePhotoPublicId = file.filename;
+  let visited = [];
+  if (body.visitedCountries) {
+    if (Array.isArray(body.visitedCountries)) {
+      visited = body.visitedCountries;
+    } else if (typeof body.visitedCountries === "string") {
+      visited = body.visitedCountries.split(",").map(c => c.trim()).filter(Boolean);
+    }
+  } else if (existing) {
+    visited = existing.visitedCountries || [];
+  }
+  payload.visitedCountries = visited;
+
+  const photoFile = files?.profilePhoto?.[0];
+  if (photoFile) {
+    payload.profilePhoto = photoFile.path;
+    payload.profilePhotoPublicId = photoFile.filename;
+  }
+
+  const videoFile = files?.profileVideo?.[0];
+  if (videoFile) {
+    payload.profileVideo = videoFile.path;
+    payload.profileVideoPublicId = videoFile.filename;
   }
 
   return payload;
 };
 
-const destroyPhoto = async (publicId) => {
+const destroyAsset = async (publicId, resourceType = "image") => {
   if (!publicId) return;
   try {
-    await cloudinary.uploader.destroy(publicId);
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
   } catch (err) {
-    console.error("Error deleting image from Cloudinary:", err);
+    console.error(`Error deleting ${resourceType} from Cloudinary:`, err);
   }
 };
 
@@ -68,11 +87,12 @@ export const createProfile = async (req, res) => {
     if (!req.body.fullName?.trim()) {
       return res.status(400).json({ message: "Full name is required" });
     }
-    if (!req.file) {
+    const photoFile = req.files && req.files.profilePhoto ? req.files.profilePhoto[0] : null;
+    if (!photoFile) {
       return res.status(400).json({ message: "Profile photo is required" });
     }
 
-    const profile = new InternationalProfile(buildPayload(req.body, req.file));
+    const profile = new InternationalProfile(buildPayload(req.body, req.files));
     const saved = await profile.save();
     res.status(201).json(saved);
   } catch (error) {
@@ -87,12 +107,16 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: "Profile not found" });
     }
 
-    const updates = buildPayload(req.body, null, profile);
+    const updates = buildPayload(req.body, req.files, profile);
 
-    if (req.file) {
-      await destroyPhoto(profile.profilePhotoPublicId);
-      updates.profilePhoto = req.file.path;
-      updates.profilePhotoPublicId = req.file.filename;
+    const photoFile = req.files && req.files.profilePhoto ? req.files.profilePhoto[0] : null;
+    if (photoFile) {
+      await destroyAsset(profile.profilePhotoPublicId, "image");
+    }
+
+    const videoFile = req.files && req.files.profileVideo ? req.files.profileVideo[0] : null;
+    if (videoFile) {
+      await destroyAsset(profile.profileVideoPublicId, "video");
     }
 
     Object.assign(profile, updates);
@@ -110,7 +134,8 @@ export const deleteProfile = async (req, res) => {
       return res.status(404).json({ message: "Profile not found" });
     }
 
-    await destroyPhoto(profile.profilePhotoPublicId);
+    await destroyAsset(profile.profilePhotoPublicId, "image");
+    await destroyAsset(profile.profileVideoPublicId, "video");
     await InternationalProfile.findByIdAndDelete(req.params.id);
     res.json({ message: "Profile deleted successfully" });
   } catch (error) {

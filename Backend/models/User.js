@@ -9,8 +9,21 @@ const userSchema = new mongoose.Schema({
   },
   registrationType: {
     type: String,
-    enum: ['PS', 'Public User', 'Rider', 'Student Rider', 'Student', 'Pillion'],
+    enum: ['PS', 'Public User', 'Rider', 'Student Rider', 'Student', 'Pillion', 'International Rider'],
     default: 'Rider'
+  },
+  riderType: {
+    type: String,
+    enum: ['National Rider', 'International Rider'],
+    default: 'National Rider'
+  },
+  country: {
+    type: String,
+    default: 'IN' // ISO code, default to India
+  },
+  visitedCountries: {
+    type: [String],
+    default: []
   },
   tshirtSize: {
     type: String,
@@ -46,6 +59,16 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: false
+  },
+  firstName: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  lastName: {
+    type: String,
+    trim: true,
+    default: ''
   },
   fullName: {
     type: String,
@@ -145,6 +168,11 @@ const userSchema = new mongoose.Schema({
   licenseImagePublicId: {
     type: String,
     default: ''
+  },
+  registrationStatus: {
+    type: String,
+    enum: ['draft', 'confirmed'],
+    default: 'confirmed'
   },
   clubId: {
     type: mongoose.Schema.Types.ObjectId,

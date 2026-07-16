@@ -110,53 +110,55 @@ const Safety = () => {
       </div>
 
       {/* Safety Influencers */}
-      <div className="max-w-7xl mx-auto px-6 mb-24">
-        <div className="mb-12">
-          <span className="text-copper font-body tracking-ultra text-xs md:text-sm uppercase mb-2 block font-bold">Safety Advocates</span>
-          <h2 className="font-heading text-5xl md:text-6xl text-white uppercase leading-none">
-            Safety <span className="text-copper">Influencers</span>
-          </h2>
-        </div>
+      {(loadingInfluencers || influencers.length > 0) && (
+        <div className="max-w-7xl mx-auto px-6 mb-24">
+          <div className="mb-12">
+            <span className="text-copper font-body tracking-ultra text-xs md:text-sm uppercase mb-2 block font-bold">Safety Advocates</span>
+            <h2 className="font-heading text-5xl md:text-6xl text-white uppercase leading-none">
+              Safety <span className="text-copper">Influencers</span>
+            </h2>
+          </div>
 
-        {loadingInfluencers ? (
-          <div className="flex justify-center py-16">
-            <div className="w-10 h-10 border-4 border-copper/20 border-t-copper rounded-full animate-spin" />
-          </div>
-        ) : influencers.length === 0 ? null : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {influencers.map((influencer) => (
-              <button
-                key={influencer._id}
-                type="button"
-                onClick={() => setSelectedInfluencer(influencer)}
-                className="group text-left p-6 border border-white/5 bg-carbon hover:border-copper/30 transition-all duration-500 hover:-translate-y-1"
-              >
-                <div className="w-24 h-24 mb-6 overflow-hidden border border-copper/20 rounded-full mx-auto sm:mx-0">
-                  <img
-                    src={influencer.profilePhoto}
-                    alt={influencer.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                  />
-                </div>
-                <h3 className="font-heading text-xl uppercase text-white group-hover:text-copper transition-colors mb-1">
-                  {influencer.name}
-                </h3>
-                <p className="font-body text-[10px] text-steel-dim uppercase tracking-widest mb-3">
-                  {[influencer.designation, influencer.organization].filter(Boolean).join(" · ")}
-                </p>
-                {influencer.shortDescription && (
-                  <p className="font-text text-steel-dim text-sm line-clamp-3">{influencer.shortDescription}</p>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+          {loadingInfluencers ? (
+            <div className="flex justify-center py-16">
+              <div className="w-10 h-10 border-4 border-copper/20 border-t-copper rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {influencers.map((influencer) => (
+                <button
+                  key={influencer._id}
+                  type="button"
+                  onClick={() => setSelectedInfluencer(influencer)}
+                  className="group text-left p-6 border border-white/5 bg-carbon hover:border-copper/30 transition-all duration-500 hover:-translate-y-1"
+                >
+                  <div className="w-24 h-24 mb-6 overflow-hidden border border-copper/20 rounded-full mx-auto sm:mx-0">
+                    <img
+                      src={influencer.profilePhoto}
+                      alt={influencer.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                    />
+                  </div>
+                  <h3 className="font-heading text-xl uppercase text-white group-hover:text-copper transition-colors mb-1">
+                    {influencer.name}
+                  </h3>
+                  <p className="font-body text-[10px] text-steel-dim uppercase tracking-widest mb-3">
+                    {[influencer.designation, influencer.organization].filter(Boolean).join(" · ")}
+                  </p>
+                  {influencer.shortDescription && (
+                    <p className="font-text text-steel-dim text-sm line-clamp-3">{influencer.shortDescription}</p>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Safety Pledge - Pinning Container */}
-      <div ref={pledgeRef} className="h-[250vh] relative mt-12">
+      <div ref={pledgeRef} className="h-[160vh] relative mt-12">
         <div className="sticky top-0 h-screen flex flex-col justify-center items-center overflow-hidden">
           {/* Atmospheric Glow */}
           <motion.div 

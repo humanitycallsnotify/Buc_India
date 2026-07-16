@@ -82,11 +82,16 @@ export const partnerUpload = multer({ storage: partnerStorage });
 
 const contentStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: "buc_india_content",
-    allowed_formats: ["jpg", "png", "jpeg", "webp"],
-    transformation: [{ width: 800, height: 800, crop: "limit" }],
-  },
+  params: async (req, file) => {
+    const isVideo = file.mimetype.startsWith('video/');
+    return {
+      folder: 'buc_india_content',
+      resource_type: isVideo ? 'video' : 'image',
+      allowed_formats: isVideo 
+        ? ['mp4', 'mov', 'avi', 'mkv', 'webm'] 
+        : ['jpg', 'png', 'jpeg', 'webp'],
+    };
+  }
 });
 
 export const contentUpload = multer({ storage: contentStorage });

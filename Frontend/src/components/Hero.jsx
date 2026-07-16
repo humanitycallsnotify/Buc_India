@@ -126,7 +126,7 @@ const Hero = () => {
   }, [isLoading]);
 
   const handleJoinClick = () => {
-    navigate("/register");
+    window.dispatchEvent(new Event("open-auth-modal"));
   };
 
   return (
@@ -250,8 +250,7 @@ const Hero = () => {
         </p>
 
         {/* Buttons */}
-        <div className="reveal-item flex flex-col md:flex-row items-center justify-center gap-6">
-          {!isLoggedIn && (
+        <div className="reveal-item flex flex-col md:flex-row items-center justify-center gap-10 mt-6">
             <div className="interactive-item overflow-hidden">
               <GlareHover
                 borderRadius="0"
@@ -260,38 +259,27 @@ const Hero = () => {
               >
                 <button
                   onClick={handleJoinClick}
-                  className="group relative px-12 py-4 bg-transparent border border-copper/50 text-white font-body font-bold uppercase tracking-widest text-sm overflow-hidden transition-all duration-500"
+                  className="group relative px-8 py-3 bg-transparent border border-copper text-white font-body uppercase tracking-[0.3em] text-xs md:text-sm overflow-hidden transition-all duration-500"
                 >
-                  <span className="relative z-10 transition-colors duration-500 group-hover:text-carbon">
-                    Join The Brotherhood
+                  <span className="relative z-10 transition-colors duration-500 group-hover:text-carbon font-bold">
+                    JOIN THE BROTHERHOOD
                   </span>
                   <div className="absolute inset-0 bg-copper translate-x-[-105%] group-hover:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.7,0,0.3,1)]"></div>
                 </button>
               </GlareHover>
             </div>
-          )}
           <button
             onClick={() => navigate("/events")}
-            className="font-body text-white/50 hover:text-white transition-colors tracking-[0.3em] text-xs md:text-sm border-b border-white/10 pb-1 interactive-item"
+            className="group flex items-center font-body text-steel-dim hover:text-white transition-colors tracking-[0.3em] text-xs md:text-sm uppercase interactive-item relative"
           >
-            EXPLORE RIDES
+            <span className="relative pb-1">EXPLORE RIDES
+              <span className="absolute -bottom-1 left-0 w-full h-[1px] bg-white/10 group-hover:bg-white/30 transition-colors"></span>
+            </span>
           </button>
         </div>
       </div>
 
-      {/* Scroll Indicator - Pill Shape */}
-      <div className="reveal-item absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-10">
-        <div className="w-6 h-10 border-2 border-white/10 rounded-full flex justify-center p-1">
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            className="w-1 h-2 bg-copper rounded-full"
-          />
-        </div>
-        <span className="text-[8px] tracking-[0.4em] uppercase text-white/20 font-body">
-          Scroll
-        </span>
-      </div>
+
     </section>
   );
 };

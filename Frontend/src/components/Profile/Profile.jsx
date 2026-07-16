@@ -23,7 +23,10 @@ import {
   Eye,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import Select from "react-select";
+import ReactCountryFlag from "react-country-flag";
 import { profileService, registrationService } from "../../services/api";
+import { COUNTRY_OPTIONS, customSelectStyles } from "../../constants/countries";
 import Header from "../Header.jsx";
 import Footer from "../Footer.jsx";
 import "./Profile.css";
@@ -63,6 +66,9 @@ const Profile = () => {
     twitterUrl: "",
     youtubeUrl: "",
     websiteUrl: "",
+    riderType: "National Rider",
+    country: "IN",
+    visitedCountries: [],
   });
 
   const [originalData, setOriginalData] = useState({});
@@ -203,6 +209,11 @@ const Profile = () => {
       formData.append("twitterUrl", profileData.twitterUrl || "");
       formData.append("youtubeUrl", profileData.youtubeUrl || "");
       formData.append("websiteUrl", profileData.websiteUrl || "");
+      formData.append("riderType", profileData.riderType || "National Rider");
+      formData.append("country", profileData.country || "IN");
+      if (profileData.visitedCountries && profileData.visitedCountries.length) {
+        profileData.visitedCountries.forEach(c => formData.append("visitedCountries", c));
+      }
 
       if (profileImage) {
         formData.append("profileImage", profileImage);
@@ -461,6 +472,72 @@ const Profile = () => {
                     type="select"
                     options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]}
                   />
+                  {(profileData.registrationType === "Rider" || profileData.registrationType === "International Rider" || profileData.registrationType === "Student Rider" || !profileData.registrationType) && (
+                    <>
+                      <ProfileField
+                        label="Rider Category"
+                        icon={Bike}
+                        name="riderType"
+                        value={profileData.riderType}
+                        onChange={handleInputChange}
+                        isEditing={isEditing}
+                        type="select"
+                        options={["National Rider", "International Rider"]}
+                      />
+                      {profileData.riderType === "International Rider" && (
+                        <div className="md:col-span-2 space-y-4">
+                          <div className="space-y-2 block">
+                            <label className="flex items-center text-gray-300 text-sm font-medium">Home Country</label>
+                            {isEditing ? (
+                              <Select
+                                options={COUNTRY_OPTIONS}
+                                value={COUNTRY_OPTIONS.find(o => o.value === profileData.country) || null}
+                                onChange={(selected) => setProfileData(prev => ({ ...prev, country: selected ? selected.value : "IN" }))}
+                                styles={customSelectStyles}
+                                isSearchable
+                                placeholder="Search & Select Home Country"
+                              />
+                            ) : (
+                              <div className="bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 text-white flex items-center gap-2">
+                                <ReactCountryFlag countryCode={profileData.country || "IN"} svg />
+                                <span>{COUNTRY_OPTIONS.find(o => o.value === profileData.country)?.label || "India"}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-2 block">
+                            <label className="flex items-center text-gray-300 text-sm font-medium">Visited Countries</label>
+                            {isEditing ? (
+                              <Select
+                                isMulti
+                                options={COUNTRY_OPTIONS}
+                                value={COUNTRY_OPTIONS.filter(o => profileData.visitedCountries?.includes(o.value))}
+                                onChange={(selected) => setProfileData(prev => ({ ...prev, visitedCountries: selected ? selected.map(o => o.value) : [] }))}
+                                styles={customSelectStyles}
+                                isSearchable
+                                placeholder="Search & Select Visited Countries"
+                              />
+                            ) : (
+                              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 min-h-[44px]">
+                                {profileData.visitedCountries && profileData.visitedCountries.length > 0 ? (
+                                  <div className="flex flex-wrap gap-3">
+                                    {profileData.visitedCountries.map(code => (
+                                      <div key={code} className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-md border border-white/10">
+                                        <ReactCountryFlag countryCode={code} svg />
+                                        <span className="text-sm">{COUNTRY_OPTIONS.find(o => o.value === code)?.label || code}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-500">None</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
 

@@ -13,8 +13,24 @@ const router = express.Router();
 
 router.get("/public", getPublicProfiles);
 router.get("/", protect, getAllProfiles);
-router.post("/", protect, contentUpload.single("profilePhoto"), createProfile);
-router.put("/:id", protect, contentUpload.single("profilePhoto"), updateProfile);
+router.post(
+  "/",
+  protect,
+  contentUpload.fields([
+    { name: "profilePhoto", maxCount: 1 },
+    { name: "profileVideo", maxCount: 1 },
+  ]),
+  createProfile
+);
+router.put(
+  "/:id",
+  protect,
+  contentUpload.fields([
+    { name: "profilePhoto", maxCount: 1 },
+    { name: "profileVideo", maxCount: 1 },
+  ]),
+  updateProfile
+);
 router.delete("/:id", protect, deleteProfile);
 
 export default router;
