@@ -1,4 +1,83 @@
 import { Instagram, Facebook, Twitter, Globe, Linkedin, Youtube, X } from "lucide-react";
+import ReactCountryFlag from "react-country-flag";
+
+const countryNameToCode = (countryName) => {
+  if (!countryName) return "";
+  const name = countryName.trim().toLowerCase();
+  if (name.length === 2) return name.toUpperCase();
+  
+  const map = {
+    india: "IN",
+    "united states": "US",
+    "united states of america": "US",
+    usa: "US",
+    "united kingdom": "GB",
+    uk: "GB",
+    "united arab emirates": "AE",
+    uae: "AE",
+    singapore: "SG",
+    australia: "AU",
+    canada: "CA",
+    germany: "DE",
+    france: "FR",
+    italy: "IT",
+    spain: "ES",
+    japan: "JP",
+    china: "CN",
+    brazil: "BR",
+    russia: "RU",
+    "south africa": "ZA",
+    netherlands: "NL",
+    switzerland: "CH",
+    sweden: "SE",
+    norway: "NO",
+    denmark: "DK",
+    finland: "FI",
+    "new zealand": "NZ",
+    malaysia: "MY",
+    thailand: "TH",
+    indonesia: "ID",
+    philippines: "PH",
+    vietnam: "VN",
+  };
+  return map[name] || "";
+};
+
+const getCountryName = (codeOrName) => {
+  if (!codeOrName) return "";
+  if (codeOrName.length !== 2) return codeOrName;
+  const map = {
+    IN: "India",
+    US: "United States",
+    GB: "United Kingdom",
+    AE: "United Arab Emirates",
+    SG: "Singapore",
+    AU: "Australia",
+    CA: "Canada",
+    DE: "Germany",
+    FR: "France",
+    IT: "Italy",
+    ES: "Spain",
+    JP: "Japan",
+    CN: "China",
+    BR: "Brazil",
+    RU: "Russia",
+    ZA: "South Africa",
+    NL: "Netherlands",
+    CH: "Switzerland",
+    SE: "Sweden",
+    NO: "Norway",
+    DK: "Denmark",
+    FI: "Finland",
+    NZ: "New Zealand",
+    MY: "Malaysia",
+    TH: "Thailand",
+    ID: "Indonesia",
+    PH: "Philippines",
+    VN: "Vietnam",
+  };
+  return map[codeOrName.toUpperCase()] || codeOrName;
+};
 
 const SOCIAL_CONFIG = {
   instagramUrl: { Icon: Instagram, label: "Instagram" },
@@ -77,10 +156,43 @@ const ProfileContentModal = ({ item, onClose, nameField = "fullName" }) => {
           </div>
 
           <div className="md:col-span-3 p-8 md:p-10">
-            {location && (
-              <span className="text-copper font-body text-[10px] tracking-[0.3em] uppercase mb-2 block">
-                {location}
-              </span>
+            {(location || (item.visitedCountries && item.visitedCountries.length > 0)) && (
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                {location && countryNameToCode(location) && (
+                  <ReactCountryFlag
+                    countryCode={countryNameToCode(location)}
+                    svg
+                    style={{
+                      width: '1.2em',
+                      height: '1.2em',
+                    }}
+                    title={getCountryName(location)}
+                  />
+                )}
+                {location && (
+                  <span className="text-copper font-body text-[10px] tracking-[0.3em] uppercase block">
+                    {getCountryName(location)}
+                  </span>
+                )}
+                
+                {item.visitedCountries && item.visitedCountries.length > 0 && (
+                  <div className={`flex items-center gap-1 ${location ? 'border-l border-white/10 pl-2' : ''}`}>
+                    <span className="text-steel-dim text-[8px] uppercase tracking-wider mr-1">Visited:</span>
+                    {item.visitedCountries.map((cCode) => (
+                      <ReactCountryFlag
+                        key={cCode}
+                        countryCode={cCode}
+                        svg
+                        style={{
+                          width: '1em',
+                          height: '1em',
+                        }}
+                        title={getCountryName(cCode)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
             <h3 className="font-heading text-3xl md:text-4xl uppercase text-white mb-2">
               {name}

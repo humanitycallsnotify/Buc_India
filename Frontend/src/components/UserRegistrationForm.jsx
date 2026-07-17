@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
+import ReactCountryFlag from "react-country-flag";
 import { toast } from "react-toastify";
 import {
   User,
@@ -36,6 +38,7 @@ import {
   OTP_VERIFY_SUCCESS,
   mapOtpVerifyError,
 } from "../constants/registrationValidationMessages";
+import { COUNTRY_OPTIONS, customSelectStyles } from "../constants/countries";
 
 const SOCIAL_PLATFORMS = [
   { value: "facebook", label: "Facebook", placeholder: "e.g. https://facebook.com/yourprofile", field: "facebookUrl" },
@@ -63,12 +66,16 @@ const mapSocialProfilesToFields = (profiles) => {
 const UserRegistrationForm = ({ eventId = "community" }) => {
   const [formData, setFormData] = useState({
     registrationType: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
+    designation: "",
+    riderType: "National Rider",
+    country: "IN",
+    profileVideo: "",
+    visitedCountries: [],
     gender: "",
-    email: "",
+    email: sessionStorage.getItem("authIdentifier") || "",
     phone: "",
-    password: "",
-    otp: "",
     tshirtSize: "",
     dateOfBirth: "",
     bloodGroup: "",
@@ -95,6 +102,8 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
 
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [profileVideo, setProfileVideo] = useState(null);
+  const [profileVideoPreview, setProfileVideoPreview] = useState(null);
   const [licenseImage, setLicenseImage] = useState(null);
   const [licenseImagePreview, setLicenseImagePreview] = useState(null);
 
@@ -137,6 +146,19 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
       }
     };
     fetchClubs();
+
+    // Load existing draft if authenticated
+    const email = sessionStorage.getItem("authIdentifier");
+    if (email) {
+      profileService.get(email, null).then(profile => {
+        if (profile) {
+          setFormData(prev => ({ ...prev, ...profile }));
+          if (profile.profileImage) {
+            // Can't show cloudinary directly if it's just path, but let's assume it returns public URL
+          }
+        }
+      }).catch(err => console.log("No existing profile found"));
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -292,8 +314,8 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, isDraft = false) => {
+    if (e) e.preventDefault();
 
     if (!formData.registrationType) {
       return toast.error("Please select a registration category.");
@@ -311,11 +333,13 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
       isPublicUser;
 
     // 1. Core validations common to ALL registration types
-    if (
-      !formData.fullName || !formData.phone || !formData.gender ||
-      !formData.address || !formData.city || !formData.state || !formData.pincode
-    ) {
-      return toast.error("Please fill all required fields: Name, Phone, Gender, and Address details.");
+    if (!isDraft) {
+      if (
+        !formData.firstName || !formData.lastName || !formData.phone || !formData.gender ||
+        !formData.address || !formData.city || !formData.state || !formData.pincode
+      ) {
+        return toast.error("Please fill all required fields: Name, Phone, Gender, and Address details.");
+      }
     }
 
     if (needsTshirt && !formData.tshirtSize) {
@@ -404,10 +428,22 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
 
       // Append core fields (Common to all)
       data.append("registrationType", formData.registrationType);
+      data.append("registrationStatus", isDraft ? "draft" : "confirmed");
       if (eventId) {
         data.append("eventId", eventId);
       }
-      data.append("fullName", formData.fullName);
+      data.append("firstName", formData.firstName);
+      data.append("lastName", formData.lastName);
+      data.append("designation", formData.designation || "");
+      if (formData.registrationType === "International Rider" || formData.registrationType === "Rider") {
+        data.append("riderType", formData.riderType);
+      }
+      if (formData.riderType === "International Rider" || formData.registrationType === "International Rider") {
+        data.append("country", formData.country);
+        if (formData.visitedCountries && formData.visitedCountries.length) {
+          formData.visitedCountries.forEach(c => data.append("visitedCountries", c));
+        }
+      }
       data.append("phone", formData.phone);
       if (needsTshirt) {
         data.append("tshirtSize", formData.tshirtSize);
@@ -418,8 +454,6 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
       data.append("gender", formData.gender);
       if (!isPS) {
         data.append("email", formData.email);
-        data.append("password", formData.password);
-        data.append("otp", formData.otp);
       }
       data.append("address", formData.address);
       data.append("city", formData.city);
@@ -431,7 +465,7 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
         data.append("emergencyContactPhone", formData.emergencyContactPhone);
       }
 
-      // Social details & Profile image (Common to non-PS)
+      // Social details & Profile image & video (Common to non-PS)
       if (!isPS) {
         const socialFields = mapSocialProfilesToFields(socialProfiles);
         if (socialFields.facebookUrl) data.append("facebookUrl", socialFields.facebookUrl);
@@ -439,6 +473,7 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
         if (socialFields.twitterUrl) data.append("twitterUrl", socialFields.twitterUrl);
         if (socialFields.websiteUrl) data.append("websiteUrl", socialFields.websiteUrl);
         if (!isPublicUser && profileImage) data.append("profileImage", profileImage);
+        if (!isPublicUser && profileVideo) data.append("profileVideo", profileVideo);
       }
 
       // Conditionally append Rider details
@@ -478,7 +513,8 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
         setShowSuccess(false);
         setFormData({
           registrationType: "",
-          fullName: "", gender: "", email: "", phone: "", password: "", otp: "", tshirtSize: "",
+          firstName: "", lastName: "", designation: "", profileVideo: "", visitedCountries: [],
+          gender: "", email: "", phone: "", tshirtSize: "",
           dateOfBirth: "", bloodGroup: "", address: "", city: "", state: "", pincode: "",
           bikeModel: "", bikeRegistrationNumber: "", licenseNumber: "", clubId: "",
           emergencyContactName: "", emergencyContactPhone: "",
@@ -486,6 +522,7 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
           participatingInYoga: false, participatingInRally: false, participatingInMVD2026: false,
         });
         setProfileImage(null); setProfileImagePreview(null);
+        setProfileVideo(null); setProfileVideoPreview(null);
         setLicenseImage(null); setLicenseImagePreview(null);
         setSocialProfiles([{ platform: "", url: "" }]);
         setOtpSent(false);
@@ -575,6 +612,12 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
                 icon: User,
               },
               {
+                id: "International Rider",
+                title: "Intl. Rider",
+                description: "International Registration",
+                icon: Bike,
+              },
+              {
                 id: "PS",
                 title: "PS",
                 description: "",
@@ -652,6 +695,19 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
                     <input type="file" accept="image/*" className="hidden" onChange={e => handleImageChange(e, setProfileImage, setProfileImagePreview)} />
                   </label>
 
+                  <label className="group cursor-pointer">
+                    <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
+                      <div className="w-12 h-12 bg-white/5 flex items-center justify-center rounded-full mb-4 text-steel-dim group-hover:text-copper group-hover:bg-copper/10 transition-all">
+                        <Camera size={20} />
+                      </div>
+                      <span className="font-body text-[10px] uppercase tracking-widest text-white font-semibold mb-1 group-hover:text-copper transition-colors">Profile Video (Optional)</span>
+                      <span className="font-text text-[9px] text-white/20 truncate max-w-[150px]">
+                        {profileVideo ? profileVideo.name : "Deploy File (VID)"}
+                      </span>
+                    </div>
+                    <input type="file" accept="video/*" className="hidden" onChange={e => handleImageChange(e, setProfileVideo, setProfileVideoPreview)} />
+                  </label>
+
                   {isRider && (
                     <label className="group cursor-pointer">
                       <div className="border border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center group-hover:border-copper/50 transition-all duration-500 bg-carbon/30">
@@ -674,7 +730,80 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
             <div className="space-y-6">
               <h3 className="font-body text-xs uppercase tracking-[0.2em] text-copper border-b border-white/10 pb-2">Basic Info <span className="text-red-500">*</span></h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InputField label="Full Name" name="fullName" icon={User} value={formData.fullName} onChange={handleInputChange} required />
+                <InputField label="First Name" name="firstName" icon={User} value={formData.firstName} onChange={handleInputChange} required />
+                <InputField label="Last Name" name="lastName" icon={User} value={formData.lastName} onChange={handleInputChange} required />
+                <InputField label="Designation" name="designation" icon={User} value={formData.designation} onChange={handleInputChange} />
+                
+                {(formData.registrationType === "Rider" || formData.registrationType === "International Rider") && (
+                  <div className="space-y-4 md:col-span-2 p-4 border border-white/10 bg-carbon/50 mt-2">
+                    <h4 className="font-body text-[10px] uppercase tracking-widest text-copper font-semibold">Rider Category</h4>
+                    <div className="flex gap-6">
+                      <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${formData.riderType === 'National Rider' ? 'border-copper bg-copper/20' : 'border-white/30 group-hover:border-white/60'}`}>
+                          {formData.riderType === 'National Rider' && <div className="w-2 h-2 rounded-full bg-copper" />}
+                        </div>
+                        <input
+                          type="radio"
+                          name="riderType"
+                          value="National Rider"
+                          checked={formData.riderType === 'National Rider'}
+                          onChange={(e) => setFormData(prev => ({ ...prev, riderType: e.target.value }))}
+                          className="hidden"
+                        />
+                        <span className="font-body text-xs uppercase tracking-widest text-white group-hover:text-copper transition-colors">National Rider</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer group">
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${formData.riderType === 'International Rider' ? 'border-copper bg-copper/20' : 'border-white/30 group-hover:border-white/60'}`}>
+                          {formData.riderType === 'International Rider' && <div className="w-2 h-2 rounded-full bg-copper" />}
+                        </div>
+                        <input
+                          type="radio"
+                          name="riderType"
+                          value="International Rider"
+                          checked={formData.riderType === 'International Rider'}
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, riderType: e.target.value }));
+                            if (formData.registrationType === 'Rider') {
+                              setFormData(prev => ({ ...prev, registrationType: 'International Rider' }));
+                            }
+                          }}
+                          className="hidden"
+                        />
+                        <span className="font-body text-xs uppercase tracking-widest text-white group-hover:text-copper transition-colors">International Rider</span>
+                      </label>
+                    </div>
+
+                    {formData.riderType === "International Rider" && (
+                      <div className="space-y-4 mt-4 animate-fade-in">
+                        <div className="space-y-2 block">
+                          <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Home Country <span className="text-red-500">*</span></label>
+                          <Select
+                            options={COUNTRY_OPTIONS}
+                            value={COUNTRY_OPTIONS.find(o => o.value === formData.country) || null}
+                            onChange={(selected) => setFormData(prev => ({ ...prev, country: selected ? selected.value : "IN" }))}
+                            styles={customSelectStyles}
+                            isSearchable
+                            placeholder="Search & Select Home Country"
+                          />
+                        </div>
+
+                        <div className="space-y-2 block">
+                          <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Visited Countries (Select all that apply)</label>
+                          <Select
+                            isMulti
+                            options={COUNTRY_OPTIONS}
+                            value={COUNTRY_OPTIONS.filter(o => formData.visitedCountries?.includes(o.value))}
+                            onChange={(selected) => setFormData(prev => ({ ...prev, visitedCountries: selected ? selected.map(o => o.value) : [] }))}
+                            styles={customSelectStyles}
+                            isSearchable
+                            placeholder="Search & Select Visited Countries"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-1">
                   <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Phone Number <span className="text-red-500">*</span></label>
                   <div className="relative">
@@ -739,79 +868,22 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
                 </div>
 
                 {!isPS && (
-                  <>
-                    <div className="space-y-1">
-                      <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Email Address <span className="text-red-500">*</span></label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-grow">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
-                          <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            onBlur={handleEmailBlur}
-                            required
-                            disabled={otpSent && countdown > 0}
-                            className={`w-full bg-carbon border pl-12 pr-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors disabled:opacity-50 ${emailError ? "border-red-500" : "border-white/10"}`}
-                          />
-                        </div>
-                        <button type="button" onClick={handleSendOtp} disabled={isSendingOtp || countdown > 0} className="px-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 min-w-[90px]">
-                          {isSendingOtp ? "..." : countdown > 0 ? `${countdown}s` : "SEND OTP"}
-                        </button>
-                      </div>
-                      {emailError && (
-                        <p className="font-body text-[10px] text-red-400 flex items-center gap-1 mt-1">
-                          <AlertCircle size={12} /> {emailError}
-                        </p>
-                      )}
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Email Address (Verified) <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        disabled
+                        className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-xs text-white outline-none disabled:opacity-50"
+                      />
                     </div>
-                    {emailVerified && (
-                      <p className="font-body text-[10px] text-green-400 flex items-center gap-1.5">
-                        <CheckCircle size={14} /> Email Verified
-                      </p>
-                    )}
-                    {otpSent && !emailVerified && (
-                      <div className="space-y-2">
-                        <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">OTP <span className="text-red-500">*</span></label>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <div className="relative flex-grow">
-                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
-                            <input
-                              type="text"
-                              name="otp"
-                              value={formData.otp}
-                              onChange={handleInputChange}
-                              required
-                              className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors"
-                              placeholder="Enter 6-digit OTP"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleVerifyOtp}
-                            disabled={isVerifyingOtp || formData.otp?.length !== 6}
-                            className="px-4 py-4 bg-white/5 border border-white/10 font-body text-[10px] uppercase tracking-widest hover:bg-copper hover:text-carbon transition-all disabled:opacity-50 whitespace-nowrap"
-                          >
-                            {isVerifyingOtp ? "..." : "Verify OTP"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="space-y-1">
-                      <label className="font-body text-[10px] uppercase tracking-widest text-white font-semibold">Password <span className="text-red-500">*</span></label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-steel-dim" size={16} />
-                        <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleInputChange} required className="w-full bg-carbon border border-white/10 pl-12 pr-12 py-4 font-body text-xs text-white outline-none focus:border-copper transition-colors" />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-steel-dim hover:text-white transition-colors">
-                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                    </div>
-                    {isPublicUser && (
-                      <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
-                    )}
-                  </>
+                  </div>
+                )}
+                {isPublicUser && (
+                  <DobPicker label="Date of Birth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} required />
                 )}
               </div>
             </div>
@@ -1019,9 +1091,21 @@ const UserRegistrationForm = ({ eventId = "community" }) => {
             </div>
             )}
 
-            <button type="submit" disabled={isSubmitting} className="w-full md:w-auto px-16 py-6 bg-copper text-carbon font-heading text-2xl uppercase hover:bg-white transition-all duration-500 disabled:opacity-50">
-              {isSubmitting ? "Processing..." : "Complete Registration"}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-between w-full">
+              <button 
+                type="button" 
+                disabled={isSubmitting} 
+                onClick={(e) => handleSubmit(e, true)}
+                className="w-full sm:w-auto px-8 py-6 border border-white/20 text-white font-heading text-xl uppercase hover:bg-white/5 transition-all duration-500 disabled:opacity-50">
+                {isSubmitting ? "Processing..." : "Save Draft"}
+              </button>
+              <button 
+                type="submit" 
+                disabled={isSubmitting} 
+                className="w-full sm:w-auto px-16 py-6 bg-copper text-carbon font-heading text-2xl uppercase hover:bg-white transition-all duration-500 disabled:opacity-50">
+                {isSubmitting ? "Processing..." : "Complete Registration"}
+              </button>
+            </div>
           </div>
         )}
       </form>

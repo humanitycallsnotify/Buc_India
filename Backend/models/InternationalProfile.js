@@ -4,9 +4,12 @@ const internationalProfileSchema = new mongoose.Schema(
   {
     profilePhoto: { type: String, default: "" },
     profilePhotoPublicId: { type: String, default: "" },
+    profileVideo: { type: String, default: "" },
+    profileVideoPublicId: { type: String, default: "" },
     fullName: { type: String, required: true, trim: true },
     designation: { type: String, default: "", trim: true },
     country: { type: String, default: "", trim: true },
+    visitedCountries: { type: [String], default: [] },
     shortBio: { type: String, default: "", trim: true },
     fullArticle: { type: String, default: "" },
     instagramUrl: { type: String, default: "", trim: true },

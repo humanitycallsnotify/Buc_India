@@ -5,7 +5,7 @@ import {
   Navigate,
   Outlet,
 } from "react-router-dom";
-import { useState, lazy, Suspense, memo } from "react";
+import { useState, useEffect, lazy, Suspense, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import { ToastContainer } from "react-toastify";
@@ -18,6 +18,7 @@ import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 import PublicRoute from "./components/PublicRoute.jsx";
 import UserProtectedRoute from "./components/UserProtectedRoute.jsx";
+import AuthModal from "./components/AuthModal.jsx";
 
 const HomePage = lazy(() => import("./components/HomePage.jsx"));
 
@@ -67,6 +68,13 @@ const MemoizedPublicLayout = memo(PublicLayout);
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenAuth = () => setIsAuthModalOpen(true);
+    window.addEventListener("open-auth-modal", handleOpenAuth);
+    return () => window.removeEventListener("open-auth-modal", handleOpenAuth);
+  }, []);
 
   return (
     <Router>
@@ -99,6 +107,10 @@ function App() {
               autoClose={3000}
               theme="dark"
             />
+            <AuthModal 
+              isOpen={isAuthModalOpen} 
+              onClose={() => setIsAuthModalOpen(false)} 
+            />
             <Suspense fallback={<Loading />}>
               <Routes>
                 {/* Admin routes */}
@@ -116,8 +128,12 @@ function App() {
                 <Route path="/event-register/:eventId" element={<PublicRegister />} />
 
                 {/* Registration portal (standalone layout) */}
-                <Route path="/register" element={<MainRegistration />} />
-                <Route path="/register/:slug" element={<MainRegistration />} />
+                <Route path="/register" element={<Navigate to="/register/community" replace />} />
+                <Route path="/register/:slug" element={
+                  <UserProtectedRoute>
+                    <MainRegistration />
+                  </UserProtectedRoute>
+                } />
                 <Route
                   path="/register/login"
                   element={<Navigate to="/login" replace />}

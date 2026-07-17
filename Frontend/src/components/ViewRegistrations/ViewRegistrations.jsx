@@ -778,7 +778,7 @@ const ViewRegistrations = () => {
               </option>
             ))}
           </select>
-  (filterEventName ||
+  {(filterEventName ||
             filterEventDate ||
             filterClubName ||
             filterCity ||
