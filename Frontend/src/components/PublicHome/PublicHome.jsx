@@ -6,6 +6,7 @@ import { eventService } from "../../services/api";
 import { getRemainingSeats } from "../../constants/eventRegistrationConfig";
 import { getRegistrationStatusLabel } from "../../utils/eventShareUtils";
 import EventShareModal from "../EventShare/EventShareModal.jsx";
+import AuthModal from "../AuthModal.jsx";
 
 const PublicHome = () => {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ const PublicHome = () => {
   const [pastLimit, setPastLimit] = useState(6);
   const [loading, setLoading] = useState(false);
   const [shareEvent, setShareEvent] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingEventId, setPendingEventId] = useState(null);
 
   useEffect(() => {
     loadEvents();
@@ -57,7 +60,13 @@ const PublicHome = () => {
   };
 
   const handleRegisterClick = (event) => {
-    navigate(`/event-register/${event._id}`);
+    const isLoggedIn = sessionStorage.getItem("userLoggedIn") === "true";
+    if (!isLoggedIn) {
+      setPendingEventId(event._id);
+      setShowAuthModal(true);
+    } else {
+      navigate(`/event-register/${event._id}`);
+    }
   };
 
   const displayedEvents = activeTab === "upcoming" ? upcomingEvents : pastEvents.slice(0, pastLimit);
@@ -174,6 +183,17 @@ const PublicHome = () => {
           <EventShareModal event={shareEvent} onClose={() => setShareEvent(null)} />
         )}
       </AnimatePresence>
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        onSuccess={() => {
+          setShowAuthModal(false);
+          if (pendingEventId) {
+            navigate(`/event-register/${pendingEventId}`);
+          }
+        }} 
+        defaultType="event_registration" 
+      />
     </section>
   );
 };

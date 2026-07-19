@@ -16,7 +16,6 @@ import {
 } from "../../constants/eventRegistrationConfig";
 import CustomQuestionsSection from "./CustomQuestionsSection.jsx";
 import EventShareModal from "../EventShare/EventShareModal.jsx";
-import AuthModal from "../AuthModal.jsx";
 import {
   applyProfileToForm,
   buildRegistrationErrors,
@@ -138,16 +137,6 @@ const PublicRegister = () => {
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [scrollY, setScrollY] = useState(0);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(sessionStorage.getItem("userLoggedIn") === "true");
-
-  useEffect(() => {
-    const handleLoginChange = () => {
-      setIsLoggedIn(sessionStorage.getItem("userLoggedIn") === "true");
-    };
-    window.addEventListener("user-login-change", handleLoginChange);
-    return () => window.removeEventListener("user-login-change", handleLoginChange);
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -435,7 +424,7 @@ const PublicRegister = () => {
       <div className="register-container">
         {/* BUC India Header Logo */}
         <div className="buc-logo-container">
-          <img src="/logo.jpg" alt="BUC INDIA Logo" className="w-auto h-24 md:h-32 object-contain drop-shadow-xl" />
+          <img src="/bucpng.png" alt="BUC INDIA Logo" className="w-auto h-24 md:h-32 object-contain drop-shadow-xl" />
         </div>
 
         <div className="register-header">
@@ -616,24 +605,8 @@ const PublicRegister = () => {
           </div>
         )}
 
-        <div className="registration-card-wrapper relative">
-          {!isLoggedIn && (
-            <div className="absolute inset-0 z-[50] flex flex-col items-center justify-start pt-16 sm:pt-24 bg-carbon/60 backdrop-blur-sm rounded-xl border border-white/5">
-              <div className="bg-carbon-light border border-copper/30 p-8 rounded-xl text-center shadow-2xl max-w-sm w-full mx-4">
-                <ShieldCheck className="w-16 h-16 text-copper mx-auto mb-4" />
-                <h3 className="text-xl font-heading text-white mb-2 uppercase tracking-wide">Login Required</h3>
-                <p className="text-steel-dim text-sm mb-6">Please log in or sign up to fill out the registration details.</p>
-                <button
-                  type="button"
-                  onClick={() => setShowAuthModal(true)}
-                  className="w-full bg-copper text-carbon py-3 px-6 rounded font-bold uppercase tracking-wider hover:bg-white transition-colors"
-                >
-                  Log In / Sign Up
-                </button>
-              </div>
-            </div>
-          )}
-          <form onSubmit={handleSubmit} className={`registration-form ${!isLoggedIn ? 'opacity-40 pointer-events-none' : ''}`} noValidate>
+        <div className="registration-card-wrapper">
+          <form onSubmit={handleSubmit} className="registration-form" noValidate>
             {error && <div className="error-message">{error}</div>}
 
             {/* Registration Type Selection */}
@@ -1514,7 +1487,6 @@ const PublicRegister = () => {
           <EventShareModal event={event} onClose={() => setShowShareModal(false)} compact />
         )}
       </AnimatePresence>
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} defaultType="event_registration" />
     </div>
   );
 };
