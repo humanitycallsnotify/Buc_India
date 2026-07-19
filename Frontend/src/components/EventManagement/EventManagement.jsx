@@ -27,6 +27,8 @@ import EventRegistrationConfigPanel, {
 } from "./EventRegistrationConfigPanel.jsx";
 import EventShareModal from "../EventShare/EventShareModal.jsx";
 import { useNavigate } from "react-router-dom";
+import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 const ITINERARY_CATEGORIES = [
   "Registration",
@@ -71,6 +73,12 @@ const EventManagement = () => {
   const [newGalleryFiles, setNewGalleryFiles] = useState([]);
   const [newGalleryPreviews, setNewGalleryPreviews] = useState([]);
   const [shareEvent, setShareEvent] = useState(null);
+
+  const [imgSrc, setImgSrc] = useState("");
+  const [crop, setCrop] = useState();
+  const [completedCrop, setCompletedCrop] = useState(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const imgRef = React.useRef(null);
 
   useEffect(() => { loadEvents(); }, []);
   useEffect(() => { filterEventsFn(); }, [events, filterName, filterDate, activeTab]);
@@ -149,10 +157,53 @@ const EventManagement = () => {
   const handleImageChange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    setBannerFile(file);
     const reader = new FileReader();
-    reader.onloadend = () => setBannerPreview(reader.result);
+    reader.addEventListener("load", () => {
+      setImgSrc(reader.result?.toString() || "");
+      setShowCropModal(true);
+    });
     reader.readAsDataURL(file);
+  };
+
+  const onImageLoad = (e) => {
+    const { width, height } = e.currentTarget;
+    const initialCrop = centerCrop(
+      makeAspectCrop({ unit: "%", width: 90 }, 16 / 9, width, height),
+      width,
+      height
+    );
+    setCrop(initialCrop);
+  };
+
+  const handleCropComplete = async () => {
+    if (!completedCrop || !imgRef.current) return;
+    
+    const canvas = document.createElement("canvas");
+    const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
+    const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
+    canvas.width = completedCrop.width;
+    canvas.height = completedCrop.height;
+    const ctx = canvas.getContext("2d");
+    
+    ctx.drawImage(
+      imgRef.current,
+      completedCrop.x * scaleX,
+      completedCrop.y * scaleY,
+      completedCrop.width * scaleX,
+      completedCrop.height * scaleY,
+      0,
+      0,
+      completedCrop.width,
+      completedCrop.height
+    );
+    
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], "banner-cropped.jpg", { type: "image/jpeg" });
+      setBannerFile(file);
+      setBannerPreview(URL.createObjectURL(blob));
+      setShowCropModal(false);
+    }, "image/jpeg");
   };
 
   const handleSubmit = async (e) => {
@@ -777,6 +828,41 @@ const EventManagement = () => {
       <AnimatePresence>
         {shareEvent && (
           <EventShareModal event={shareEvent} onClose={() => setShareEvent(null)} />
+        )}
+      </AnimatePresence>
+
+      {/* Image Crop Modal */}
+      <AnimatePresence>
+        {showCropModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-carbon/90 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-carbon-light border border-white/10 p-6 w-full max-w-3xl overflow-y-auto max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-heading text-xl uppercase text-white">Crop Banner Image</h3>
+                <button onClick={() => setShowCropModal(false)} className="text-steel-dim hover:text-white"><X size={20} /></button>
+              </div>
+              {imgSrc && (
+                <div className="flex justify-center mb-6 overflow-hidden">
+                  <ReactCrop
+                    crop={crop}
+                    onChange={(_, percentCrop) => setCrop(percentCrop)}
+                    onComplete={(c) => setCompletedCrop(c)}
+                    aspect={16 / 9}
+                  >
+                    <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Crop me" style={{ maxHeight: "60vh" }} />
+                  </ReactCrop>
+                </div>
+              )}
+              <div className="flex justify-end gap-4">
+                <button onClick={() => setShowCropModal(false)} className="px-6 py-2 border border-white/10 text-white font-body text-[10px] uppercase tracking-widest hover:bg-white/5 transition-colors">Cancel</button>
+                <button onClick={handleCropComplete} className="px-6 py-2 bg-copper text-carbon font-body text-[10px] uppercase tracking-widest font-bold hover:bg-white transition-colors">Apply Crop</button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

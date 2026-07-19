@@ -72,6 +72,11 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup' }) => {
       sessionStorage.setItem("userLoggedIn", "true");
       sessionStorage.setItem("authMethod", authMethod);
       sessionStorage.setItem("authIdentifier", authMethod === "email" ? email : phone);
+      if (authMethod === "email") {
+        sessionStorage.setItem("userEmail", email);
+      } else {
+        sessionStorage.setItem("userPhone", phone);
+      }
       
       window.dispatchEvent(new Event("user-login-change"));
       
@@ -199,6 +204,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup' }) => {
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="6-digit OTP"
+                    autoComplete="one-time-code"
                     className="w-full bg-carbon border border-white/10 pl-12 pr-4 py-4 font-body text-center tracking-[0.5em] text-lg text-white outline-none focus:border-copper transition-colors rounded-lg"
                   />
                 </div>
