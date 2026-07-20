@@ -186,8 +186,8 @@ const PublicRegister = () => {
 
   useEffect(() => {
     const userLoggedIn = sessionStorage.getItem("userLoggedIn") === "true";
-    const userEmail = sessionStorage.getItem("userEmail");
-    const userPhone = sessionStorage.getItem("userPhone");
+    const userEmail = sessionStorage.getItem("userEmail") || (sessionStorage.getItem("authMethod") === "email" ? sessionStorage.getItem("authIdentifier") : "");
+    const userPhone = sessionStorage.getItem("userPhone") || (sessionStorage.getItem("authMethod") === "mobile" ? sessionStorage.getItem("authIdentifier") : "");
     
     const fetchProfile = async () => {
       if (userLoggedIn && (userEmail || userPhone)) {
@@ -424,10 +424,7 @@ const PublicRegister = () => {
       <div className="register-container">
         {/* BUC India Header Logo */}
         <div className="buc-logo-container">
-          <div className="logo-text-wrapper">
-            <span className="logo-main font-heading">BUC INDIA</span>
-            <span className="logo-sub">UNITED RIDERS. ONE COMMUNITY.</span>
-          </div>
+          <img src="/bucpng.png" alt="BUC INDIA Logo" className="w-auto h-24 md:h-32 object-contain drop-shadow-xl" />
         </div>
 
         <div className="register-header">
@@ -727,6 +724,7 @@ const PublicRegister = () => {
                           onChange={handleInputChange}
                           placeholder="6-digit OTP"
                           maxLength="6"
+                          autoComplete="one-time-code"
                           className="email-otp-input"
                         />
                         <button

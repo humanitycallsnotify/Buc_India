@@ -35,7 +35,7 @@ const Safety = () => {
 
   const { scrollYProgress } = useScroll({
     target: pledgeRef,
-    offset: ["start start", "end end"]
+    offset: ["start 80%", "end 40%"]
   });
 
   const pledgeChars = fullPledge.split("");
@@ -157,9 +157,9 @@ const Safety = () => {
         </div>
       )}
 
-      {/* Safety Pledge - Pinning Container */}
-      <div ref={pledgeRef} className="h-[160vh] relative mt-12">
-        <div className="sticky top-0 h-screen flex flex-col justify-center items-center overflow-hidden">
+      {/* Safety Pledge */}
+      <div ref={pledgeRef} className="relative py-24 my-12">
+        <div className="flex flex-col justify-center items-center overflow-hidden">
           {/* Atmospheric Glow */}
           <motion.div 
             style={{ opacity: glowOpacity, scale: glowScale }}

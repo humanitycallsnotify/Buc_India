@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const client = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
+// Client will be initialized lazily inside functions
 
 export const sendOTP = async (email, otp, type) => {
   const subjectByType = {
@@ -22,6 +22,7 @@ export const sendOTP = async (email, otp, type) => {
   const logoUrl = "https://res.cloudinary.com/dhdxoawdk/image/upload/v1779437906/qszeyqwcg2qa9vfmpzjh.jpg";
 
   try {
+    const client = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
     await client.transactionalEmails.sendTransacEmail({
       subject: subject,
       sender: {
@@ -76,6 +77,7 @@ export const sendRegistrationConfirmation = async (email, details) => {
   const logoUrl = "https://res.cloudinary.com/dhdxoawdk/image/upload/v1779437906/qszeyqwcg2qa9vfmpzjh.jpg";
 
   try {
+    const client = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
     await client.transactionalEmails.sendTransacEmail({
       subject: "Welcome to BUC India - Registration Successful!",
       sender: {

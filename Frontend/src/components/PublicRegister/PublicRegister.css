@@ -140,19 +140,21 @@
 /* Admin Event Banner Container */
 .admin-event-banner-container {
   width: 100%;
-  aspect-ratio: 16 / 9;
   border-radius: 16px;
   border: 1.5px solid rgba(193, 154, 107, 0.22);
   overflow: hidden;
   margin-bottom: 32px;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.95);
   background: var(--buc-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .admin-event-banner-img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
 }
 
 /* Details, itinerary, and form cards */
@@ -298,8 +300,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .lightbox-close {
@@ -344,8 +351,13 @@
   font-size: 18px;
 }
 
-.lightbox-prev { left: 24px; }
-.lightbox-next { right: 24px; }
+.lightbox-prev {
+  left: 24px;
+}
+
+.lightbox-next {
+  right: 24px;
+}
 
 .lightbox-prev:hover,
 .lightbox-next:hover {
@@ -706,8 +718,15 @@
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Success Card layouts */
@@ -729,7 +748,7 @@
   position: absolute;
   inset: -20px;
   background: radial-gradient(circle, rgba(193, 154, 107, 0.2) 2px, transparent 2px),
-              radial-gradient(circle, rgba(16, 185, 129, 0.2) 2px, transparent 2px);
+    radial-gradient(circle, rgba(16, 185, 129, 0.2) 2px, transparent 2px);
   background-size: 40px 40px;
   background-position: 0 0, 20px 20px;
   animation: successConfetti 8s linear infinite;
@@ -739,8 +758,13 @@
 }
 
 @keyframes successConfetti {
-  0% { background-position: 0 0, 20px 20px; }
-  100% { background-position: 0 160px, 20px 180px; }
+  0% {
+    background-position: 0 0, 20px 20px;
+  }
+
+  100% {
+    background-position: 0 160px, 20px 180px;
+  }
 }
 
 .success-icon {
