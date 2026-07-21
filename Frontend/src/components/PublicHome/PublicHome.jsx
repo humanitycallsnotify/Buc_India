@@ -193,6 +193,7 @@ const PublicHome = () => {
           }
         }} 
         defaultType="event_registration" 
+        disableMobileAuth={true}
       />
     </section>
   );

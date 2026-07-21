@@ -126,8 +126,8 @@ const GalleryGlimpse = () => {
             className="text-center"
           >
             <span className="text-copper font-body tracking-ultra text-[10px] uppercase mb-4 block font-bold">The Kinetic Feed</span>
-            <h2 className="font-heading text-6xl md:text-8xl text-white uppercase tracking-tighter leading-none mb-12">
-              Witness The <br/><span className="text-copper">Legacy</span>
+            <h2 className="font-heading text-6xl md:text-8xl text-white uppercase leading-tight mb-12">
+              Witness The <br /><span className="text-copper">Legacy</span>
             </h2>
           </motion.div>
 
@@ -149,14 +149,14 @@ const GalleryGlimpse = () => {
         </div>
 
         {/* Unique Broken Grid Layout (V3) */}
-        <div className="relative flex flex-wrap justify-center items-start gap-8 md:gap-16">
+        <div className="relative flex flex-wrap justify-center items-start gap-12 md:gap-20 mt-12 md:mt-0">
           {/* Card 1: Elevated Left */}
           <div className="mt-0 md:-mt-12">
             <CinematicVideo src={VIDEOS[0]} speed={20} delay={0.1} />
           </div>
           
           {/* Card 2: Deep Offset Center-Left */}
-          <div className="mt-12 md:mt-40">
+          <div className="mt-16 md:mt-40">
             <CinematicVideo src={VIDEOS[1]} speed={-30} delay={0.2} />
           </div>
 
@@ -166,18 +166,8 @@ const GalleryGlimpse = () => {
           </div>
 
           {/* Card 4: High Pinned Center-Right */}
-          <div className="mt-8 md:-mt-24 lg:mt-12">
+          <div className="mt-12 md:-mt-24 lg:mt-12">
             <CinematicVideo src={VIDEOS[3]} speed={-50} delay={0.4} />
-          </div>
-
-          {/* Card 5: Low Drift Right */}
-          <div className="mt-20 md:mt-52">
-            <CinematicVideo src={VIDEOS[4]} speed={10} delay={0.5} />
-          </div>
-          
-          {/* Card 6: Shadow Drift (Hidden on mobile) */}
-          <div className="hidden lg:block absolute -right-20 top-1/4 opacity-40">
-             <CinematicVideo src={VIDEOS[5]} speed={80} delay={0.6} className="w-32 blur-[2px]" />
           </div>
         </div>
       </div>

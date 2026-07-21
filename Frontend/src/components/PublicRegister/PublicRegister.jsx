@@ -196,6 +196,17 @@ const PublicRegister = () => {
           if (profile) {
             setProfileData(profile);
             setFormData((prev) => applyProfileToForm(profile, prev));
+            
+            // Automatically verify the email if it matches the profile
+            if (userEmail && profile.email === userEmail) {
+               setEmailOtpVerified(true);
+               setVerifiedEmail(userEmail);
+               setEmailOtpSent(true);
+            } else if (userPhone && profile.phone === userPhone && profile.email) {
+               setEmailOtpVerified(true);
+               setVerifiedEmail(profile.email);
+               setEmailOtpSent(true);
+            }
           }
         } catch (err) {
           console.error("Error fetching profile:", err);
