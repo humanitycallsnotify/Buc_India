@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
   },
   tshirtSize: {
     type: String,
-    enum: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+    enum: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL', ''],
     default: ''
   },
   clubId: {
