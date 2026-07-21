@@ -1,9 +1,7 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { PhoneCall } from "lucide-react";
 import groupRidingImg from "../assets/gallery/WhatsApp Image 2025-08-09 at 21.22.15_0472380c.jpg";
-import { safetyInfluencerService } from "../services/api";
-import ProfileContentModal from "./ProfileContentModal";
 
 const Character = ({ char, index, progress, total }) => {
   // Ensure the entire animation finishes before reaching the very end (by 80% scroll)
@@ -26,9 +24,6 @@ const Character = ({ char, index, progress, total }) => {
 };
 
 const Safety = () => {
-  const [influencers, setInfluencers] = useState([]);
-  const [loadingInfluencers, setLoadingInfluencers] = useState(true);
-  const [selectedInfluencer, setSelectedInfluencer] = useState(null);
   const pledgeRef = useRef(null);
   const fullPledge =
     "As members of Bikers Unity Calls, we pledge to prioritize safety in all our riding activities. We commit to wearing proper protective gear, following traffic laws, riding within our abilities, and looking out for our fellow riders. Together, we ensure that every ride ends with everyone returning home safely.";
@@ -43,20 +38,6 @@ const Safety = () => {
   // Background atmosphere scale/opacity
   const glowOpacity = useTransform(scrollYProgress, [0, 0.5, 1], [0.2, 0.4, 0.2]);
   const glowScale = useTransform(scrollYProgress, [0, 1], [0.8, 1.2]);
-
-  useEffect(() => {
-    const loadInfluencers = async () => {
-      try {
-        const data = await safetyInfluencerService.getPublic();
-        setInfluencers(data || []);
-      } catch (error) {
-        console.error("Failed to load safety influencers:", error);
-      } finally {
-        setLoadingInfluencers(false);
-      }
-    };
-    loadInfluencers();
-  }, []);
 
   const safetyTips = [
     { title: "Protective Gear", description: "Always wear DOT-approved helmet, protective jacket, gloves, and boots." },
@@ -108,54 +89,6 @@ const Safety = () => {
           </div>
         ))}
       </div>
-
-      {/* Safety Influencers */}
-      {(loadingInfluencers || influencers.length > 0) && (
-        <div className="max-w-7xl mx-auto px-6 mb-24">
-          <div className="mb-12">
-            <span className="text-copper font-body tracking-ultra text-xs md:text-sm uppercase mb-2 block font-bold">Safety Advocates</span>
-            <h2 className="font-heading text-5xl md:text-6xl text-white uppercase leading-none">
-              Safety <span className="text-copper">Influencers</span>
-            </h2>
-          </div>
-
-          {loadingInfluencers ? (
-            <div className="flex justify-center py-16">
-              <div className="w-10 h-10 border-4 border-copper/20 border-t-copper rounded-full animate-spin" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {influencers.map((influencer) => (
-                <button
-                  key={influencer._id}
-                  type="button"
-                  onClick={() => setSelectedInfluencer(influencer)}
-                  className="group text-left p-6 border border-white/5 bg-carbon hover:border-copper/30 transition-all duration-500 hover:-translate-y-1"
-                >
-                  <div className="w-24 h-24 mb-6 overflow-hidden border border-copper/20 rounded-full mx-auto sm:mx-0">
-                    <img
-                      src={influencer.profilePhoto}
-                      alt={influencer.name}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                    />
-                  </div>
-                  <h3 className="font-heading text-xl uppercase text-white group-hover:text-copper transition-colors mb-1">
-                    {influencer.name}
-                  </h3>
-                  <p className="font-body text-[10px] text-steel-dim uppercase tracking-widest mb-3">
-                    {[influencer.designation, influencer.organization].filter(Boolean).join(" · ")}
-                  </p>
-                  {influencer.shortDescription && (
-                    <p className="font-text text-steel-dim text-sm line-clamp-3">{influencer.shortDescription}</p>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Safety Pledge */}
       <div ref={pledgeRef} className="relative py-24 my-12">
@@ -272,15 +205,8 @@ const Safety = () => {
            </div>
         </div>
       </div>
-
-      <ProfileContentModal
-        item={selectedInfluencer}
-        onClose={() => setSelectedInfluencer(null)}
-        nameField="name"
-      />
     </section>
   );
 };
 
 export default Safety;
-

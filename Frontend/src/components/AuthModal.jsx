@@ -3,10 +3,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Phone, Key, ArrowRight, Shield, CheckCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { otpService } from "../services/api";
+import { otpService, profileService } from "../services/api";
 
-const AuthModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup' }) => {
+const AuthModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup', disableMobileAuth = false }) => {
   const [authMethod, setAuthMethod] = useState("email"); // "email" or "mobile"
+  
+  // Force email method if mobile is disabled
+  useEffect(() => {
+    if (disableMobileAuth && authMethod === "mobile") {
+      setAuthMethod("email");
+    }
+  }, [disableMobileAuth, authMethod]);
+
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -64,6 +72,21 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup' }) => {
         await otpService.verify(email, otp, defaultType);
       } else {
         if (otp !== "123456") throw new Error("Invalid simulated OTP");
+      }
+      
+      // Ensure user exists if they are logging in or applying for an event
+      if (defaultType === "login" || defaultType === "event_registration") {
+        try {
+          const profile = await profileService.get(authMethod === "email" ? email : null, authMethod === "mobile" ? phone : null);
+          if (!profile || Object.keys(profile).length === 0) {
+            throw new Error("Profile not found.");
+          }
+        } catch (err) {
+          toast.error("You must register your profile before continuing.");
+          onClose();
+          navigate("/register/community");
+          return;
+        }
       }
       
       toast.success("Authentication successful!");
@@ -130,24 +153,26 @@ const AuthModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup' }) => {
 
             {!otpSent ? (
               <div className="space-y-6">
-                <div className="flex bg-carbon border border-white/10 rounded-lg p-1">
-                  <button
-                    onClick={() => { setAuthMethod("email"); resetState(); }}
-                    className={`flex-1 py-2 text-xs font-body uppercase tracking-wider rounded-md transition-all ${
-                      authMethod === "email" ? "bg-copper text-carbon font-bold" : "text-steel-dim hover:text-white"
-                    }`}
-                  >
-                    Email
-                  </button>
-                  <button
-                    onClick={() => { setAuthMethod("mobile"); resetState(); }}
-                    className={`flex-1 py-2 text-xs font-body uppercase tracking-wider rounded-md transition-all ${
-                      authMethod === "mobile" ? "bg-copper text-carbon font-bold" : "text-steel-dim hover:text-white"
-                    }`}
-                  >
-                    Mobile
-                  </button>
-                </div>
+                {!disableMobileAuth && (
+                  <div className="flex bg-carbon border border-white/10 rounded-lg p-1">
+                    <button
+                      onClick={() => { setAuthMethod("email"); resetState(); }}
+                      className={`flex-1 py-2 text-xs font-body uppercase tracking-wider rounded-md transition-all ${
+                        authMethod === "email" ? "bg-copper text-carbon font-bold" : "text-steel-dim hover:text-white"
+                      }`}
+                    >
+                      Email
+                    </button>
+                    <button
+                      onClick={() => { setAuthMethod("mobile"); resetState(); }}
+                      className={`flex-1 py-2 text-xs font-body uppercase tracking-wider rounded-md transition-all ${
+                        authMethod === "mobile" ? "bg-copper text-carbon font-bold" : "text-steel-dim hover:text-white"
+                      }`}
+                    >
+                      Mobile
+                    </button>
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   {authMethod === "email" ? (

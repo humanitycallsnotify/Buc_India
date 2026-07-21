@@ -28,8 +28,8 @@ const HomePage = () => (
     <StatsStrip />
     <InfluencerSpotlight />
     <Safety />
-    <JoinOurFamily />
     <PartnerMarquee />
+    <JoinOurFamily />
   </Suspense>
 );
 
