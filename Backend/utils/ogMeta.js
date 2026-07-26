@@ -35,13 +35,6 @@ export const getOgImageUrl = (bannerUrl, siteUrl = getSiteUrl()) => {
 
   const url = String(bannerUrl).trim();
 
-  if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
-    if (url.includes("/upload/c_fill,w_1200,h_630")) {
-      return url;
-    }
-    return url.replace("/upload/", "/upload/c_fill,w_1200,h_630,f_jpg,q_auto/");
-  }
-
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
@@ -49,10 +42,17 @@ export const getOgImageUrl = (bannerUrl, siteUrl = getSiteUrl()) => {
   return `${siteUrl}${url.startsWith("/") ? url : `/${url}`}`;
 };
 
-export const buildRegistrationShareMeta = (event, identifier) => {
+export const buildRegistrationShareMeta = (event, identifier, req = null) => {
   const siteUrl = getSiteUrl();
   const eventId = event?._id?.toString() || identifier;
   const pageUrl = getRegistrationUrl(eventId);
+  
+  let shareUrl = pageUrl;
+  if (req) {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    shareUrl = `${protocol}://${req.get('host')}${req.originalUrl}`;
+  }
+
   const title = event?.title
     ? `${event.title} | Registration`
     : "Event Registration";
@@ -70,6 +70,7 @@ export const buildRegistrationShareMeta = (event, identifier) => {
     shortTitle: title,
     description,
     pageUrl,
+    shareUrl,
     image,
     type: "website",
   };
@@ -81,18 +82,22 @@ export const buildMetaTagsHtml = (meta) => {
     title,
     description,
     pageUrl,
+    shareUrl,
     image,
     type = "website",
   } = meta;
+
+  const finalUrl = shareUrl || pageUrl;
 
   return [
     `<meta property="og:site_name" content="${escapeHtml(siteName)}" />`,
     `<meta property="og:type" content="${escapeHtml(type)}" />`,
     `<meta property="og:title" content="${escapeHtml(title)}" />`,
     `<meta property="og:description" content="${escapeHtml(description)}" />`,
-    `<meta property="og:url" content="${escapeHtml(pageUrl)}" />`,
+    `<meta property="og:url" content="${escapeHtml(finalUrl)}" />`,
     `<meta property="og:image" content="${escapeHtml(image)}" />`,
     `<meta property="og:image:secure_url" content="${escapeHtml(image)}" />`,
+    `<meta property="og:image:type" content="image/jpeg" />`,
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
     `<meta property="og:image:alt" content="${escapeHtml(title)}" />`,
