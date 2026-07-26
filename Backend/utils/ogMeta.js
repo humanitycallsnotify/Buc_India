@@ -35,6 +35,14 @@ export const getOgImageUrl = (bannerUrl, siteUrl = getSiteUrl()) => {
 
   const url = String(bannerUrl).trim();
 
+  // Resize and heavily compress for WhatsApp (under 300kb limit)
+  if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
+    if (url.includes("/upload/c_fill,w_1200,h_630")) {
+      return url;
+    }
+    return url.replace("/upload/", "/upload/c_fill,w_1200,h_630,f_jpg,q_auto/");
+  }
+
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
@@ -47,20 +55,16 @@ export const buildRegistrationShareMeta = (event, identifier, req = null) => {
   const eventId = event?._id?.toString() || identifier;
   const pageUrl = getRegistrationUrl(eventId);
   
-  let shareUrl = pageUrl;
-  if (req) {
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    shareUrl = `${protocol}://${req.get('host')}${req.originalUrl}`;
-  }
-
   const title = event?.title
     ? `${event.title} | Registration`
     : "Event Registration";
+  
   const description = event?.description
     ? truncateDescription(
         `Register for ${event.title}. ${event.description}`,
       )
     : DEFAULT_DESCRIPTION;
+    
   const image = getOgImageUrl(event?.banner, siteUrl);
   const fullTitle = `${title} | ${SITE_NAME}`;
 
@@ -70,7 +74,7 @@ export const buildRegistrationShareMeta = (event, identifier, req = null) => {
     shortTitle: title,
     description,
     pageUrl,
-    shareUrl,
+    shareUrl: pageUrl,
     image,
     type: "website",
   };
