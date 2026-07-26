@@ -6,15 +6,21 @@ import {
   buildRegistrationShareMeta,
   getSiteUrl,
   injectMetaIntoHtml,
+  buildMetaTagsHtml,
+  escapeHtml
 } from "../utils/ogMeta.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const INDEX_CANDIDATES = [
   path.resolve(process.cwd(), "..", "Frontend", "dist", "index.html"),
+  path.resolve(process.cwd(), "..", "frontend", "dist", "index.html"),
   path.resolve(process.cwd(), "Frontend", "dist", "index.html"),
+  path.resolve(process.cwd(), "frontend", "dist", "index.html"),
   path.resolve(__dirname, "..", "..", "Frontend", "dist", "index.html"),
+  path.resolve(__dirname, "..", "..", "frontend", "dist", "index.html"),
   path.resolve(__dirname, "..", "..", "Frontend", "index.html"),
+  path.resolve(__dirname, "..", "..", "frontend", "index.html"),
 ];
 
 async function readIndexTemplate() {
@@ -25,6 +31,17 @@ async function readIndexTemplate() {
       // try next candidate
     }
   }
+  
+  try {
+    const siteUrl = getSiteUrl();
+    const response = await fetch(siteUrl);
+    if (response.ok) {
+      return await response.text();
+    }
+  } catch (error) {
+    console.error("Failed to fetch index.html from live site:", error);
+  }
+
   throw new Error("Unable to locate frontend index.html template for OG rendering.");
 }
 
@@ -63,10 +80,19 @@ export const serveEventRegisterOgHtml = async (req, res) => {
   try {
     const { identifier } = req.params;
     const event = await findEventByIdentifier(identifier);
-    const meta = buildRegistrationShareMeta(event, identifier);
-    const metaTagsHtml = buildMetaTagsHtml(meta);
+    const meta = buildRegistrationShareMeta(event, identifier, req);
 
-    const html = `<!DOCTYPE html>
+    try {
+      const htmlTemplate = await readIndexTemplate();
+      const html = injectMetaIntoHtml(htmlTemplate, meta);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600");
+      res.status(event ? 200 : 404);
+      res.send(html);
+    } catch (templateError) {
+      console.error("Failed to read frontend template, falling back to basic HTML:", templateError);
+      const metaTagsHtml = buildMetaTagsHtml(meta);
+      const fallbackHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -81,11 +107,11 @@ export const serveEventRegisterOgHtml = async (req, res) => {
   <p>Redirecting to <a href="${meta.pageUrl}">${meta.pageUrl}</a>...</p>
 </body>
 </html>`;
-
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600");
-    res.status(event ? 200 : 404);
-    res.send(html);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600");
+      res.status(event ? 200 : 404);
+      res.send(fallbackHtml);
+    }
   } catch (error) {
     console.error("OG HTML render failed:", error.message);
     res.status(500).send("Unable to render registration preview page.");

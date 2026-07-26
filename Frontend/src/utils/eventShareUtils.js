@@ -2,9 +2,8 @@ import { toast } from "react-toastify";
 
 export const getEventRegistrationUrl = (eventId) => {
   if (!eventId) return "";
-  const apiUrl = import.meta.env.VITE_API_URL || "https://api-buc-india.onrender.com/api";
-  const baseUrl = apiUrl.replace(/\/api\/?$/, "");
-  return `${baseUrl}/og/event-register/${eventId}`;
+  const siteUrl = window.location.origin;
+  return `${siteUrl}/event-register/${eventId}`;
 };
 
 export const getQrCodeUrl = (registrationUrl, size = 220) => {
