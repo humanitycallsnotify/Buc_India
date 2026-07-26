@@ -27,6 +27,12 @@ import membershipApplicationRoutes from "./routes/membershipApplicationRoutes.js
 import userRoutes from "./routes/userRoutes.js";
 import forumRoutes from "./routes/forumRoutes.js";
 import partnerRoutes from "./routes/partnerRoutes.js";
+import ogRoutes from "./routes/ogRoutes.js";
+import { serveEventRegisterOgHtml } from "./controllers/ogController.js";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendDistPath = path.resolve(__dirname, "..", "Frontend", "dist");
 
 const app = express();
 
@@ -154,6 +160,25 @@ app.use("/api/membership-applications", membershipApplicationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/forum", forumRoutes);
 app.use("/api/partners", partnerRoutes);
+app.use("/og", ogRoutes);
+
+const shouldServeFrontend =
+  process.env.SERVE_FRONTEND === "true" || process.env.NODE_ENV === "production";
+
+if (shouldServeFrontend) {
+  app.get("/event-register/:identifier", serveEventRegisterOgHtml);
+
+  app.use(express.static(frontendDistPath, { index: false }));
+
+  app.get(/(.*)/, (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/og")) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDistPath, "index.html"), (err) => {
+      if (err) next(err);
+    });
+  });
+}
 
 // Error handler
 app.use((err, req, res, next) => {

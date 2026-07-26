@@ -2,8 +2,9 @@ import { toast } from "react-toastify";
 
 export const getEventRegistrationUrl = (eventId) => {
   if (!eventId) return "";
-  const base = typeof window !== "undefined" ? window.location.origin : "";
-  return `${base}/event-register/${eventId}`;
+  const apiUrl = import.meta.env.VITE_API_URL || "https://api-buc-india.onrender.com/api";
+  const baseUrl = apiUrl.replace(/\/api\/?$/, "");
+  return `${baseUrl}/og/event-register/${eventId}`;
 };
 
 export const getQrCodeUrl = (registrationUrl, size = 220) => {
@@ -27,13 +28,55 @@ export const openRegistrationLink = (url) => {
   if (url) window.open(url, "_blank", "noopener,noreferrer");
 };
 
-export const shareViaWhatsApp = (url, title) => {
-  const text = encodeURIComponent(`Join ${title || "this BUC India event"}! Register here: ${url}`);
+export const buildShareMessage = (event, url) => {
+  const title = event?.title || "BUC India Event";
+  let dateStr = "";
+  let timeStr = "";
+  
+  if (event?.eventDate) {
+    const d = new Date(event.eventDate);
+    if (!isNaN(d.getTime())) {
+      dateStr = d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    }
+  }
+  
+  const location = event?.location || event?.meetingPoint || "";
+  const description = event?.description || "";
+  
+  const parts = [];
+  parts.push(`🚴 ${title}`);
+  parts.push("");
+  if (dateStr) parts.push(`📅 ${dateStr}`);
+  if (timeStr) parts.push(`🕕 ${timeStr}`);
+  if (location) parts.push(`📍 ${location}`);
+  
+  if (dateStr || timeStr || location) {
+    parts.push("");
+  }
+  
+  if (description) {
+    parts.push(description);
+    parts.push("");
+  }
+  
+  if (url) {
+    parts.push("Register here:");
+    parts.push(url);
+  } else {
+    parts.push("Register here:");
+  }
+  
+  return parts.join("\n");
+};
+
+export const shareViaWhatsApp = (url, event) => {
+  const text = encodeURIComponent(buildShareMessage(event, url));
   window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
 };
 
-export const shareViaTelegram = (url, title) => {
-  const text = encodeURIComponent(`${title || "BUC India Event"} — Register: ${url}`);
+export const shareViaTelegram = (url, event) => {
+  const text = encodeURIComponent(buildShareMessage(event, ""));
   window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${text}`, "_blank", "noopener,noreferrer");
 };
 
@@ -41,21 +84,39 @@ export const shareViaFacebook = (url) => {
   window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer");
 };
 
-export const shareViaTwitter = (url, title) => {
-  const text = encodeURIComponent(`${title || "BUC India Event"} — Register now`);
+export const shareViaTwitter = (url, event) => {
+  const text = encodeURIComponent(buildShareMessage(event, ""));
   window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${text}`, "_blank", "noopener,noreferrer");
 };
 
-export const shareViaEmail = (url, title) => {
-  const subject = encodeURIComponent(`Register for ${title || "BUC India Event"}`);
-  const body = encodeURIComponent(`Register for this event:\n\n${url}`);
+export const shareViaEmail = (url, event) => {
+  const subject = encodeURIComponent(event?.title || "BUC India Event");
+  const body = encodeURIComponent(buildShareMessage(event, url));
   window.location.href = `mailto:?subject=${subject}&body=${body}`;
 };
 
-export const nativeShare = async (url, title, text) => {
+export const nativeShare = async (url, event) => {
   if (navigator.share) {
     try {
-      await navigator.share({ title: title || "BUC India Event", text: text || "Register for this event", url });
+      const shareData = {
+        title: event?.title || "BUC India Event",
+        text: buildShareMessage(event, url),
+      };
+
+      if (event?.banner && navigator.canShare) {
+        try {
+          const response = await fetch(event.banner);
+          const blob = await response.blob();
+          const file = new File([blob], 'event-poster.jpg', { type: blob.type || 'image/jpeg' });
+          if (navigator.canShare({ files: [file] })) {
+            shareData.files = [file];
+          }
+        } catch (e) {
+          console.warn("Could not fetch banner for native share", e);
+        }
+      }
+
+      await navigator.share(shareData);
       return true;
     } catch (err) {
       if (err?.name !== "AbortError") toast.error("Share failed.");

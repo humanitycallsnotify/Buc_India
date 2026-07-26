@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import { Instagram, Facebook, Twitter, Globe, Linkedin, Youtube, X } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 
@@ -114,6 +115,14 @@ export const SocialLinks = ({ item, className = "" }) => {
 };
 
 const ProfileContentModal = ({ item, onClose, nameField = "fullName" }) => {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   if (!item) return null;
 
   const name = item[nameField] || item.fullName || item.name;
@@ -123,70 +132,70 @@ const ProfileContentModal = ({ item, onClose, nameField = "fullName" }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-carbon/95 backdrop-blur-xl"
+      className="fixed inset-0 z-[3000] flex items-center justify-center bg-carbon"
       onClick={onClose}
     >
       <div
-        className="relative max-w-3xl w-full max-h-[90vh] overflow-y-auto bg-carbon-light border border-white/10"
+        className="relative w-full h-full flex flex-col md:flex-row overflow-hidden bg-carbon"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center border border-white/10 hover:border-copper/40 hover:text-copper transition-colors"
+          className="absolute top-4 right-4 md:top-8 md:right-8 z-[3010] w-12 h-12 flex items-center justify-center bg-black/40 hover:bg-copper hover:text-black text-white border border-white/10 rounded-full transition-all backdrop-blur-md"
           aria-label="Close"
         >
-          <X size={20} />
+          <X size={24} />
         </button>
 
-        <div className="grid md:grid-cols-5 gap-0">
-          <div className="md:col-span-2 aspect-square md:aspect-auto bg-carbon">
-            {item.profilePhoto ? (
+        {/* Left Side: Image */}
+        <div className="w-full h-[40vh] md:h-full md:w-1/2 relative bg-black">
+          {item.profilePhoto ? (
+            <>
               <img
                 src={item.profilePhoto}
                 alt={name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-top"
                 loading="lazy"
               />
-            ) : (
-              <div className="w-full h-full min-h-[200px] flex items-center justify-center text-steel-dim font-body text-xs uppercase tracking-widest">
-                No Photo
-              </div>
-            )}
-          </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-carbon via-carbon/40 to-transparent md:hidden"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-carbon hidden md:block"></div>
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-steel-dim font-body text-sm uppercase tracking-widest">
+              No Photo
+            </div>
+          )}
+        </div>
 
-          <div className="md:col-span-3 p-8 md:p-10">
+        {/* Right Side: Content */}
+        <div className="w-full h-[60vh] md:h-full md:w-1/2 overflow-y-auto px-6 py-8 md:p-16 lg:p-24" data-lenis-prevent="true">
+          <div className="max-w-2xl mx-auto">
             {(location || (item.visitedCountries && item.visitedCountries.length > 0)) && (
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
                 {location && countryNameToCode(location) && (
                   <ReactCountryFlag
                     countryCode={countryNameToCode(location)}
                     svg
-                    style={{
-                      width: '1.2em',
-                      height: '1.2em',
-                    }}
+                    style={{ width: '1.4em', height: '1.4em' }}
                     title={getCountryName(location)}
                   />
                 )}
                 {location && (
-                  <span className="text-copper font-body text-[10px] tracking-[0.3em] uppercase block">
+                  <span className="text-copper font-body text-xs tracking-[0.3em] uppercase block">
                     {getCountryName(location)}
                   </span>
                 )}
                 
                 {item.visitedCountries && item.visitedCountries.length > 0 && (
-                  <div className={`flex items-center gap-1 ${location ? 'border-l border-white/10 pl-2' : ''}`}>
-                    <span className="text-steel-dim text-[8px] uppercase tracking-wider mr-1">Visited:</span>
+                  <div className={`flex items-center gap-1.5 ${location ? 'border-l border-white/10 pl-3 ml-1' : ''}`}>
+                    <span className="text-steel-dim text-[9px] uppercase tracking-wider mr-1">Visited:</span>
                     {item.visitedCountries.map((cCode) => (
                       <ReactCountryFlag
                         key={cCode}
                         countryCode={cCode}
                         svg
-                        style={{
-                          width: '1em',
-                          height: '1em',
-                        }}
+                        style={{ width: '1.2em', height: '1.2em' }}
                         title={getCountryName(cCode)}
                       />
                     ))}
@@ -194,24 +203,29 @@ const ProfileContentModal = ({ item, onClose, nameField = "fullName" }) => {
                 )}
               </div>
             )}
-            <h3 className="font-heading text-3xl md:text-4xl uppercase text-white mb-2">
+            <h3 className="font-heading text-4xl md:text-5xl lg:text-6xl uppercase text-white mb-2 leading-none">
               {name}
             </h3>
+            <div className="w-24 h-1 bg-copper mb-6"></div>
+            
             {subtitle && (
-              <p className="font-body text-sm text-steel-dim uppercase tracking-widest mb-6">
+              <p className="font-body text-sm md:text-base text-steel-dim uppercase tracking-[0.2em] mb-10">
                 {[item.designation, item.organization].filter(Boolean).join(" · ")}
               </p>
             )}
+            
             {shortText && (
-              <p className="font-text text-steel-dim text-sm leading-relaxed mb-6 border-l-2 border-copper/30 pl-4">
+              <p className="font-text text-steel-dim text-base md:text-lg leading-relaxed mb-8 border-l-2 border-copper/50 pl-5">
                 {shortText}
               </p>
             )}
+            
             {item.fullArticle && (
-              <div className="font-text text-steel-dim text-sm leading-relaxed whitespace-pre-wrap mb-8">
+              <div className="font-text text-steel-dim/90 text-sm md:text-base leading-loose whitespace-pre-wrap mb-12">
                 {item.fullArticle}
               </div>
             )}
+            
             <SocialLinks item={item} />
           </div>
         </div>
