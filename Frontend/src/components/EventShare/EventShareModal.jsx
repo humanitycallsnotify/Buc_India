@@ -146,16 +146,16 @@ const EventShareModal = ({ event, onClose }) => {
                 label="Open Registration"
                 onClick={() => openRegistrationLink(registrationUrl)}
               />
-              <ShareBtn compact icon={<MessageCircle size={13} />} label="WhatsApp" onClick={() => shareViaWhatsApp(registrationUrl, event.title)} />
-              <ShareBtn compact icon={<Share2 size={13} />} label="Telegram" onClick={() => shareViaTelegram(registrationUrl, event.title)} />
+              <ShareBtn compact icon={<MessageCircle size={13} />} label="WhatsApp" onClick={() => shareViaWhatsApp(registrationUrl, event)} />
+              <ShareBtn compact icon={<Share2 size={13} />} label="Telegram" onClick={() => shareViaTelegram(registrationUrl, event)} />
               <ShareBtn compact icon={<Share2 size={13} />} label="Facebook" onClick={() => shareViaFacebook(registrationUrl)} />
-              <ShareBtn compact icon={<Share2 size={13} />} label="X" onClick={() => shareViaTwitter(registrationUrl, event.title)} />
-              <ShareBtn compact icon={<Mail size={13} />} label="Email" onClick={() => shareViaEmail(registrationUrl, event.title)} />
+              <ShareBtn compact icon={<Share2 size={13} />} label="X" onClick={() => shareViaTwitter(registrationUrl, event)} />
+              <ShareBtn compact icon={<Mail size={13} />} label="Email" onClick={() => shareViaEmail(registrationUrl, event)} />
               <ShareBtn
                 compact
                 icon={<Share2 size={13} />}
                 label="Share"
-                onClick={() => nativeShare(registrationUrl, event.title)}
+                onClick={() => nativeShare(registrationUrl, event)}
               />
             </div>
           </div>

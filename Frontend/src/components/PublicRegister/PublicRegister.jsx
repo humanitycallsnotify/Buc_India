@@ -16,6 +16,7 @@ import {
 } from "../../constants/eventRegistrationConfig";
 import CustomQuestionsSection from "./CustomQuestionsSection.jsx";
 import EventShareModal from "../EventShare/EventShareModal.jsx";
+import useRegistrationShareMeta from "../../hooks/useRegistrationShareMeta.js";
 import {
   applyProfileToForm,
   buildRegistrationErrors,
@@ -137,6 +138,8 @@ const PublicRegister = () => {
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [scrollY, setScrollY] = useState(0);
+
+  useRegistrationShareMeta(event, routeEventId);
 
   useEffect(() => {
     const handleScroll = () => {
