@@ -129,11 +129,7 @@ function App() {
 
                 {/* Registration portal (standalone layout) */}
                 <Route path="/register" element={<Navigate to="/register/community" replace />} />
-                <Route path="/register/:slug" element={
-                  <UserProtectedRoute>
-                    <MainRegistration />
-                  </UserProtectedRoute>
-                } />
+                <Route path="/register/:slug" element={<MainRegistration />} />
                 <Route
                   path="/register/login"
                   element={<Navigate to="/login" replace />}
