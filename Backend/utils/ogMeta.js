@@ -20,7 +20,11 @@ export const truncateDescription = (value = "", maxLength = 200) => {
 
 export const getSiteUrl = () => {
   const configured = process.env.FRONTEND_URL || process.env.SITE_URL;
-  return (configured || "https://bucindia.com").replace(/\/$/, "");
+  if (configured) {
+    const firstUrl = configured.split(',')[0].trim();
+    return firstUrl.replace(/\/$/, "");
+  }
+  return "https://bucindia.com";
 };
 
 export const getRegistrationUrl = (eventId) =>

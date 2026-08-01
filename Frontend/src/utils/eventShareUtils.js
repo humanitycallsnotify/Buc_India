@@ -29,41 +29,14 @@ export const openRegistrationLink = (url) => {
 
 export const buildShareMessage = (event, url) => {
   const title = event?.title || "BUC India Event";
-  let dateStr = "";
-  let timeStr = "";
-  
-  if (event?.eventDate) {
-    const d = new Date(event.eventDate);
-    if (!isNaN(d.getTime())) {
-      dateStr = d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-      timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-    }
-  }
-  
-  const location = event?.location || event?.meetingPoint || "";
-  const description = event?.description || "";
   
   const parts = [];
-  parts.push(`🚴 ${title}`);
+  parts.push(`🏍️ ${title}`);
   parts.push("");
-  if (dateStr) parts.push(`📅 ${dateStr}`);
-  if (timeStr) parts.push(`🕕 ${timeStr}`);
-  if (location) parts.push(`📍 ${location}`);
-  
-  if (dateStr || timeStr || location) {
-    parts.push("");
-  }
-  
-  if (description) {
-    parts.push(description);
-    parts.push("");
-  }
   
   if (url) {
     parts.push("Register here:");
     parts.push(url);
-  } else {
-    parts.push("Register here:");
   }
   
   return parts.join("\n");
