@@ -101,7 +101,7 @@ const OtpModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup', disableM
         } catch (err) {
           toast.error("You must register your profile before continuing.");
           onClose();
-          navigate("/register/community");
+          window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { type: "signup" } }));
           return;
         }
       }
@@ -174,7 +174,7 @@ const OtpModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup', disableM
                 <button
                   onClick={() => {
                     onClose();
-                    navigate("/register/community");
+                    window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { type: "signup" } }));
                   }}
                   className="w-full py-4 bg-copper text-carbon font-body font-bold text-xs uppercase tracking-widest hover:bg-white transition-colors rounded-lg flex items-center justify-center gap-2 mt-4"
                 >
