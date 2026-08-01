@@ -23,13 +23,18 @@ const galleryItemSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    influencerName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     eventDate: {
       type: Date,
       required: true,
     },
     category: {
       type: String,
-      enum: ['all', 'rides', 'events', 'bikes', 'rallies', 'highlights', 'cover'],
+      enum: ['all', 'rides', 'events', 'bikes', 'rallies', 'highlights', 'cover', 'influencer_videos'],
       default: 'all',
     },
   },

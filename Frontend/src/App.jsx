@@ -69,11 +69,31 @@ const MemoizedPublicLayout = memo(PublicLayout);
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalType, setAuthModalType] = useState('login');
 
   useEffect(() => {
-    const handleOpenAuth = () => setIsAuthModalOpen(true);
+    const handleOpenAuth = (e) => {
+      if (e?.detail?.type) {
+        setAuthModalType(e.detail.type);
+      } else {
+        setAuthModalType('login');
+      }
+      setIsAuthModalOpen(true);
+    };
     window.addEventListener("open-auth-modal", handleOpenAuth);
     return () => window.removeEventListener("open-auth-modal", handleOpenAuth);
+  }, []);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const authParam = searchParams.get('auth');
+    if (authParam === 'login' || authParam === 'signup') {
+      setAuthModalType(authParam);
+      setIsAuthModalOpen(true);
+      // Remove query param without reloading
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.pushState({path:newUrl},'',newUrl);
+    }
   }, []);
 
   return (
@@ -110,6 +130,7 @@ function App() {
             <AuthModal 
               isOpen={isAuthModalOpen} 
               onClose={() => setIsAuthModalOpen(false)} 
+              defaultType={authModalType}
             />
             <Suspense fallback={<Loading />}>
               <Routes>
@@ -126,6 +147,7 @@ function App() {
 
                 {/* Event registration (standalone layout) */}
                 <Route path="/event-register/:eventId" element={<PublicRegister />} />
+                <Route path="/event-register-view/:eventId" element={<PublicRegister />} />
 
                 {/* Registration portal (standalone layout) */}
                 <Route path="/register" element={<Navigate to="/register/community" replace />} />
@@ -177,19 +199,11 @@ function App() {
                   />
                   <Route
                     path="/login"
-                    element={
-                      <PublicRoute>
-                        <LoginForm />
-                      </PublicRoute>
-                    }
+                    element={<Navigate to="/?auth=login" replace />}
                   />
                   <Route
                     path="/signup"
-                    element={
-                      <PublicRoute>
-                        <SignUpForm />
-                      </PublicRoute>
-                    }
+                    element={<Navigate to="/?auth=signup" replace />}
                   />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>

@@ -14,10 +14,20 @@ const navigation = [
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const scrollRef = useRef(null);
   const linksRef = useRef([]);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      setIsLoggedIn(sessionStorage.getItem("userLoggedIn") === "true");
+    };
+    checkAuth();
+    window.addEventListener("user-login-change", checkAuth);
+    return () => window.removeEventListener("user-login-change", checkAuth);
+  }, []);
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -76,19 +86,30 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center gap-8">
-          <button
-            onClick={() => handleNavigate("/login")}
-            className="group relative font-body text-xs tracking-[0.3em] uppercase text-white/70 hover:text-white transition-colors"
-          >
-            LOGIN
-            <span className="absolute -bottom-1 left-0 w-0 h-px bg-copper group-hover:w-full transition-all duration-300" />
-          </button>
-          <button
-            onClick={() => handleNavigate("/register")}
-            className="px-6 py-2.5 border border-copper/40 text-copper font-heading text-sm tracking-widest uppercase hover:bg-copper hover:text-carbon transition-all duration-300"
-          >
-            REGISTER
-          </button>
+          {!isLoggedIn ? (
+            <>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { type: "login" } }))}
+                className="group relative font-body text-xs tracking-[0.3em] uppercase text-white/70 hover:text-white transition-colors"
+              >
+                LOGIN
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-copper group-hover:w-full transition-all duration-300" />
+              </button>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { type: "signup" } }))}
+                className="px-6 py-2.5 border border-copper/40 text-copper font-heading text-sm tracking-widest uppercase hover:bg-copper hover:text-carbon transition-all duration-300"
+              >
+                REGISTER
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => handleNavigate("/profile")}
+              className="px-6 py-2.5 border border-copper/40 text-copper font-heading text-sm tracking-widest uppercase hover:bg-copper hover:text-carbon transition-all duration-300"
+            >
+              PROFILE
+            </button>
+          )}
         </div>
       </header>
 
@@ -274,24 +295,42 @@ const Header = () => {
             <footer className="relative z-20 flex-none w-full max-w-full overflow-x-hidden border-t border-white/5 bg-carbon/95 backdrop-blur-md">
               <div className="h-px w-full bg-gradient-to-r from-copper/40 via-copper/20 to-transparent" />
               <div className="flex items-center justify-start gap-4 sm:gap-8 px-6 sm:px-10 py-4 sm:py-5 pr-20 sm:pr-28 max-w-full">
-                <button
-                  type="button"
-                  onClick={() => handleNavigate("/login")}
-                  className="group relative font-body text-[10px] sm:text-xs tracking-[0.35em] uppercase text-white/50 hover:text-white transition-colors py-2 shrink-0"
-                >
-                  LOGIN
-                  <span className="absolute bottom-0 left-0 w-0 h-px bg-copper group-hover:w-full transition-all duration-500" />
-                </button>
+                {!isLoggedIn ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { type: "login" } }));
+                        setIsOpen(false);
+                      }}
+                      className="group relative font-body text-[10px] sm:text-xs tracking-[0.35em] uppercase text-white/50 hover:text-white transition-colors py-2 shrink-0"
+                    >
+                      LOGIN
+                      <span className="absolute bottom-0 left-0 w-0 h-px bg-copper group-hover:w-full transition-all duration-500" />
+                    </button>
 
-                <span className="text-white/10 hidden sm:inline">|</span>
+                    <span className="text-white/10 hidden sm:inline">|</span>
 
-                <button
-                  type="button"
-                  onClick={() => handleNavigate("/register")}
-                  className="px-5 sm:px-8 py-2.5 sm:py-3 border border-copper/40 text-copper font-heading text-sm sm:text-base tracking-widest uppercase hover:bg-copper hover:text-carbon transition-all duration-300 shrink-0"
-                >
-                  REGISTER
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { type: "signup" } }));
+                        setIsOpen(false);
+                      }}
+                      className="px-5 sm:px-8 py-2.5 sm:py-3 border border-copper/40 text-copper font-heading text-sm sm:text-base tracking-widest uppercase hover:bg-copper hover:text-carbon transition-all duration-300 shrink-0"
+                    >
+                      REGISTER
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate("/profile")}
+                    className="px-5 sm:px-8 py-2.5 sm:py-3 border border-copper/40 text-copper font-heading text-sm sm:text-base tracking-widest uppercase hover:bg-copper hover:text-carbon transition-all duration-300 shrink-0"
+                  >
+                    PROFILE
+                  </button>
+                )}
               </div>
             </footer>
           </motion.div>

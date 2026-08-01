@@ -154,7 +154,7 @@ export const FIELD_TO_FORM = {
 };
 
 export const createDefaultRegistrationFields = () =>
-  createEmptyRegistrationFields();
+  JSON.parse(JSON.stringify(DEFAULT_REGISTRATION_FIELDS));
 
 export const createDefaultRegistrationSettings = () =>
   JSON.parse(JSON.stringify(DEFAULT_REGISTRATION_SETTINGS));
@@ -163,6 +163,13 @@ export const hasCustomRegistrationConfig = (event) => {
   if (!event?.registrationFields || typeof event.registrationFields !== "object") {
     return false;
   }
+  
+  // If the admin saved the config but didn't enable ANY fields, fallback to legacy/default
+  const hasEnabledFields = Object.values(event.registrationFields).some(field => field && field.enabled === true);
+  if (!hasEnabledFields) {
+    return false;
+  }
+
   return Object.keys(event.registrationFields).length > 0;
 };
 

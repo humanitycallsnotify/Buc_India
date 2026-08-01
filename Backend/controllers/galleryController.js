@@ -12,7 +12,7 @@ export const getGalleryItems = async (req, res) => {
 
 export const createGalleryItem = async (req, res) => {
   try {
-    const { eventName, eventDate, category, type } = req.body;
+    const { eventName, eventDate, category, type, influencerName } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ message: 'Media file is required' });
@@ -32,6 +32,7 @@ export const createGalleryItem = async (req, res) => {
       imagePublicId: isVideo ? '' : req.file.filename,
       videoUrl: isVideo ? req.file.path : '',
       videoPublicId: isVideo ? req.file.filename : '',
+      influencerName: influencerName || '',
     });
 
     const saved = await item.save();
@@ -58,6 +59,14 @@ export const deleteGalleryItem = async (req, res) => {
       }
     }
 
+    if (item.videoPublicId) {
+      try {
+        await cloudinary.uploader.destroy(item.videoPublicId, { resource_type: 'video' });
+      } catch (err) {
+        console.error('Error deleting gallery video from Cloudinary:', err);
+      }
+    }
+
     await GalleryItem.findByIdAndDelete(id);
     res.json({ message: 'Gallery item deleted successfully' });
   } catch (error) {
@@ -68,7 +77,7 @@ export const deleteGalleryItem = async (req, res) => {
 export const updateGalleryItem = async (req, res) => {
   try {
     const { id } = req.params;
-    const { eventName, eventDate, category } = req.body;
+    const { eventName, eventDate, category, influencerName } = req.body;
     
     const item = await GalleryItem.findById(id);
     if (!item) {
@@ -78,6 +87,9 @@ export const updateGalleryItem = async (req, res) => {
     item.eventName = eventName || item.eventName;
     item.eventDate = eventDate || item.eventDate;
     item.category = category || item.category;
+    if (influencerName !== undefined) {
+      item.influencerName = influencerName;
+    }
 
     if (req.file) {
       const isVideo = req.file.mimetype.startsWith('video/');
@@ -86,9 +98,17 @@ export const updateGalleryItem = async (req, res) => {
         // Delete old video if any
         if (item.videoPublicId) {
           try {
-            await cloudinary.uploader.destroy(item.videoPublicId);
+            await cloudinary.uploader.destroy(item.videoPublicId, { resource_type: 'video' });
           } catch (err) {
             console.error('Error deleting old video:', err);
+          }
+        }
+        // Also delete old image if replacing image with video
+        if (item.imagePublicId) {
+          try {
+            await cloudinary.uploader.destroy(item.imagePublicId);
+          } catch (err) {
+            console.error('Error deleting old image:', err);
           }
         }
         item.videoUrl = req.file.path;
@@ -102,6 +122,14 @@ export const updateGalleryItem = async (req, res) => {
             await cloudinary.uploader.destroy(item.imagePublicId);
           } catch (err) {
             console.error('Error deleting old image:', err);
+          }
+        }
+        // Also delete old video if replacing video with image
+        if (item.videoPublicId) {
+          try {
+            await cloudinary.uploader.destroy(item.videoPublicId, { resource_type: 'video' });
+          } catch (err) {
+            console.error('Error deleting old video:', err);
           }
         }
         item.imageUrl = req.file.path;

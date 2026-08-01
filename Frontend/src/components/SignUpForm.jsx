@@ -98,7 +98,9 @@ const SignUpForm = () => {
       window.dispatchEvent(new Event("user-login-change"));
 
       toast.success("Account created successfully!");
-      navigate("/register/june-21-event");
+      const redirectUrl = sessionStorage.getItem("redirectAfterLogin") || "/events";
+      sessionStorage.removeItem("redirectAfterLogin");
+      navigate(redirectUrl);
     } catch (error) {
       toast.error(
         error.response?.data?.message ||

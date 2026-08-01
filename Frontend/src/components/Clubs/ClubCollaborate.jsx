@@ -484,7 +484,7 @@ const ClubCollaborate = () => {
       setFounderEmailError("");
       setFounderEmailVerified(false);
       setAdminPhoneErrors({});
-      navigate("/register/june-21-event");
+      navigate("/register/community");
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
@@ -501,7 +501,7 @@ const ClubCollaborate = () => {
         {/* Header */}
         <div className="mb-16">
           <button
-            onClick={() => navigate("/register/june-21-event")}
+            onClick={() => navigate("/register/community")}
             className="flex items-center gap-2 font-body text-[10px] tracking-widest uppercase text-steel-dim hover:text-copper transition-colors mb-8"
           >
             <ArrowLeft size={14} />
