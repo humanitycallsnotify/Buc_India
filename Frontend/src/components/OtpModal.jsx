@@ -22,6 +22,7 @@ const OtpModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup', disableM
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [notRegistered, setNotRegistered] = useState(false);
 
   const navigate = useNavigate();
 
@@ -44,7 +45,23 @@ const OtpModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup', disableM
     }
 
     setIsSendingOtp(true);
+    setNotRegistered(false);
     try {
+      if (defaultType === "login" || defaultType === "event_registration") {
+        try {
+          const profile = await profileService.get(authMethod === "email" ? email : null, authMethod === "mobile" ? phone : null);
+          if (!profile || Object.keys(profile).length === 0) {
+            setNotRegistered(true);
+            setIsSendingOtp(false);
+            return;
+          }
+        } catch (err) {
+          setNotRegistered(true);
+          setIsSendingOtp(false);
+          return;
+        }
+      }
+
       if (authMethod === "email") {
         await otpService.send(email, defaultType, "Rider"); // Using Rider as default category for OTP
       } else {
@@ -151,7 +168,26 @@ const OtpModal = ({ isOpen, onClose, onSuccess, defaultType = 'signup', disableM
               </p>
             </div>
 
-            {!otpSent ? (
+            {notRegistered ? (
+              <div className="space-y-6 animate-fade-in text-center">
+                <p className="text-white text-lg font-body">You are not a registered user. Please register to continue.</p>
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate("/register/community");
+                  }}
+                  className="w-full py-4 bg-copper text-carbon font-body font-bold text-xs uppercase tracking-widest hover:bg-white transition-colors rounded-lg flex items-center justify-center gap-2 mt-4"
+                >
+                  Go to Register <ArrowRight size={16} />
+                </button>
+                <button
+                  onClick={() => setNotRegistered(false)}
+                  className="text-xs text-steel-dim hover:text-white underline underline-offset-4 mt-2 inline-block"
+                >
+                  Back to Login
+                </button>
+              </div>
+            ) : !otpSent ? (
               <div className="space-y-6">
                 {!disableMobileAuth && (
                   <div className="flex bg-carbon border border-white/10 rounded-lg p-1">
