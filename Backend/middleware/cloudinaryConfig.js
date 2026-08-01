@@ -28,13 +28,20 @@ const profileStorage = new CloudinaryStorage({
   }
 });
 
-// Storage for gallery images
+// Storage for gallery images and videos
 const galleryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'buc_india_gallery',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-    transformation: [{ width: 1400, height: 900, crop: 'limit' }]
+  params: async (req, file) => {
+    const isVideo = file.mimetype.startsWith('video/');
+    return {
+      folder: 'buc_india_gallery',
+      resource_type: isVideo ? 'video' : 'image',
+      allowed_formats: isVideo 
+        ? ['mp4', 'mov', 'avi', 'mkv', 'webm'] 
+        : ['jpg', 'png', 'jpeg', 'webp'],
+      // Only apply transformations to images
+      ...(isVideo ? {} : { transformation: [{ width: 1400, height: 900, crop: 'limit' }] }),
+    };
   }
 });
 

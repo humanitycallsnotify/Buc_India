@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { eventRegisterOgDevPlugin } from './vite-plugins/eventRegisterOgDev.js';
 
 export default defineConfig({
-  plugins: [react(), eventRegisterOgDevPlugin()],
+  plugins: [react()],
   server: {
     port: 3000,
   },

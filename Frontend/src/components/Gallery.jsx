@@ -127,15 +127,17 @@ const Gallery = () => {
   }, []);
 
   const mediaItems = useMemo(() => {
-    const backend = galleryItems.map(item => ({
-      id: item._id,
-      type: "image",
-      src: item.imageUrl,
-      title: item.eventName,
-      category: item.category || "rides",
-      author: "CENTRAL COMMAND",
-      likes: 0,
-    }));
+    const backend = galleryItems
+      .filter(item => item.category !== "cover" && item.category !== "influencer_videos")
+      .map(item => ({
+        id: item._id,
+        type: item.videoUrl ? "video" : "image",
+        src: item.videoUrl || item.imageUrl,
+        title: item.eventName,
+        category: item.category || "rides",
+        author: "CENTRAL COMMAND",
+        likes: 0,
+      }));
     return [...backend, ...autoGalleryItems];
   }, [galleryItems, autoGalleryItems]);
 

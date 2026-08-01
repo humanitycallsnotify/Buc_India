@@ -6,7 +6,7 @@ import { eventService } from "../../services/api";
 import { getRemainingSeats } from "../../constants/eventRegistrationConfig";
 import { getRegistrationStatusLabel } from "../../utils/eventShareUtils";
 import EventShareModal from "../EventShare/EventShareModal.jsx";
-import AuthModal from "../AuthModal.jsx";
+import OtpModal from "../OtpModal.jsx";
 
 const PublicHome = () => {
   const navigate = useNavigate();
@@ -183,7 +183,7 @@ const PublicHome = () => {
           <EventShareModal event={shareEvent} onClose={() => setShareEvent(null)} />
         )}
       </AnimatePresence>
-      <AuthModal 
+      <OtpModal 
         isOpen={showAuthModal} 
         onClose={() => setShowAuthModal(false)} 
         onSuccess={() => {

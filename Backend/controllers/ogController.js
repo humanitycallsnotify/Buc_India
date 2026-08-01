@@ -23,7 +23,7 @@ const INDEX_CANDIDATES = [
   path.resolve(__dirname, "..", "..", "frontend", "index.html"),
 ];
 
-async function readIndexTemplate() {
+async function readIndexTemplate(req) {
   for (const candidate of INDEX_CANDIDATES) {
     try {
       return await fs.readFile(candidate, "utf8");
@@ -32,14 +32,26 @@ async function readIndexTemplate() {
     }
   }
   
-  try {
-    const siteUrl = getSiteUrl();
-    const response = await fetch(siteUrl);
-    if (response.ok) {
-      return await response.text();
+  const urlsToTry = [getSiteUrl()];
+  if (req) {
+    const host = req.get("x-forwarded-host") || req.get("host");
+    if (host) {
+      const protocol = req.get("x-forwarded-proto") || req.protocol || "https";
+      urlsToTry.push(`${protocol}://${host}`);
     }
-  } catch (error) {
-    console.error("Failed to fetch index.html from live site:", error);
+  }
+  urlsToTry.push("https://www.bucindia.com");
+  urlsToTry.push("https://bucindia.com");
+
+  for (const url of [...new Set(urlsToTry)]) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return await response.text();
+      }
+    } catch (error) {
+      console.error(`Failed to fetch index.html from ${url}:`, error.message);
+    }
   }
 
   throw new Error("Unable to locate frontend index.html template for OG rendering.");
@@ -82,17 +94,13 @@ export const serveEventRegisterOgHtml = async (req, res) => {
     const event = await findEventByIdentifier(identifier);
     const meta = buildRegistrationShareMeta(event, identifier, req);
 
-    try {
-      const htmlTemplate = await readIndexTemplate();
-      const html = injectMetaIntoHtml(htmlTemplate, meta);
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600");
-      res.status(event ? 200 : 404);
-      res.send(html);
-    } catch (templateError) {
-      console.error("Failed to read frontend template, falling back to basic HTML:", templateError);
-      const metaTagsHtml = buildMetaTagsHtml(meta);
-      const fallbackHtml = `<!DOCTYPE html>
+    const metaTagsHtml = buildMetaTagsHtml(meta);
+    
+    // We redirect to /event-register-view/ to bypass the Hostinger /event-register/* rewrite rule
+    // which would otherwise cause an infinite loop.
+    const redirectUrl = meta.pageUrl.replace('/event-register/', '/event-register-view/');
+
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -100,27 +108,27 @@ export const serveEventRegisterOgHtml = async (req, res) => {
   <meta name="description" content="${escapeHtml(meta.description)}" />
   ${metaTagsHtml}
   <script>
-    window.location.replace("${meta.pageUrl}");
+    window.location.replace("${redirectUrl}");
   </script>
 </head>
-<body>
-  <p>Redirecting to <a href="${meta.pageUrl}">${meta.pageUrl}</a>...</p>
+<body style="background:#111;color:#fff;font-family:sans-serif;text-align:center;padding-top:10vh;">
+  <p>Redirecting to <a href="${redirectUrl}" style="color:#e97132;">${redirectUrl}</a>...</p>
 </body>
 </html>`;
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600");
-      res.status(event ? 200 : 404);
-      res.send(fallbackHtml);
-    }
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600");
+    res.status(event ? 200 : 404);
+    res.send(html);
   } catch (error) {
     console.error("OG HTML render failed:", error.message);
     res.status(500).send("Unable to render registration preview page.");
   }
 };
 
-export const serveSiteRootOgFallback = async (_req, res, next) => {
+export const serveSiteRootOgFallback = async (req, res, next) => {
   try {
-    const htmlTemplate = await readIndexTemplate();
+    const htmlTemplate = await readIndexTemplate(req);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(htmlTemplate);
   } catch (error) {

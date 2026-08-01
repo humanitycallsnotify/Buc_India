@@ -3,19 +3,18 @@ import { galleryService } from "../services/api";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Image as ImageIcon, 
+  Upload, 
+  X, 
   Calendar, 
   Tag, 
-  Eye, 
   Trash2, 
-  Plus, 
-  X, 
   Edit3, 
-  AlertTriangle,
-  Check,
+  Image as ImageIcon,
   ExternalLink,
-  ChevronRight,
-  Upload
+  Plus,
+  AlertTriangle,
+  Eye,
+  Play
 } from "lucide-react";
 import { 
   Box, 
@@ -100,6 +99,7 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
       eventName: isCoverOnly ? "Registration Portal Cover" : "",
       eventDate: isCoverOnly ? new Date().toISOString().split("T")[0] : "",
       category: isCoverOnly ? "cover" : "all",
+      influencerName: "",
     });
     setMediaFile(null);
     setMediaPreview(null);
@@ -115,8 +115,9 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
       eventName: item.eventName,
       eventDate: item.eventDate ? item.eventDate.split("T")[0] : "",
       category: item.category || (isCoverOnly ? "cover" : "all"),
+      influencerName: item.influencerName || "",
     });
-    setMediaPreview(item.imageUrl);
+    setMediaPreview(item.videoUrl || item.imageUrl);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -134,6 +135,7 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
         { id: "bikes", label: "Member Bikes" },
         { id: "rallies", label: "Rallies" },
         { id: "highlights", label: "Ride Highlights (2–3s Clips)" },
+        { id: "influencer_videos", label: "Watch & Learn (Influencer Videos)" },
       ];
 
   const handleSubmit = async (e) => {
@@ -159,8 +161,11 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
     } else {
       data.append("eventName", formData.eventName);
       data.append("eventDate", formData.eventDate);
+      data.append("category", formData.category);
+      if (formData.influencerName) {
+        data.append("influencerName", formData.influencerName);
+      }
     }
-    data.append("category", formData.category);
 
     setSubmitting(true);
     try {
@@ -209,6 +214,7 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
       { id: "rallies", label: "Rallies" },
       { id: "highlights", label: "Ride Highlights (2–3s Clips)" },
       { id: "cover", label: "Cover Photo (Registration Portal)" },
+      { id: "influencer_videos", label: "Watch & Learn (Influencer Videos)" },
     ];
     const cat = allCats.find((c) => c.id === id);
     return cat ? cat.label : id;
@@ -274,29 +280,43 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
                         <Grid item xs={12} md={6}>
                           <TextField
                             fullWidth
-                            label="Event Name"
+                            label={formData.category === 'influencer_videos' ? "Video Title" : "Event / Ride Name"}
                             name="eventName"
                             value={formData.eventName}
                             onChange={handleChange}
-                            required={formData.category !== 'cover'}
+                            required
                             variant="outlined"
                             sx={{ input: { color: 'white' }, label: { color: 'rgba(255,255,255,0.7)' } }}
                           />
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                          <TextField
-                            fullWidth
-                            label="Event Date"
-                            type="date"
-                            name="eventDate"
-                            value={formData.eventDate}
-                            onChange={handleChange}
-                            required={formData.category !== 'cover'}
-                            InputLabelProps={{ shrink: true }}
-                            variant="outlined"
-                            sx={{ input: { color: 'white' }, label: { color: 'rgba(255,255,255,0.7)' } }}
-                          />
-                        </Grid>
+                        {formData.category === 'influencer_videos' ? (
+                          <Grid item xs={12} md={6}>
+                            <TextField
+                              fullWidth
+                              label="Influencer Name (Author)"
+                              name="influencerName"
+                              value={formData.influencerName}
+                              onChange={handleChange}
+                              variant="outlined"
+                              sx={{ input: { color: 'white' }, label: { color: 'rgba(255,255,255,0.7)' } }}
+                            />
+                          </Grid>
+                        ) : (
+                          <Grid item xs={12} md={6}>
+                            <TextField
+                              fullWidth
+                              label="Event Date"
+                              type="date"
+                              name="eventDate"
+                              value={formData.eventDate}
+                              onChange={handleChange}
+                              required={formData.category !== 'cover'}
+                              InputLabelProps={{ shrink: true }}
+                              variant="outlined"
+                              sx={{ input: { color: 'white' }, label: { color: 'rgba(255,255,255,0.7)' } }}
+                            />
+                          </Grid>
+                        )}
                       </>
                     )}
                     {!isCoverOnly && (
@@ -340,11 +360,21 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
                     {(mediaPreview) && (
                       <Grid item xs={12}>
                         <Box sx={{ position: 'relative', height: 200, borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-                          <img 
-                            src={mediaPreview} 
-                            alt="Preview" 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                          />
+                          {(mediaFile?.type?.startsWith('video/') || mediaPreview.match(/\.(mp4|mov|webm|avi|mkv)$/i) || (!mediaFile && isEditing && !mediaPreview.includes('image/upload'))) ? (
+                            <video 
+                              src={mediaPreview} 
+                              autoPlay 
+                              muted 
+                              loop 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            />
+                          ) : (
+                            <img 
+                              src={mediaPreview} 
+                              alt="Preview" 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            />
+                          )}
                         </Box>
                       </Grid>
                     )}
@@ -404,11 +434,30 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
                     Active Cover
                   </div>
                 )}
-                <img
-                  src={item.imageUrl}
-                  alt={item.eventName}
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                />
+                {item.videoUrl ? (
+                  <div className="w-full h-full relative">
+                    <video
+                      src={item.videoUrl}
+                      muted
+                      loop
+                      playsInline
+                      onMouseEnter={(e) => e.target.play()}
+                      onMouseLeave={(e) => { e.target.pause(); e.target.currentTime = 0; }}
+                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                         <Play size={20} className="text-white ml-1" fill="currentColor" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.eventName}
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                  />
+                )}
                 
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-carbon via-carbon/20 to-transparent opacity-60 group-hover:opacity-90 transition-opacity" />
@@ -422,8 +471,14 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
                   </div>
                   <h4 className="font-heading text-xl text-white uppercase truncate mb-1">{item.eventName}</h4>
                   <div className="flex items-center gap-2 text-steel-dim text-[8px] uppercase tracking-widest font-bold mb-4">
-                    <Calendar size={10} className="text-copper" />
-                    {new Date(item.eventDate).toLocaleDateString()}
+                    {item.category === 'influencer_videos' && item.influencerName ? (
+                      <span>By {item.influencerName}</span>
+                    ) : (
+                      <>
+                        <Calendar size={10} className="text-copper" />
+                        {new Date(item.eventDate).toLocaleDateString()}
+                      </>
+                    )}
                   </div>
                   
                   <div className="flex gap-4 pt-4 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -470,11 +525,20 @@ const GalleryManagement = ({ isCoverOnly = false }) => {
               
               <div className="grid grid-cols-1 lg:grid-cols-3 h-full">
                 <div className="lg:col-span-2 bg-black flex items-center justify-center min-h-[40vh] lg:min-h-0">
-                  <img
-                    src={selectedItem.imageUrl}
-                    alt={selectedItem.eventName}
-                    className="max-w-full max-h-full object-contain"
-                  />
+                  {selectedItem.videoUrl ? (
+                    <video
+                      src={selectedItem.videoUrl}
+                      controls
+                      autoPlay
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  ) : (
+                    <img
+                      src={selectedItem.imageUrl}
+                      alt={selectedItem.eventName}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  )}
                 </div>
                 <div className="p-12 space-y-8 flex flex-col justify-center border-l border-white/5 bg-carbon-light/50">
                   <div>
