@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { AnimatePresence } from "framer-motion";
-import { eventService, registrationService, profileService, otpService } from "../../services/api";
+import { eventService, registrationService, profileService, otpService, clubService } from "../../services/api";
 import { TERMS_SUMMARY } from "../../constants/registrationConstants";
 import {
   resolveRegistrationConfig,
@@ -76,6 +76,7 @@ const INITIAL_FORM = {
   bikeBrand: "",
   ridingExperience: "",
   clubName: "",
+  clubNameCustom: "",
   aadhaarNumber: "",
   allergies: "",
   insurance: "",
@@ -137,17 +138,22 @@ const PublicRegister = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [scrollY, setScrollY] = useState(0);
+  const [clubs, setClubs] = useState([]);
 
   useRegistrationShareMeta(event, routeEventId);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
+    const fetchClubs = async () => {
+      try {
+        const publicClubs = await clubService.getPublic();
+        setClubs(publicClubs);
+      } catch (err) {
+        console.error("Error fetching clubs:", err);
+      }
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    fetchClubs();
   }, []);
+
 
   const regConfig = useMemo(() => resolveRegistrationConfig(event), [event]);
   const computedAge = useMemo(() => computeAgeFromDob(formData.dateOfBirth), [formData.dateOfBirth]);
@@ -230,10 +236,8 @@ const PublicRegister = () => {
     if (!routeEventId || routeEventId === "community") return undefined;
     const refresh = () => loadEvent(true);
     window.addEventListener("focus", refresh);
-    const interval = setInterval(refresh, 15000);
     return () => {
       window.removeEventListener("focus", refresh);
-      clearInterval(interval);
     };
   }, [routeEventId, loadEvent]);
 
@@ -677,6 +681,7 @@ const PublicRegister = () => {
                 </RegField>
               </div>
 
+
               <div className="form-row">
                 <RegField fieldKey="fullName" regConfig={regConfig}>
                   <label>{fieldLabel(regConfig, "fullName", "Full Name")}</label>
@@ -1076,18 +1081,40 @@ const PublicRegister = () => {
                   <div className="form-row">
                     <RegField fieldKey="ridingClub" regConfig={regConfig}>
                       <label>{fieldLabel(regConfig, "ridingClub", "Riding Club")}</label>
-                      <input
-                        type="text"
+                      <select
                         name="clubName"
-                        value={formData.clubName}
+                        value={formData.clubName || ""}
                         onChange={handleInputChange}
-                        placeholder="Club name (if any)"
                         className={fieldErrors.clubName ? "input-error" : ""}
-                      />
+                      >
+                        <option value="">Select a club</option>
+                        {clubs.map((c) => (
+                          <option key={c.id || c._id} value={c.name}>
+                            {c.name}
+                          </option>
+                        ))}
+                        <option value="Others">Others</option>
+                      </select>
                       {fieldErrors.clubName && (
                         <span className="field-error">{fieldErrors.clubName}</span>
                       )}
                     </RegField>
+                    {formData.clubName === "Others" && (
+                      <div className="form-group">
+                        <label>Enter Club Name <span style={{color:'#EF4444'}}>*</span></label>
+                        <input
+                          type="text"
+                          name="clubNameCustom"
+                          value={formData.clubNameCustom || ""}
+                          onChange={handleInputChange}
+                          className={fieldErrors.clubNameCustom ? "input-error" : ""}
+                          placeholder="Enter your club name"
+                        />
+                        {fieldErrors.clubNameCustom && (
+                          <span className="field-error">{fieldErrors.clubNameCustom}</span>
+                        )}
+                      </div>
+                    )}
                     <RegField fieldKey="aadhaar" regConfig={regConfig}>
                       <label>{fieldLabel(regConfig, "aadhaar", "Aadhaar Number")}</label>
                       <input

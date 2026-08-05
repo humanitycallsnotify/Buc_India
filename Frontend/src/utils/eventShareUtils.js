@@ -74,6 +74,7 @@ export const nativeShare = async (url, event) => {
       const shareData = {
         title: event?.title || "BUC India Event",
         text: buildShareMessage(event, url),
+        url: url,
       };
 
       if (event?.banner && navigator.canShare) {

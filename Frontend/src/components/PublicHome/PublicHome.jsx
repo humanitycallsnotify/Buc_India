@@ -21,8 +21,6 @@ const PublicHome = () => {
 
   useEffect(() => {
     loadEvents();
-    const interval = setInterval(() => loadEvents(), 10000);
-    return () => clearInterval(interval);
   }, []);
 
   const loadEvents = async () => {
