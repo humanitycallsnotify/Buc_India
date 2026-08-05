@@ -20,6 +20,7 @@ const META_FORM_KEYS = new Set([
   "tShirtSize",
   "requestRidingGears",
   "requestedGears",
+  "clubNameCustom",
 ]);
 
 const SKIP_FORM_KEYS = new Set(["otp", "requestedGears"]);

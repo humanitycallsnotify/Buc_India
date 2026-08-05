@@ -61,8 +61,16 @@ export const buildRegistrationErrors = ({
   };
 
   Object.entries(FIELD_TO_FORM).forEach(([configKey, formKey]) => {
+    if (configKey === "idUpload" || configKey === "licenceUpload") return;
     requireField(formKey, configKey);
   });
+
+  if (show("ridingClub") && require("ridingClub") && formData.clubName === "Others") {
+    const value = formData.clubNameCustom;
+    if (value === undefined || value === null || String(value).trim() === "") {
+      errors.clubNameCustom = "Please enter your club name";
+    }
+  }
 
   if (show("emergencyContact") && require("emergencyContact")) {
     requireField("emergencyContactName", "emergencyContact");

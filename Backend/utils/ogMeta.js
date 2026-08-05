@@ -39,12 +39,12 @@ export const getOgImageUrl = (bannerUrl, siteUrl = getSiteUrl()) => {
 
   const url = String(bannerUrl).trim();
 
-  // Resize and heavily compress for WhatsApp (under 300kb limit)
+  // Resize and heavily compress for WhatsApp (under 300kb limit), preserving aspect ratio
   if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
-    if (url.includes("/upload/c_fill,w_1200,h_630")) {
+    if (url.includes("/upload/c_limit,w_1200,h_1200")) {
       return url;
     }
-    return url.replace("/upload/", "/upload/c_fill,w_1200,h_630,f_jpg,q_auto/");
+    return url.replace("/upload/", "/upload/c_limit,w_1200,h_1200,f_jpg,q_auto/");
   }
 
   if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -107,7 +107,7 @@ export const buildMetaTagsHtml = (meta) => {
     `<meta property="og:image:secure_url" content="${escapeHtml(image)}" />`,
     `<meta property="og:image:type" content="image/jpeg" />`,
     `<meta property="og:image:width" content="1200" />`,
-    `<meta property="og:image:height" content="630" />`,
+    `<meta property="og:image:height" content="1200" />`,
     `<meta property="og:image:alt" content="${escapeHtml(title)}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${escapeHtml(title)}" />`,
