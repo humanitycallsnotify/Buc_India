@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE = "https://api-buc-india.onrender.com";
+const DEFAULT_API_BASE = "https://buc2026-api.onrender.com";
 
 const getApiBase = () => {
   const configured = process.env.API_URL || process.env.VITE_API_URL;

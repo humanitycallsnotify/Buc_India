@@ -24,7 +24,7 @@ export const getSiteUrl = () => {
     const firstUrl = configured.split(',')[0].trim();
     return firstUrl.replace(/\/$/, "");
   }
-  return "https://bucindia.com";
+  return "https://www.bucindia.com";
 };
 
 export const getRegistrationUrl = (eventId) =>

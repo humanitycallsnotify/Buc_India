@@ -1,0 +1,3 @@
+/event-register-view/*  /index.html  200
+/event-register/*  https://buc2026-api.onrender.com/og/event-register/:splat  301
+/*  /index.html  200
